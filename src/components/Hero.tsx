@@ -3,15 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 
-const vLine: Variants = {
-  hidden: { opacity: 0, y: 8, filter: "blur(2px)" } as any,
+
+const vLine = {
+  hidden: { opacity: 0, y: 8, filter: "blur(2px)" },
   show: {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
     transition: { duration: 0.42, ease: "easeOut" },
-  } as any,
-};
+  },
+} satisfies Variants;;
 
 /* =========================
    STEP2: 行ごと演出の素材
