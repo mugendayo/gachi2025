@@ -1,4 +1,3 @@
-// src/components/Hero.tsx
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,17 +5,48 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hasSeenPopup, setHasSeenPopup] = useState(false); // 初回閲覧フラグ
 
+  // 1秒後にCTA出現
   useEffect(() => {
     const t = setTimeout(() => setShowCTA(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
+  // ポップアップを見る前はスクロールロック
+  useEffect(() => {
+    const lock = !hasSeenPopup;
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (lock) {
+      html.style.overflow = "hidden";
+      body.style.overscrollBehavior = "none";
+      const prevent = (e: TouchEvent) => e.preventDefault();
+      body.addEventListener("touchmove", prevent, { passive: false });
+      return () => {
+        body.removeEventListener("touchmove", prevent);
+        html.style.overflow = "";
+        body.style.overscrollBehavior = "";
+      };
+    } else {
+      html.style.overflow = "";
+      body.style.overscrollBehavior = "";
+    }
+  }, [hasSeenPopup]);
+
+  const handleOpen = () => {
+    setOpen(true);
+    setHasSeenPopup(true); // ← ここで“見た”扱いにしてスクロール解禁
+  };
+
+  const handleClose = () => setOpen(false);
+
   return (
-    <section className="relative min-h-[70vh] grid place-items-center text-center overflow-hidden bg-white">
-      {/* 動画：透過なし & 前面（z-20） */}
+    <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black">
+      {/* 背景動画：全面フィット */}
       <video
-        className="absolute inset-0 w-full h-full object-cover z-20"
+        className="absolute inset-0 z-10 w-full h-full object-cover"
         autoPlay
         muted
         playsInline
@@ -27,34 +57,39 @@ export default function Hero() {
         <source src="/hero.mp4" type="video/mp4" />
       </video>
 
-      {/* ヒーローテキスト：動画よりさらに上（z-30） */}
-      <div className="relative z-30 p-6 text-black">
-        <h1 className="text-4xl md:text-6xl font-bold"></h1>
-        <p className="mt-4 text-lg md:text-xl"></p>
-
-        {/* 1秒後に出るCTA：最前面UI（z-40） */}
-        <AnimatePresence>
-          {showCTA && !open && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              onClick={() => setOpen(true)}
-              className="mt-6 inline-flex items-center justify-center
-                         text-base md:text-lg font-semibold
-                         px-8 md:px-10 py-4 md:py-5
-                         rounded-full bg-white hover:bg-white/95
-                         shadow-lg ring-1 ring-black/10
-                         backdrop-blur z-40"
-            >
-              クリックでミッションを表示
-            </motion.button>
-          )}
-        </AnimatePresence>
+      {/* ヒーローテキスト（必要なら残す/消す） */}
+      <div className="absolute inset-x-0 top-10 z-20 text-center px-6 text-white">
+        <h1 className="text-4xl md:text-6xl font-bold drop-shadow">ガチ文化祭 2025</h1>
+        <p className="mt-3 text-lg md:text-xl drop-shadow">一生、文化祭前夜。</p>
       </div>
 
-      {/* 全画面ポップアップ（最前面） */}
+      {/* 台風GIF CTA（中央・大きめ） */}
+      <AnimatePresence>
+        {showCTA && !open && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+            <motion.button
+              type="button"
+              aria-label="ミッションを表示"
+              onClick={handleOpen}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              whileHover={{ scale: 1.06 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="pointer-events-auto"
+            >
+              {/* 動画幅の約半分（端末に応じて可変） */}
+              <img
+                src="/tyb.gif"
+                alt="クリックでミッションを表示"
+                className="w-[50vw] md:w-[35vw] h-auto block drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+              />
+            </motion.button>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ポップアップ（初期は表示しない。ボタンクリック時のみ） */}
       <AnimatePresence>
         {open && (
           <>
@@ -63,7 +98,7 @@ export default function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
             />
             <motion.div
               className="fixed inset-0 z-[1001] grid place-items-center p-6"
@@ -81,7 +116,7 @@ export default function Hero() {
                 </p>
                 <div className="mt-8 flex justify-center gap-3">
                   <button
-                    onClick={() => setOpen(false)}
+                    onClick={handleClose}
                     className="rounded-full border px-5 py-2 text-sm hover:bg-gray-50"
                   >
                     閉じる

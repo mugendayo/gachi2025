@@ -6,9 +6,7 @@ export default function Mission() {
       <div className="mx-auto max-w-2xl px-6">
         <h2 className="text-3xl font-bold mb-4">ミッション</h2>
         <p className="text-lg leading-relaxed">
-          “ガチな文化祭を作れ！”
-          <br />
-          参加者全員がクリエイター。見るだけじゃなく、創る側へ。
+          “全員で「ガチな文化祭」を作れ！”
         </p>
       </div>
     </section>
