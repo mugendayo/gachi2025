@@ -44,3 +44,19 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .tg-anim { animation: none !important; }
 }
+
+.step2-panel {
+  width: calc(100svw - 24px);
+  height: calc(100svh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  margin: 12px;
+  border-radius: 16px;
+}
+
+@media (min-width: 640px) {
+  .step2-panel {
+    width: min(92vw, 480px);
+    height: auto;
+    aspect-ratio: 9 / 16;
+    margin: 0;
+  }
+}

@@ -2,15 +2,49 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import type { Variants } from "framer-motion";
+
+const vLine: Variants = {
+  hidden: { opacity: 0, y: 8, filter: "blur(2px)" } as any,
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.42, ease: "easeOut" },
+  } as any,
+};
+
+/* =========================
+   STEP2: 行ごと演出の素材
+   ========================= */
+const step2Lines = [
+  "君はガチ文高等学校に生徒としてタイムスリップしてきたんだよ。",
+  "大変なことに2日後は街の人たちや他校の生徒も楽しみにしている文化祭なんだ。",
+  "もちろん授業もあるし、体育祭もあるみたい⁉",
+  "みんなは君のことを同い年のクラスメイトだと思っているから、",
+  "君がタイムスリップしてきたことがバレないように、最高の文化祭を作ってくれ！",
+  "もしあの頃やり残したことが胸の中にあるなら、全部できるんだ！",
+  "じゃあ、ガチ文高等学校は生徒指導の先生が厳しいから遅刻には気をつけて！行ってらっしゃい！",
+];
+
+// 親→子にステップ表示
+const vLinesContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: 0.08, staggerChildren: 0.22 },
+  },
+};
+
+
+
 export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
   const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0); // 0=なし, 1=動画, 2=ストーリー
-  const [hasSeenPopup, setHasSeenPopup] = useState(false);  // 終了後にtrue
-
-  // STEP1の縦長動画参照（自動再生フォールバック用）
+  const [hasSeenPopup, setHasSeenPopup] = useState(false); // STEP2を閉じたらtrue
   const step1VideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // 初回：過去に完了済みなら復元
+  /* 既に完了済みなら右下ボタンを即表示 */
   useEffect(() => {
     try {
       const seen = typeof window !== "undefined" && localStorage.getItem("gbf_seen_popup") === "1";
@@ -18,13 +52,13 @@ export default function Hero() {
     } catch {}
   }, []);
 
-  // 1秒後に中央CTA出現
+  /* 1秒後に中央CTA出現 */
   useEffect(() => {
     const t = setTimeout(() => setShowCTA(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
-  // ポップアップ未完了の間はスクロールロック
+  /* ポップアップ完了までスクロールロック */
   useEffect(() => {
     const lock = !hasSeenPopup;
     const html = document.documentElement;
@@ -47,22 +81,23 @@ export default function Hero() {
   }, [hasSeenPopup]);
 
   const openStep1 = () => setPopupStep(1);
-  const goStep2  = () => setPopupStep(2);
+  const goStep2 = () => setPopupStep(2);
 
-  // STEP2のみ外側クリックで閉じる
+  /* STEP2のみ外側クリックで終了 */
   const finishPopup = () => {
     setPopupStep(0);
     if (!hasSeenPopup) {
       setHasSeenPopup(true);
-      try { localStorage.setItem("gbf_seen_popup", "1"); } catch {}
+      try {
+        localStorage.setItem("gbf_seen_popup", "1");
+      } catch {}
     }
   };
 
-  // STEP1 の動画を開いたら自動再生フォールバック
+  /* STEP1: 縦動画 自動再生フォールバック */
   useEffect(() => {
     if (popupStep === 1 && step1VideoRef.current) {
       const v = step1VideoRef.current;
-      // 一応、再生試行を2回ほど
       const tryPlay = () => {
         const p = v.play?.();
         if (p && typeof p.then === "function") p.catch(() => {});
@@ -73,19 +108,17 @@ export default function Hero() {
     }
   }, [popupStep]);
 
-  // テキストのステップ表示用 variants
-  const vContainer = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-  };
-  const vItem = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } };
-
   return (
     <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black">
-      {/* 背景動画 */}
+      {/* 背景動画（ヒーロー） */}
       <video
         className="absolute inset-0 z-10 w-full h-full object-cover"
-        autoPlay muted playsInline loop preload="metadata" poster="/og.jpg"
+        autoPlay
+        muted
+        playsInline
+        loop
+        preload="metadata"
+        poster="/og.jpg"
       >
         <source src="/hero.mp4" type="video/mp4" />
       </video>
@@ -96,7 +129,7 @@ export default function Hero() {
         <p className="mt-3 text-lg md:text-xl drop-shadow">一生、文化祭前夜。</p>
       </div>
 
-      {/* 中央CTA：画像クリックで STEP1 を開く */}
+      {/* 中央CTA：クリックでSTEP1を開く */}
       <AnimatePresence>
         {showCTA && popupStep === 0 && (
           <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
@@ -122,11 +155,11 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* ===== ポップアップ（STEP1: 縦長映像 / STEP2: テキスト） ===== */}
+      {/* ===== ポップアップ（STEP1: 縦長映像 / STEP2: 物語） ===== */}
       <AnimatePresence>
         {popupStep !== 0 && (
           <>
-            {/* 背景：STEP2のみクリックで閉じる */}
+            {/* 背景オーバーレイ：STEP2のみクリックで閉じる */}
             <motion.div
               className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
               initial={{ opacity: 0 }}
@@ -136,7 +169,7 @@ export default function Hero() {
               aria-hidden={popupStep !== 2}
             />
 
-            {/* ラッパーはクリック透過、モーダル本体のみ操作可 */}
+            {/* ラッパーはクリック透過 / 本体のみ操作可 */}
             <motion.div
               className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -146,6 +179,7 @@ export default function Hero() {
               aria-modal="true"
               role="dialog"
             >
+              {/* --- コンテンツ（stepで切替） --- */}
               <motion.div
                 key={`step-${popupStep}`}
                 initial={{ opacity: 0, y: 8 }}
@@ -155,14 +189,10 @@ export default function Hero() {
                 className="pointer-events-auto"
               >
                 {popupStep === 1 ? (
-                  /* --- STEP1: 縦長映像＋最上位“次へ”ボタン --- */
+                  /* STEP1: 縦長映像 + 最上位“次へ”ボタン */
                   <div
                     className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
-                    /* スマホでも大きく見せつつ、縦横比9:16を維持 */
-                    style={{
-                      width: "min(92vw, 480px)",
-                      aspectRatio: "9 / 16",
-                    }}
+                    style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
                   >
                     <video
                       ref={step1VideoRef}
@@ -173,19 +203,20 @@ export default function Hero() {
                       controls={false}
                       loop={false}
                       preload="metadata"
-                      poster="/goal-poster.jpg" // 任意：用意がなければ削除OK
+                      poster="/goal-poster.jpg" /* 任意 */
                       onCanPlay={() => {
-                        // 念のためもう一度再生を試みる
-                        try { step1VideoRef.current?.play?.(); } catch {}
+                        try {
+                          step1VideoRef.current?.play?.();
+                        } catch {}
                       }}
                     >
                       <source src="/goal.mp4" type="video/mp4" />
                     </video>
 
-                    {/* 読ませるための下部グラデ（任意） */}
+                    {/* 可読性UPの下部グラデ（任意） */}
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent" />
 
-                    {/* ★ 最上位レイヤーの“次へ”ボタン（下段中央） */}
+                    {/* 最上位“次へ”ボタン（下段中央） */}
                     <div className="absolute inset-x-0 bottom-4 flex justify-center">
                       <button
                         onClick={goStep2}
@@ -196,10 +227,13 @@ export default function Hero() {
                     </div>
                   </div>
                 ) : (
-                  /* --- STEP2: ストーリー（テキスト） --- */
-                  <div className="max-w-xl w-[min(92vw,640px)] rounded-2xl bg-white p-8 text-center shadow-xl">
+                  /* STEP2: 物語テキスト（行ごとにステップ表示） */
+                  <div
+                      className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-white flex flex-col justify-between"
+                      style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16", padding: "2rem" }}
+                    >
                     <motion.h2
-                      className="text-2xl font-bold mb-3"
+                      className="text-2xl font-bold mb-4"
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
@@ -208,32 +242,42 @@ export default function Hero() {
                     </motion.h2>
 
                     <motion.div
-                      variants={vContainer}
+                      variants={vLinesContainer}
                       initial="hidden"
                       animate="show"
-                      className="text-lg leading-relaxed text-left space-y-3"
+                      className="text-[17px] md:text-lg leading-relaxed text-left space-y-3"
+                      onAnimationComplete={() => {
+                        const el = document.getElementById("gbf-close-btn");
+                        if (el) el.classList.add("gbf-attn");
+                      }}
                     >
-                      <motion.p variants={vItem}>
-                        やあこんにちは！君はいま、<b>ガチ文高等学校</b>に生徒としてタイムスリップしてきたんだよ。
-                      </motion.p>
-                      <motion.p variants={vItem}>
-                        もちろん授業もあるし、体育祭もあるみたい。街のみんなも文化祭を楽しみにしている。
-                      </motion.p>
-                      <motion.p variants={vItem}>
-                        君がタイムスリップしてきたことが<b>バレないように</b>、<b>最高の文化祭</b>を作ってくれ！
-                      </motion.p>
+                      {step2Lines.map((line, i) => {
+                        const decorated = line
+                          .replace("ガチ文高等学校", "<b>ガチ文高等学校</b>")
+                          .replace("最高の文化祭", "<b>最高の文化祭</b>")
+                          .replace("バレないように", "<b>バレないように</b>");
+                        return (
+                          <motion.p
+                            key={i}
+                            variants={vLine}
+                            className="text-gray-900"
+                            dangerouslySetInnerHTML={{ __html: decorated }}
+                          />
+                        );
+                      })}
                     </motion.div>
 
-                    <div className="mt-8 flex justify-center gap-3">
+                    <div className="mt-8 flex justify-center">
                       <button
+                        id="gbf-close-btn"
                         onClick={finishPopup}
-                        className="rounded-full border px-5 py-2 text-sm hover:bg-gray-50"
+                        className="rounded-full border px-6 py-2 text-sm hover:bg-gray-50 transition gbf-attn-base"
                       >
                         閉じる
                       </button>
                     </div>
 
-                    <p className="mt-4 text-xs text-gray-500">
+                    <p className="mt-3 text-xs text-gray-500">
                       ※ この画面の外側をクリックしても閉じられます
                     </p>
                   </div>
@@ -244,7 +288,7 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* 右下：チケット購入ボタン（STEP2を閉じた後に出現） */}
+      {/* 右下：チケット購入ボタン（STEP2終了後に出現） */}
       <AnimatePresence>
         {hasSeenPopup && (
           <motion.div
@@ -278,26 +322,75 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* スタイル：発光＆レスポンシブサイズ */}
+      {/* スタイル：発光、ボタンサイズ、STEP2ボタン強調 */}
       <style jsx global>{`
+        /* 右下ボタンのサイズ（全体的に大きめ） */
         .tg-ticket-wrap {
           --btn-size: clamp(120px, 20vw, 340px);
         }
-        .tg-ticket-img { width: var(--btn-size); height: var(--btn-size); }
+        .tg-ticket-img {
+          width: var(--btn-size);
+          height: var(--btn-size);
+        }
 
+        /* 出現フェード */
         @keyframes tg-fade-in {
-          0% { opacity: 0; transform: translateY(6px) scale(0.98); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
+          0% {
+            opacity: 0;
+            transform: translateY(6px) scale(0.98);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
+        /* 発光 */
         @keyframes tg-glow {
-          0% { filter: drop-shadow(0 0 0px rgba(255,255,255,0)) drop-shadow(0 0 0px rgba(0,180,255,0)); }
-          100% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)) drop-shadow(0 0 18px rgba(0,180,255,0.6)); }
+          0% {
+            filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0))
+              drop-shadow(0 0 0px rgba(0, 180, 255, 0));
+          }
+          100% {
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))
+              drop-shadow(0 0 18px rgba(0, 180, 255, 0.6));
+          }
         }
-        .tg-glow-wrap { animation: tg-fade-in 0.8s ease-out 0.4s both; border-radius: 9999px; }
-        .tg-glow-img  { animation: tg-glow 2.2s ease-in-out 1.2s infinite alternate; border-radius: 9999px; }
-
+        .tg-glow-wrap {
+          animation: tg-fade-in 0.8s ease-out 0.4s both;
+          border-radius: 9999px;
+        }
+        .tg-glow-img {
+          animation: tg-glow 2.2s ease-in-out 1.2s infinite alternate;
+          border-radius: 9999px;
+        }
         @media (prefers-reduced-motion: reduce) {
-          .tg-glow-wrap, .tg-glow-img { animation: none !important; }
+          .tg-glow-wrap,
+          .tg-glow-img {
+            animation: none !important;
+          }
+        }
+
+        /* STEP2を読み切ったら“閉じる”が軽く呼吸発光 */
+        .gbf-attn-base {
+          box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+        }
+        .gbf-attn {
+          animation: gbfPulse 1.8s ease-in-out infinite;
+          border-color: rgba(0, 0, 0, 0.12);
+        }
+        @keyframes gbfPulse {
+          0% {
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+            transform: translateY(0);
+          }
+          50% {
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
+          }
+          100% {
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+            transform: translateY(0);
+          }
         }
       `}</style>
     </section>
