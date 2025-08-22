@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
 import type { Variants } from "framer-motion";
 
 const vLine: Variants = {
@@ -229,7 +228,7 @@ export default function Hero() {
                 ) : (
                   /* STEP2: 物語テキスト（行ごとにステップ表示） */
                   <div
-                      className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-white flex flex-col justify-between"
+                      className="step2-panel relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-white flex flex-col justify-between"
                       style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16", padding: "2rem" }}
                     >
                     <motion.h2
