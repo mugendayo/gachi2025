@@ -18,9 +18,9 @@ type Person = {
 // ---- ダミーデータ（必要に応じて差し替え） ----
 const PRINCIPAL: Person = {
   role: "principal",
-  name: "校長 〇〇 〇〇",
+  name: "校長 しまじろうとTシャツのつかね",
   title: "ガチ文高等学校 校長",
-  bio: "“魂の熱量がすべてを変える” を合言葉に、生徒一人ひとりの挑戦を支える。前職は〇〇。趣味は〇〇。",
+  bio: "“いつでも高校生に戻れる社会をつくる” を合言葉に、生徒一人ひとりに青い春と希望を与える。前職はマザーテレサ。趣味は世界平和。",
   thumb: "/principal/thumb.jpg",
   gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/principal/v/${String(i + 1).padStart(2, "0")}.jpg`,
@@ -30,9 +30,9 @@ const PRINCIPAL: Person = {
 
 const VICE: Person = {
   role: "vice",
-  name: "教頭 △△ △△",
+  name: "教頭 エンザントモアキ",
   title: "ガチ文高等学校 教頭",
-  bio: "現場主義で“仕組みと熱量の両立”を推進。校内の運営や安全面を統括。前職は〇〇。",
+  bio: "現実主義で“仕組みで青春”を推進。高校時代の文化祭そして使われなくなった廃校に命を芽吹くことに命を賭ける。前職は宮代健太。趣味は多拠点生活。",
   thumb: "/vice/thumb.png",
   gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/vice/v/${String(i + 1).padStart(2, "0")}.jpg`,
@@ -86,7 +86,7 @@ export default function SchoolIntro() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          ガチ文高等学校はどんな学校？
+          ガチ文高等学校とは？
         </motion.h2>
 
         {/* メインの3点レイアウト（相対レイヤー管理） */}
@@ -114,13 +114,13 @@ export default function SchoolIntro() {
           {/* ★ スロー文字：校舎画像の上／ボタンの下 → 中層 z-20（フォント小さめ＋白文字透過） */}
           <div className="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
             <div className="absolute -left-[50vw] top-1/3 whitespace-nowrap text-[6vw] font-extrabold tracking-widest animate-marquee text-white/30">
-              魂の熱量がすべてを変える！　タイムマシーンをつくってます　目に見えない大切なもの
+              魂の熱量　タイムマシーン作ってる　目に見えない大切なもの
             </div>
             <div className="absolute -left-[40vw] top-[60%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow text-white/30">
-              SASUKEを作りたい　ガチ文化祭=人生　自己実現のMVPを作り続ける
+              SASUKEがしたい　ガチ文化祭=人生　自己実現のMVP
             </div>
             <div className="absolute -left-[50vw] top-[80%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow text-white/30">
-              SASUKEを作りたい　ガチ文化祭=人生　自己実現のMVPを作り続ける
+              超悔しい。　あの時ああすれば　やっぱり諦められない
             </div>
           </div>
 
