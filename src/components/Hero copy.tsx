@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
   const [open, setOpen] = useState(false);
-  const [hasSeenPopup, setHasSeenPopup] = useState(false); // ←「閉じたら」trueにする
+  const [hasSeenPopup, setHasSeenPopup] = useState(false); // 初回閲覧フラグ
 
-  // 初回：過去に閉じていたら復元
+  // 初期：以前に見たことがあれば復元
   useEffect(() => {
     try {
       const seen = typeof window !== "undefined" && localStorage.getItem("gbf_seen_popup") === "1";
@@ -21,7 +21,7 @@ export default function Hero() {
     return () => clearTimeout(t);
   }, []);
 
-  // ポップアップを閉じるまではスクロールロック
+  // ポップアップを見る前はスクロールロック
   useEffect(() => {
     const lock = !hasSeenPopup;
     const html = document.documentElement;
@@ -43,22 +43,21 @@ export default function Hero() {
     }
   }, [hasSeenPopup]);
 
-  const handleOpen = () => setOpen(true);
-
-  // ★「閉じた時」に閲覧済み扱い → 右下ボタン出現＆スクロール解禁
-  const handleClose = () => {
-    setOpen(false);
+  const handleOpen = () => {
+    setOpen(true);
     if (!hasSeenPopup) {
-      setHasSeenPopup(true);
+      setHasSeenPopup(true); // ← ここで“見た”扱いにしてスクロール解禁
       try {
         localStorage.setItem("gbf_seen_popup", "1");
       } catch {}
     }
   };
 
+  const handleClose = () => setOpen(false);
+
   return (
     <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black">
-      {/* 背景動画 */}
+      {/* 背景動画：全面フィット */}
       <video
         className="absolute inset-0 z-10 w-full h-full object-cover"
         autoPlay
@@ -77,7 +76,7 @@ export default function Hero() {
         <p className="mt-3 text-lg md:text-xl drop-shadow">一生、文化祭前夜。</p>
       </div>
 
-      {/* 台風GIF CTA（中央） */}
+      {/* 台風GIF CTA（中央・大きめ） */}
       <AnimatePresence>
         {showCTA && !open && (
           <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
@@ -92,6 +91,7 @@ export default function Hero() {
               transition={{ duration: 0.35, ease: "easeOut" }}
               className="pointer-events-auto"
             >
+              {/* 画面幅の約半分（端末に応じて可変） */}
               <img
                 src="/tyb.gif"
                 alt="クリックでミッションを表示"
@@ -103,7 +103,7 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* ポップアップ */}
+      {/* ポップアップ（クリック時のみ表示） */}
       <AnimatePresence>
         {open && (
           <>
@@ -142,12 +142,12 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* 右下：チケット購入ボタン（閉じた後だけ表示） */}
+      {/* ▼ 右下：チケット購入ボタン（ポップアップを“見た”後だけ表示） */}
       <AnimatePresence>
         {hasSeenPopup && (
           <motion.div
             key="ticket-btn"
-            className="fixed z-[60] tg-ticket-wrap"
+            className="fixed z-[60]"
             initial={{ opacity: 0, scale: 0.98, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 6 }}
@@ -158,17 +158,19 @@ export default function Hero() {
             }}
           >
             <a
-              href="https://gachibun.studio.site/ticket"
+              href="https://gachibun.studio.site/ticket" // 実URLに差し替え可
               aria-label="チケットを購入する"
               className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               rel="noopener"
             >
               <div className="rounded-full p-1 tg-glow-wrap">
-                {/* PNGに変更し、サイズはclampでレスポンシブ（最小/理想/最大） */}
+                {/* 透明背景の購入ボタンGIF（例：/ticket-btn.gif） */}
                 <img
                   src="/ticket-btn.png"
-                  alt="ガチ文高等学校の生徒になる"
-                  className="block select-none pointer-events-none rounded-full tg-glow-img tg-ticket-img"
+                  alt="TICKET"
+                  width={112}
+                  height={112}
+                  className="block select-none pointer-events-none rounded-full tg-glow-img"
                   draggable={false}
                 />
               </div>
@@ -177,18 +179,8 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* 発光＆レスポンシブサイズ（コンポーネント内に同梱） */}
+      {/* 発光アニメ＆低モーション対応（コンポーネント内に同梱） */}
       <style jsx global>{`
-        /* 右下ボタンのサイズをビューポート連動で定義 */
-        .tg-ticket-wrap {
-          /* スマホ〜PCでなめらかに拡大：16vwをベースに最小96px〜最大240px */
-          --btn-size: clamp(120px, 20vw, 320px);
-        }
-        .tg-ticket-img {
-          width: var(--btn-size);
-          height: var(--btn-size);
-        }
-
         @keyframes tg-fade-in {
           0% {
             opacity: 0;
@@ -221,13 +213,6 @@ export default function Hero() {
           .tg-glow-wrap,
           .tg-glow-img {
             animation: none !important;
-          }
-        }
-
-        /* 大画面でさらに見やすく（任意強化） */
-        @media (min-width: 1280px) {
-          .tg-ticket-wrap {
-            --btn-size: clamp(120px, 14vw, 280px);
           }
         }
       `}</style>

@@ -29,3 +29,18 @@ body {
 html, body {
   background: #fff;
 }
+
+@keyframes tg-fade-in {
+  0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tg-glow {
+  0% { filter: drop-shadow(0 0 0px rgba(255,255,255,.0)) drop-shadow(0 0 0px rgba(255,255,255,.0)); }
+  100% { filter: drop-shadow(0 0 8px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(0,180,255,.6)); }
+}
+
+/* 低モーション環境では常時表示＋発光停止 */
+@media (prefers-reduced-motion: reduce) {
+  .tg-anim { animation: none !important; }
+}
