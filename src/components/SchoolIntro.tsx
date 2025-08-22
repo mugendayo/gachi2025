@@ -119,6 +119,9 @@ export default function SchoolIntro() {
             <div className="absolute -left-[40vw] top-[60%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow text-white/30">
               SASUKEを作りたい　ガチ文化祭=人生　自己実現のMVPを作り続ける
             </div>
+            <div className="absolute -left-[50vw] top-[80%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow text-white/30">
+              SASUKEを作りたい　ガチ文化祭=人生　自己実現のMVPを作り続ける
+            </div>
           </div>
 
           {/* 左下：校長カード（最上層 z-30） */}
@@ -199,7 +202,7 @@ export default function SchoolIntro() {
           >
             <div className="relative" style={{ width: "clamp(280px, 40vw, 560px)" }}>
               <Image
-                src="/school/admission-btn.png" // 指定画像
+                src="/school/test2.png" // 指定画像
                 alt=""
                 width={1120}
                 height={360}

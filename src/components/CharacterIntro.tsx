@@ -182,13 +182,11 @@ export default function CharacterIntro() {
   const accent = current.accent ?? "#fff";
 
   return (
-    <section id="characters" className="relative bg-black/80 text-white">
+    <section id="characters" className="relative bg-black/80 text-white -mt-px pt-0">
       {/* コンテナ */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-12 md:py-16">
-
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-0 pb-12 md:pb-0">
         {/* タイトル */}
-        <h2 className="text-2xl md:text-3xl font-bold mb-6">登場人物</h2>
-
+        <h2 className="text-2xl md:text-3xl font-bold mb-0">登場人物</h2>
         {/* ステージ（横長画像＋名前） */}
         <div className="relative rounded-2xl overflow-hidden bg-black/40 ring-1 ring-white/10">
           <div className="relative aspect-[16/9] w-full">

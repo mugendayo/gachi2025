@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 
 
+
 const vLine = {
   hidden: { opacity: 0, y: 8, filter: "blur(2px)" },
   show: {
@@ -109,7 +110,7 @@ export default function Hero() {
   }, [popupStep]);
 
   return (
-    <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black">
+    <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black mb-0">
       {/* 背景動画（ヒーロー） */}
       <video
         className="absolute inset-0 z-10 w-full h-full object-cover"
