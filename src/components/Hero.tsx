@@ -16,8 +16,8 @@ export default function Hero() {
 
       {/* テキストは必ず動画の上に載せる */}
       <div className="relative z-10 p-6 text-black">
-        <h1 className="text-4xl md:text-6xl font-bold">ガチ文化祭 2025</h1>
-        <p className="mt-4 text-lg md:text-xl">一生、文化祭前夜。</p>
+        <h1 className="text-4xl md:text-6xl font-bold">ガチ文化祭2025</h1>
+        <p className="mt-4 text-lg md:text-xl">ぼくらは一生、ナナメのポーズをしてた</p>
       </div>
     </section>
   );

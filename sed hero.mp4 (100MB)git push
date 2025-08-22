@@ -1,0 +1,53 @@
+[33mcommit 056b813463aad170dd5373614645124311b60d42[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: mugendayo <ano7bksp@gmail.com>
+Date:   Fri Aug 22 19:37:43 2025 +0900
+
+    LP: remove large video; add to .gitignore
+
+.gitignore
+public/hero.mp4
+src/app/page.tsx
+src/components/Hero.tsx
+src/components/Info.tsx
+src/components/Mission.tsx
+src/components/hero.tsx
+src/data/site.ts
+
+[33mcommit b0ec2f08e489d5dda359a795b936e620dfa1f984[m
+Author: mugendayo <ano7bksp@gmail.com>
+Date:   Fri Aug 22 19:12:02 2025 +0900
+
+    switch to LP components
+
+package-lock.json
+package.json
+src/app/page.tsx
+src/components/Info.tsx
+src/components/Mission.tsx
+src/components/hero.tsx
+src/data/site.ts
+tsconfig.json
+
+[33mcommit 69e558feab7420528a1d9157c71c9c510785406a[m
+Author: mugendayo <あなたのGitHub登録メールアドレス>
+Date:   Fri Aug 22 18:32:09 2025 +0900
+
+    Initial commit from Create Next App
+
+.gitignore
+README.md
+eslint.config.mjs
+next.config.ts
+package-lock.json
+package.json
+postcss.config.mjs
+public/file.svg
+public/globe.svg
+public/next.svg
+public/vercel.svg
+public/window.svg
+src/app/favicon.ico
+src/app/globals.css
+src/app/layout.tsx
+src/app/page.tsx
+tsconfig.json
