@@ -8,15 +8,15 @@ export default function Hero() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setShowCTA(true), 1000); // 1秒後に表示
+    const t = setTimeout(() => setShowCTA(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <section className="relative min-h-[70vh] grid place-items-center text-center overflow-hidden bg-white">
-      {/* 背景動画 */}
+      {/* 動画：透過なし & 前面（z-20） */}
       <video
-        className="absolute inset-0 w-full h-full object-cover opacity-60"
+        className="absolute inset-0 w-full h-full object-cover z-20"
         autoPlay
         muted
         playsInline
@@ -27,12 +27,12 @@ export default function Hero() {
         <source src="/hero.mp4" type="video/mp4" />
       </video>
 
-      {/* ヒーローコンテンツ（動画の上） */}
-      <div className="relative z-10 p-6 text-black">
-        <h1 className="text-4xl md:text-6xl font-bold">ガチ文化祭 2025</h1>
-        <p className="mt-4 text-lg md:text-xl">一生、文化祭前夜。</p>
+      {/* ヒーローテキスト：動画よりさらに上（z-30） */}
+      <div className="relative z-30 p-6 text-black">
+        <h1 className="text-4xl md:text-6xl font-bold"></h1>
+        <p className="mt-4 text-lg md:text-xl"></p>
 
-        {/* ← ここに大きなCTAボタンを配置（サブコピー直下） */}
+        {/* 1秒後に出るCTA：最前面UI（z-40） */}
         <AnimatePresence>
           {showCTA && !open && (
             <motion.button
@@ -44,10 +44,9 @@ export default function Hero() {
               className="mt-6 inline-flex items-center justify-center
                          text-base md:text-lg font-semibold
                          px-8 md:px-10 py-4 md:py-5
-                         rounded-full bg-white/90 hover:bg-white
+                         rounded-full bg-white hover:bg-white/95
                          shadow-lg ring-1 ring-black/10
-                         backdrop-blur cursor-pointer
-                         z-20"
+                         backdrop-blur z-40"
             >
               クリックでミッションを表示
             </motion.button>
