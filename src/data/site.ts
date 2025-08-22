@@ -7,3 +7,4 @@ export const site = {
   ctaUrl: "https://forms.gle/xxxxxxx",
   ogImage: "/og.jpg"
 };
+
