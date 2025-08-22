@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [hasSeenPopup, setHasSeenPopup] = useState(false); // 初回閲覧フラグ
+  const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0); // 0=なし, 1=ミッション, 2=ストーリー
+  const [hasSeenPopup, setHasSeenPopup] = useState(false);  // 終了後にtrue
 
-  // 初期：以前に見たことがあれば復元
+  // 初回：過去に完了済みなら復元
   useEffect(() => {
     try {
       const seen = typeof window !== "undefined" && localStorage.getItem("gbf_seen_popup") === "1";
@@ -21,7 +21,7 @@ export default function Hero() {
     return () => clearTimeout(t);
   }, []);
 
-  // ポップアップを見る前はスクロールロック
+  // ポップアップ未完了の間はスクロールロック
   useEffect(() => {
     const lock = !hasSeenPopup;
     const html = document.documentElement;
@@ -43,29 +43,31 @@ export default function Hero() {
     }
   }, [hasSeenPopup]);
 
-  const handleOpen = () => {
-    setOpen(true);
+  const openStep1 = () => setPopupStep(1);
+  const goStep2  = () => setPopupStep(2);
+
+  // 完了処理：STEP2 だけ閉じられる。チケット出現＆解禁
+  const finishPopup = () => {
+    setPopupStep(0);
     if (!hasSeenPopup) {
-      setHasSeenPopup(true); // ← ここで“見た”扱いにしてスクロール解禁
-      try {
-        localStorage.setItem("gbf_seen_popup", "1");
-      } catch {}
+      setHasSeenPopup(true);
+      try { localStorage.setItem("gbf_seen_popup", "1"); } catch {}
     }
   };
 
-  const handleClose = () => setOpen(false);
+  // テキストのステップ表示用 variants
+  const vContainer = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  };
+  const vItem = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } };
 
   return (
     <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black">
-      {/* 背景動画：全面フィット */}
+      {/* 背景動画 */}
       <video
         className="absolute inset-0 z-10 w-full h-full object-cover"
-        autoPlay
-        muted
-        playsInline
-        loop
-        preload="metadata"
-        poster="/og.jpg"
+        autoPlay muted playsInline loop preload="metadata" poster="/og.jpg"
       >
         <source src="/hero.mp4" type="video/mp4" />
       </video>
@@ -76,14 +78,14 @@ export default function Hero() {
         <p className="mt-3 text-lg md:text-xl drop-shadow">一生、文化祭前夜。</p>
       </div>
 
-      {/* 台風GIF CTA（中央・大きめ） */}
+      {/* 中央CTA：画像クリックで STEP1 を開く */}
       <AnimatePresence>
-        {showCTA && !open && (
+        {showCTA && popupStep === 0 && (
           <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
             <motion.button
               type="button"
               aria-label="ミッションを表示"
-              onClick={handleOpen}
+              onClick={openStep1}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -91,7 +93,6 @@ export default function Hero() {
               transition={{ duration: 0.35, ease: "easeOut" }}
               className="pointer-events-auto"
             >
-              {/* 画面幅の約半分（端末に応じて可変） */}
               <img
                 src="/tyb.gif"
                 alt="クリックでミッションを表示"
@@ -102,52 +103,131 @@ export default function Hero() {
           </div>
         )}
       </AnimatePresence>
+      
+{/* ===== ポップアップ（STEP1 / STEP2） ===== */}
+<AnimatePresence>
+  {popupStep !== 0 && (
+    <>
+      {/* 背景オーバーレイ：STEP2のみクリックで閉じる */}
+      <motion.div
+        className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={popupStep === 2 ? finishPopup : undefined}
+        aria-hidden={popupStep !== 2}
+      />
 
-      {/* ポップアップ（クリック時のみ表示） */}
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleClose}
-            />
-            <motion.div
-              className="fixed inset-0 z-[1001] grid place-items-center p-6"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.25 }}
-            >
-              <div className="max-w-xl w-full rounded-2xl bg-white p-8 text-center shadow-xl">
-                <h2 className="text-2xl font-bold mb-3">ミッション</h2>
-                <p className="text-lg leading-relaxed">
-                  <span className="text-3xl font-semibold">“ガチな文化祭を作れ！”</span>
-                  <br />
+      {/* ラッパーは全画面だが、クリックは透過させる（外側クリックをオーバーレイに通す） */}
+      <motion.div
+        className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.25 }}
+        aria-modal="true"
+        role="dialog"
+      >
+        {/* モーダル本体のみクリック可 */}
+        <motion.div
+          key={`step-${popupStep}`}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.25 }}
+          className="max-w-xl w-full rounded-2xl bg-white p-8 text-center shadow-xl pointer-events-auto"
+        >
+          {popupStep === 1 ? (
+            /* --- STEP1: ミッション --- */
+            <div>
+              <motion.h2
+                className="text-2xl font-bold mb-3"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                ミッション
+              </motion.h2>
+
+              <motion.div
+                variants={vContainer}
+                initial="hidden"
+                animate="show"
+                className="text-lg leading-relaxed"
+              >
+                <motion.span variants={vItem} className="text-3xl font-semibold block">
+                  “ガチな文化祭を作れ！”
+                </motion.span>
+                <motion.p variants={vItem} className="mt-3">
                   本気の仲間と、本気の一日を。あなたの一歩が会場の熱量を変える。
-                </p>
-                <div className="mt-8 flex justify-center gap-3">
-                  <button
-                    onClick={handleClose}
-                    className="rounded-full border px-5 py-2 text-sm hover:bg-gray-50"
-                  >
-                    閉じる
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                </motion.p>
+              </motion.div>
 
-      {/* ▼ 右下：チケット購入ボタン（ポップアップを“見た”後だけ表示） */}
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={goStep2}
+                  className="rounded-full bg-black text-white px-6 py-2 text-sm hover:bg-black/90"
+                >
+                  次へ
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* --- STEP2: ストーリー --- */
+            <div>
+              <motion.h2
+                className="text-2xl font-bold mb-3"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                ストーリー
+              </motion.h2>
+
+              <motion.div
+                variants={vContainer}
+                initial="hidden"
+                animate="show"
+                className="text-lg leading-relaxed text-left space-y-3"
+              >
+                <motion.p variants={vItem}>
+                  やあこんにちは！君はいま、<b>ガチ文高等学校</b>に生徒としてタイムスリップしてきたんだよ。
+                </motion.p>
+                <motion.p variants={vItem}>
+                  もちろん授業もあるし、体育祭もあるみたい。街のみんなも文化祭を楽しみにしている。
+                </motion.p>
+                <motion.p variants={vItem}>
+                  君がタイムスリップしてきたことが<b>バレないように</b>、<b>最高の文化祭</b>を作ってくれ！
+                </motion.p>
+              </motion.div>
+
+              <div className="mt-8 flex justify-center gap-3">
+                <button
+                  onClick={finishPopup}
+                  className="rounded-full border px-5 py-2 text-sm hover:bg-gray-50"
+                >
+                  閉じる
+                </button>
+              </div>
+
+              <p className="mt-4 text-xs text-gray-500">
+                ※ この画面の外側をクリックしても閉じられます
+              </p>
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
+
+
+      {/* 右下：チケット購入ボタン（STEP2を閉じた後に出現） */}
       <AnimatePresence>
         {hasSeenPopup && (
           <motion.div
             key="ticket-btn"
-            className="fixed z-[60]"
+            className="fixed z-[60] tg-ticket-wrap"
             initial={{ opacity: 0, scale: 0.98, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 6 }}
@@ -158,19 +238,16 @@ export default function Hero() {
             }}
           >
             <a
-              href="https://gachibun.studio.site/ticket" // 実URLに差し替え可
+              href="https://gachibun.studio.site/ticket"
               aria-label="チケットを購入する"
               className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               rel="noopener"
             >
               <div className="rounded-full p-1 tg-glow-wrap">
-                {/* 透明背景の購入ボタンGIF（例：/ticket-btn.gif） */}
                 <img
                   src="/ticket-btn.png"
-                  alt="TICKET"
-                  width={112}
-                  height={112}
-                  className="block select-none pointer-events-none rounded-full tg-glow-img"
+                  alt="ガチ文高等学校の生徒になる"
+                  className="block select-none pointer-events-none rounded-full tg-glow-img tg-ticket-img"
                   draggable={false}
                 />
               </div>
@@ -179,41 +256,29 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      {/* 発光アニメ＆低モーション対応（コンポーネント内に同梱） */}
+      {/* スタイル：発光＆レスポンシブサイズ */}
       <style jsx global>{`
+        .tg-ticket-wrap {
+          --btn-size: clamp(120px, 20vw, 340px);
+        }
+        .tg-ticket-img {
+          width: var(--btn-size);
+          height: var(--btn-size);
+        }
+
         @keyframes tg-fade-in {
-          0% {
-            opacity: 0;
-            transform: translateY(6px) scale(0.98);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
+          0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes tg-glow {
-          0% {
-            filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0))
-              drop-shadow(0 0 0px rgba(0, 180, 255, 0));
-          }
-          100% {
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))
-              drop-shadow(0 0 18px rgba(0, 180, 255, 0.6));
-          }
+          0% { filter: drop-shadow(0 0 0px rgba(255,255,255,0)) drop-shadow(0 0 0px rgba(0,180,255,0)); }
+          100% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)) drop-shadow(0 0 18px rgba(0,180,255,0.6)); }
         }
-        .tg-glow-wrap {
-          animation: tg-fade-in 0.8s ease-out 0.4s both;
-          border-radius: 9999px;
-        }
-        .tg-glow-img {
-          animation: tg-glow 2.2s ease-in-out 1.2s infinite alternate;
-          border-radius: 9999px;
-        }
+        .tg-glow-wrap { animation: tg-fade-in 0.8s ease-out 0.4s both; border-radius: 9999px; }
+        .tg-glow-img  { animation: tg-glow 2.2s ease-in-out 1.2s infinite alternate; border-radius: 9999px; }
+
         @media (prefers-reduced-motion: reduce) {
-          .tg-glow-wrap,
-          .tg-glow-img {
-            animation: none !important;
-          }
+          .tg-glow-wrap, .tg-glow-img { animation: none !important; }
         }
       `}</style>
     </section>
