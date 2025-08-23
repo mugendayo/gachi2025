@@ -126,8 +126,8 @@ export default function Hero() {
 
       {/* ヒーローテキスト */}
       <div className="absolute inset-x-0 top-10 z-20 text-center px-6 text-white">
-        <h1 className="text-4xl md:text-6xl font-bold drop-shadow">ガチ文化祭 2025</h1>
-        <p className="mt-3 text-lg md:text-xl drop-shadow">一生、文化祭前夜。</p>
+        <h1 className="text-4xl md:text-3xl font-bold drop-shadow">ガチ文化祭2025</h1>
+        <p className="mt-1 text-lg md:text-l drop-shadow">- 青春の延命治療</p>
       </div>
 
       {/* 中央CTA：クリックでSTEP1を開く */}

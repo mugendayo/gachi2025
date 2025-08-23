@@ -1,8 +1,6 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import type { PanInfo } from "framer-motion";
 
 type GalleryItem = { src: string; caption?: string };
 
@@ -11,18 +9,18 @@ type Person = {
   name: string;
   title: string;
   bio: string;
-  thumb: string;         // カードのサムネ（横 or 正方形）
+  thumb: string;       // カードのサムネ
   gallery: GalleryItem[]; // 縦長 9:16 推奨を10枚まで
 };
 
-// ---- ダミーデータ（必要に応じて差し替え） ----
+// ---- ダミーデータ（必要に応じ差し替え） ----
 const PRINCIPAL: Person = {
   role: "principal",
-  name: "校長 しまじろうとTシャツのつかね",
+  name: "しまじろうとTシャツのつかね",
   title: "ガチ文高等学校 校長",
   bio: "“いつでも高校生に戻れる社会をつくる” を合言葉に、生徒一人ひとりに青い春と希望を与える。前職はマザーテレサ。趣味は世界平和。",
   thumb: "/principal/thumb.jpg",
-  gallery: Array.from({ length: 10 }).map((_, i) => ({
+   gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/principal/v/${String(i + 1).padStart(2, "0")}.jpg`,
     caption: `校長ギャラリー ${i + 1}/10`,
   })),
@@ -30,7 +28,7 @@ const PRINCIPAL: Person = {
 
 const VICE: Person = {
   role: "vice",
-  name: "教頭 エンザントモアキ",
+  name: "エンザントモアキ",
   title: "ガチ文高等学校 教頭",
   bio: "現実主義で“仕組みで青春”を推進。高校時代の文化祭そして使われなくなった廃校に命を芽吹くことに命を賭ける。前職は宮代健太。趣味は多拠点生活。",
   thumb: "/vice/thumb.png",
@@ -39,7 +37,6 @@ const VICE: Person = {
     caption: `教頭ギャラリー ${i + 1}/10`,
   })),
 };
-
 export default function SchoolIntro() {
   const [open, setOpen] = useState<null | Person>(null);
   const [gidx, setGidx] = useState(0);
@@ -52,32 +49,36 @@ export default function SchoolIntro() {
 
   // スワイプで次/前へ
   const swipeThreshold = 80;
-  const onDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const onDragEnd = (_: any, info: { offset: { x: number } }) => {
     if (!open) return;
     if (info.offset.x < -swipeThreshold) setGidx((i) => Math.min(i + 1, open.gallery.length - 1));
     else if (info.offset.x > swipeThreshold) setGidx((i) => Math.max(i - 1, 0));
   };
 
   return (
-    <section id="about-gachibun" className="relative overflow-hidden text-white">
-      {/* ▼ 縦長背景（全画面カバー） */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0">
-          <Image
-            src="/school/bg-vert.jpg"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover object-center"
-            priority
-          />
+     <section
+        id="about-gachibun"
+        className="relative overflow-hidden text-white min-h-[60vh] bg-black bg-cover bg-center"
+                style={{ backgroundImage: "url('/school/bg-vert.jpg')" }}
+            >
+            {/* うっすら暗幕 */}
+            <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+            {/* 以降のコンテンツ */}
+            <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-16 md:py-24">
+            </div>
+
+      {/* ▼ スロー文字：校舎画像の「上」／ボタンの「下」レイヤ */}
+      <div className="pointer-events-none absolute inset-0 z-20">
+        <div className="absolute -left-[50vw] top-1/3 whitespace-nowrap text-[8vw] font-extrabold tracking-widest animate-marquee opacity-[0.06]">
+          魂の熱量がすべてを変える！　タイムマシーンをつくってます　目に見えない大切なもの
         </div>
-        {/* ほんのり暗くして前景を読みやすく */}
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute -left-[40vw] top-[60%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-slow opacity-[0.06]">
+          SASUKEを作りたい　ガチ文化祭=人生　自己実現のMVPを作り続ける
+        </div>
       </div>
 
-      {/* 以降の中身は z-10 以上で積む */}
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-16 md:py-24">
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 md:py-24">
         {/* 見出し */}
         <motion.h2
           className="text-2xl md:text-4xl font-bold mb-6"
@@ -86,12 +87,12 @@ export default function SchoolIntro() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          ガチ文高等学校とは？
+          ガチ文高等学校ってなに？
         </motion.h2>
 
-        {/* メインの3点レイアウト（相対レイヤー管理） */}
-        <div className="relative z-10">
-          {/* 中央：学校の様子（下層 z-10） */}
+        {/* ================== 横長カード #1 ================== */}
+        <div className="relative mb-10">
+          {/* 画像（下層） */}
           <motion.div
             className="relative z-10 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl"
             initial={{ opacity: 0, scale: 0.98, y: 12 }}
@@ -99,118 +100,93 @@ export default function SchoolIntro() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <div className="relative w-full aspect-[16/9]">
-              <Image
-                src="/school/campus-hero.jpg"
-                alt="ガチ文高等学校の様子"
-                fill
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                className="object-cover"
-                priority
-              />
-            </div>
+            <img
+              src="/school/campus-hero-1.jpg"  /* ← 1枚目 */
+              alt="ガチ文高等学校の様子 1"
+              className="w-full h-auto object-cover aspect-[16/9]"
+              draggable={false}
+            />
           </motion.div>
 
-          {/* ★ スロー文字：校舎画像の上／ボタンの下 → 中層 z-20（フォント小さめ＋白文字透過） */}
-          <div className="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
-            <div className="absolute -left-[50vw] top-1/3 whitespace-nowrap text-[6vw] font-extrabold tracking-widest animate-marquee text-white/30">
-              魂の熱量　タイムマシーン作ってる　目に見えない大切なもの
-            </div>
-            <div className="absolute -left-[40vw] top-[60%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow text-white/30">
-              SASUKEがしたい　ガチ文化祭=人生　自己実現のMVP
-            </div>
-            <div className="absolute -left-[50vw] top-[80%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow text-white/30">
-              超悔しい。　あの時ああすれば　やっぱり諦められない
-            </div>
-          </div>
-
-          {/* 左下：校長カード（最上層 z-30） */}
-          <motion.button
-            onClick={() => openModal(PRINCIPAL)}
-            className="group absolute left-0 bottom-0 translate-y-1/2 md:translate-y-1/3 bg-white/10 backdrop-blur rounded-2xl ring-1 ring-white/15 overflow-hidden hover:bg-white/15 transition z-30"
-            initial={{ opacity: 0, x: -12, y: 12 }}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.55 }}
-          >
-            <div className="flex items-center gap-3 p-3 pr-4">
-              <Image
-                src={PRINCIPAL.thumb}
-                alt={PRINCIPAL.name}
-                width={64}
-                height={64}
-                className="h-16 w-16 rounded-xl object-cover ring-1 ring-white/15"
-                priority={false}
-              />
-              <div className="text-left">
-                <div className="text-sm text-white/70">{PRINCIPAL.title}</div>
-                <div className="text-base md:text-lg font-semibold">{PRINCIPAL.name}</div>
-                <div className="text-xs text-white/60 mt-1">クリックでプロフィールを見る</div>
-              </div>
-            </div>
-          </motion.button>
-
-          {/* 右上：教頭カード（最上層 z-30） */}
-          <motion.button
+          {/* 教頭カード（1枚目の右上・最上層） */}
+         <motion.button
             onClick={() => openModal(VICE)}
-            className="group absolute right-0 -top-6 md:-top-10 bg-white/10 backdrop-blur rounded-2xl ring-1 ring-white/15 overflow-hidden hover:bg-white/15 transition z-30"
+            className="group absolute right-0 -top-12 md:-top-20 bg-white/10 backdrop-blur rounded-2xl ring-1 ring-white/15 overflow-hidden hover:bg-white/15 transition z-30 bg-black/0 hover:bg-black/10
+             rounded-2xl ring-1 ring-white/25 overflow-hidden transition"
             initial={{ opacity: 0, x: 12, y: -12 }}
             whileInView={{ opacity: 1, x: 0, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 0.55 }}
-          >
-            <div className="flex items-center gap-3 p-3 pr-4">
-              <Image
-                src={VICE.thumb}
-                alt={VICE.name}
-                width={64}
-                height={64}
-                className="h-16 w-16 rounded-xl object-cover ring-1 ring-white/15"
-                priority={false}
-              />
-              <div className="text-left">
-                <div className="text-sm text-white/70">{VICE.title}</div>
-                <div className="text-base md:text-lg font-semibold">{VICE.name}</div>
-                <div className="text-xs text-white/60 mt-1">クリックでプロフィールを見る</div>
-              </div>
+            aria-label="教頭のプロフィールを開く"
+            >
+                <div className="flex items-center gap-6 p-6 pr-8">
+                <img src={VICE.thumb} alt={VICE.name} className="h-32 w-32 rounded-2xl object-cover ring-2 ring-white/20" />
+                <div className="text-left">
+                <div className="text-lg md:text-xl text-white/85" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{VICE.title}</div>
+                <div className="text-2xl md:text-3xl font-bold" style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>{VICE.name}</div>
+                <div className="text-base text-white/80 mt-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>クリックでプロフィールを見る</div>
+                </div>
             </div>
-          </motion.button>
+            </motion.button>
         </div>
 
-        {/* 真ん中の大ボタン：アドミッション・ポリシーへ（常時アニメ & 画像ボタン） */}
+        {/* ================== 横長カード #2 ================== */}
+        <div className="relative">
+          {/* 画像（下層） */}
+          <motion.div
+            className="relative z-10 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl"
+            initial={{ opacity: 0, scale: 0.98, y: 12 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          >
+            <img
+              src="/school/campus-hero-2.jpg"  /* ← 2枚目 */
+              alt="ガチ文高等学校の様子 2"
+              className="w-full h-auto object-cover aspect-[16/9]"
+              draggable={false}
+            />
+          </motion.div>
+
+          {/* 校長カード（2枚目の左下・最上層） */}
+            <motion.button
+                onClick={() => openModal(PRINCIPAL)}
+                className="group absolute left-0 translate-y-1/2 md:translate-y-1/3 -bottom-12 md:-bottom-20 bg-white/10 backdrop-blur rounded-2xl ring-1 ring-white/15 overflow-hidden hover:bg-white/15 transition z-30 bg-black/0 hover:bg-black/10
+             rounded-2xl ring-1 ring-white/25 overflow-hidden transition"
+                initial={{ opacity: 0, x: -12, y: 12 }}
+                whileInView={{ opacity: 1, x: 0, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.55 }}
+                aria-label="校長のプロフィールを開く"
+                >
+                <div className="flex items-center gap-6 p-6 pr-8">
+                <img src={PRINCIPAL.thumb} alt={PRINCIPAL.name} className="h-32 w-32 rounded-2xl object-cover ring-2 ring-white/20" />
+                <div className="text-left">
+                <div className="text-lg md:text-xl text-white/85" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{PRINCIPAL.title}</div>
+                <div className="text-2xl md:text-3xl font-bold" style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>{PRINCIPAL.name}</div>
+                <div className="text-base text-white/80 mt-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>クリックでプロフィールを見る</div>
+                </div>
+            </div>
+            </motion.button>
+        </div>
+
+        {/* アドミッション・ポリシー CTA */}
         <motion.div
-          className="mt-20 flex justify-center"
+          className="mt-24 md:mt-28 flex justify-center"
           initial={{ opacity: 0, scale: 0.94, y: 12 }}
           whileInView={{ opacity: 1, scale: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
         >
-          <motion.a
+          <a
             href="/admission"
-            aria-label="アドミッション・ポリシーを見る"
-            className="relative inline-block focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30 rounded-[20px]"
-            animate={{
-              scale: [1, 1.04, 1],
-              y: [0, -3, 0],
-              boxShadow: [
-                "0 10px 30px rgba(255,255,255,0.06)",
-                "0 18px 40px rgba(255,255,255,0.12)",
-                "0 10px 30px rgba(255,255,255,0.06)",
-              ],
-            }}
-            transition={{ duration: 2.6, ease: "easeInOut", repeat: Infinity }}
+            className="inline-flex items-center gap-3 rounded-full bg-white text-black px-6 py-3 md:px-8 md:py-4 text-base md:text-lg font-semibold hover:bg-white/95 ring-4 ring-white/10 hover:ring-white/20 transition"
           >
-            <div className="relative" style={{ width: "clamp(280px, 40vw, 560px)" }}>
-              <Image
-                src="/school/test2.png" // 指定画像
-                alt=""
-                width={1120}
-                height={360}
-                className="block rounded-[20px] object-contain w-full h-auto"
-                priority={false}
-              />
-            </div>
-          </motion.a>
+            アドミッション・ポリシーを見る
+            <svg width="22" height="22" viewBox="0 0 24 24" className="inline-block">
+              <path d="M13 5l7 7-7 7M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" />
+            </svg>
+          </a>
         </motion.div>
       </div>
 
@@ -238,12 +214,11 @@ export default function SchoolIntro() {
                 {/* 左：プロフィール */}
                 <div className="p-5 md:p-6 border-b md:border-b-0 md:border-r">
                   <div className="flex items-center gap-3">
-                    <Image
+                    <img
                       src={open.thumb}
                       alt={open.name}
-                      width={64}
-                      height={64}
                       className="h-16 w-16 rounded-xl object-cover"
+                      draggable={false}
                     />
                     <div>
                       <div className="text-sm text-black/60">{open.title}</div>
@@ -257,7 +232,9 @@ export default function SchoolIntro() {
                   >
                     × 閉じる
                   </button>
-                  <div className="mt-4 text-xs text-black/50">←→ スワイプ／ドラッグで写真を切り替え</div>
+                  <div className="mt-4 text-xs text-black/50">
+                    ←→ スワイプ／ドラッグで写真を切り替え
+                  </div>
                 </div>
 
                 {/* 右：縦長ギャラリー（スワイプで切替） */}
@@ -274,12 +251,11 @@ export default function SchoolIntro() {
                     transition={{ duration: 0.2 }}
                   >
                     <div className="relative w-[min(88vw,420px)] aspect-[9/16] overflow-hidden rounded-xl ring-1 ring-white/20 shadow-xl">
-                      <Image
-                        src={open.gallery[gidx]?.src || "/school/placeholder-9x16.jpg"}
+                      <img
+                        src={open.gallery[gidx]?.src}
                         alt={open.gallery[gidx]?.caption ?? ""}
-                        fill
-                        sizes="(max-width: 420px) 88vw, 420px"
-                        className="object-cover"
+                        className="absolute inset-0 h-full w-full object-cover"
+                        draggable={false}
                       />
                     </div>
                   </motion.div>
