@@ -158,7 +158,7 @@ export default function CharacterIntro() {
   return (
     <section
       id="characters"
-      className="relative bg-black text-white -mt-[130px] pt-10 isolate"
+      className="relative bg-black text-white isolate"
     >
       {/* ▼ セクション背景画像（任意のパスに変更） */}
       <div className="absolute inset-0 -z-10">

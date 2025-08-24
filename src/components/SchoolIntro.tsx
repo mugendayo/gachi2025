@@ -100,15 +100,19 @@ export default function SchoolIntro() {
       {/* コンテンツ */}
       <div className="relative z-20 mx-auto max-w-6xl px-4 sm:px-6 py-16 md:py-24 pb-36 md:pb-44">
         {/* 見出し */}
-        <motion.h2
-          className="relative z-40 text-2xl md:text-4xl font-bold mb-6"
-          initial={{ opacity: 0, y: 10 }}
+        {/* 学校の説明（冒頭イントロ） */}
+        <motion.div
+          className="relative z-30 mb-10 md:mb-14 rounded-2xl bg-black/35 ring-1 ring-white/10 backdrop-blur-sm p-5 md:p-8"
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
+          viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          ガチ文高等学校はどんな学校？
-        </motion.h2>
+          <h3 className="text-xl md:text-5xl font-bold mb-3">「文化祭の前夜」のような高揚を</h3>
+          <p className="text-sm md:text-base leading-relaxed text-white/90">
+            ガチ文高等学校とは、年に1回の文化祭に重きをおいた高校です。“青春の装置”を年中稼働させています。
+          </p>
+        </motion.div>
 
         {/* ================== 横長カード #1（教頭ボタン：右上） ================== */}
         <div className="relative mb-28 md:mb-36">
@@ -223,37 +227,35 @@ export default function SchoolIntro() {
           {/* 校長ボタン（アイコン拡大・左に傾け・丸・高透過／文字は読める） */}
           <motion.button
             onClick={() => openModal(PRINCIPAL)}
-            className="group absolute left-0 translate-y-1/2 md:translate-y-1/3 -bottom-12 md:-bottom-20 z-30 rounded-2xl
-                       ring-1 ring-white/30 bg-black/5 hover:bg-black/10 backdrop-blur-[2px] transition"
+            className="group absolute left-0 translate-y-1/2 md:translate-y-1/3 -bottom-12 md:-bottom-20 z-30 rounded-2xl ring-1 ring-white/30 bg-black/5 hover:bg-black/10 backdrop-blur-[2px] transition"
             initial={{ opacity: 0, x: -12, y: 12 }}
             whileInView={{ opacity: 1, x: 0, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 0.55 }}
             aria-label="校長のプロフィールを開く"
           >
-            <div className="flex items-center gap-6 p-6 pr-8">
+            <div className="flex items-center gap-6 md:gap-8 p-6 md:p-7 pr-8">
+              {/* ←ここを拡大 */}
               <div className="relative">
                 <img
-                src={PRINCIPAL.thumb}
-                alt={PRINCIPAL.name}
-                className="h-28 w-28 sm:h-36 sm:w-36 aspect-square rounded-full object-cover ring-2 ring-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.35)] -rotate-[10deg]"
-              />
-                <span className="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_6px_rgba(255,255,255,0.06)]" />
+                  src={PRINCIPAL.thumb}
+                  alt={PRINCIPAL.name}
+                  className="h-40 w-40 md:h-56 md:w-56 rounded-full object-cover ring-2 ring-white/40 shadow-[0_12px_36px_rgba(0,0,0,0.38)] -rotate-[10deg]"
+                  draggable={false}
+                />
+                <span className="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_8px_rgba(255,255,255,0.06)]" />
               </div>
 
               <div className="text-left">
-                <div className="text-sm sm:text-base text-white/85 leading-tight"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
-                {PRINCIPAL.title /* or PRINCIPAL.title */}
-              </div>
-              <div className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight break-keep"
-                  style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>
-                {PRINCIPAL.name /* or PRINCIPAL.name */}
-              </div>
-              <div className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
-                プロフィールを見る
-              </div>
+                <div className="text-lg md:text-xl text-white/85" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
+                  {PRINCIPAL.title}
+                </div>
+                <div className="text-2xl md:text-3xl font-bold" style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>
+                  {PRINCIPAL.name}
+                </div>
+                <div className="text-base text-white/80 mt-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
+                  クリックでプロフィールを見る
+                </div>
               </div>
             </div>
           </motion.button>

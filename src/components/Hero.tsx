@@ -21,11 +21,8 @@ const vLine = {
    ========================= */
 const step2Lines = [
   "君はガチ文高等学校に生徒としてタイムスリップしてきたんだよ。",
-  "大変なことに2日後は街の人たちや他校の生徒も楽しみにしている文化祭なんだ。",
-  "もちろん授業もあるし、体育祭もあるみたい⁉",
-  "みんなは君のことを同い年のクラスメイトだと思っているから、",
-  "君がタイムスリップしてきたことがバレないように、最高の文化祭を作ってくれ！",
-  "もしあの頃やり残したことが胸の中にあるなら、全部できるんだ！",
+  "大変なことに2日後は街の人たちや他校の生徒も楽しみにしている文化祭なんだ。もちろん授業もあるし、体育祭もあるみたい⁉",
+  "みんなは君のことを同い年のクラスメイトだと思っているから、君がタイムスリップしてきたことがバレないように、最高の文化祭を作ってくれ！もしあの頃やり残したことが胸の中にあるなら、全部できるんだ！",
   "じゃあ、ガチ文高等学校は生徒指導の先生が厳しいから遅刻には気をつけて！行ってらっしゃい！",
 ];
 
@@ -46,19 +43,47 @@ export default function Hero() {
   const [hasSeenPopup, setHasSeenPopup] = useState(false); // STEP2を閉じたらtrue
   const step1VideoRef = useRef<HTMLVideoElement | null>(null);
 
-  /* 既に完了済みなら右下ボタンを即表示 */
-  useEffect(() => {
-    try {
-      const seen = typeof window !== "undefined" && localStorage.getItem("gbf_seen_popup") === "1";
-      if (seen) setHasSeenPopup(true);
-    } catch {}
-  }, []);
+// 初回判定（マウント時）
+useEffect(() => {
+  try {
+    const seen = typeof window !== "undefined" && localStorage.getItem("gbf_seen_popup") === "1";
+    setHasSeenPopup(seen);
+    setPopupStep(0);        // 起動時は何も開かない
+    setShowCTA(!seen);      // 未読ならCTAを使う / 既読ならCTAも非表示
+  } catch {
+    setHasSeenPopup(false);
+    setPopupStep(0);
+    setShowCTA(true);
+  }
+}, []);
 
-  /* 1秒後に中央CTA出現 */
-  useEffect(() => {
-    const t = setTimeout(() => setShowCTA(true), 1000);
-    return () => clearTimeout(t);
-  }, []);
+// CTAは未読のときだけ1秒後に出す（既読なら出さない）
+useEffect(() => {
+  if (hasSeenPopup) { setShowCTA(false); return; }
+  const t = setTimeout(() => setShowCTA(true), 1000);
+  return () => clearTimeout(t);
+}, [hasSeenPopup]);
+
+useEffect(() => {
+  const lock = popupStep !== 0;   // ← ここを hasSeenPopup ではなく popupStep にする
+  const html = document.documentElement;
+  const body = document.body;
+
+  if (lock) {
+    html.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    const prevent = (e: TouchEvent) => e.preventDefault();
+    body.addEventListener("touchmove", prevent, { passive: false });
+    return () => {
+      body.removeEventListener("touchmove", prevent);
+      html.style.overflow = "";
+      body.style.overscrollBehavior = "";
+    };
+  } else {
+    html.style.overflow = "";
+    body.style.overscrollBehavior = "";
+  }
+}, [popupStep]);
 
   /* ポップアップ完了までスクロールロック */
   useEffect(() => {
@@ -87,14 +112,13 @@ export default function Hero() {
 
   /* STEP2のみ外側クリックで終了 */
   const finishPopup = () => {
-    setPopupStep(0);
-    if (!hasSeenPopup) {
-      setHasSeenPopup(true);
-      try {
-        localStorage.setItem("gbf_seen_popup", "1");
-      } catch {}
-    }
-  };
+  setPopupStep(0);
+  if (!hasSeenPopup) {
+    setHasSeenPopup(true);
+    setShowCTA(false); // 念のため同セッションでも出ないように
+    try { localStorage.setItem("gbf_seen_popup", "1"); } catch {}
+  }
+};
 
   /* STEP1: 縦動画 自動再生フォールバック */
   useEffect(() => {
@@ -111,19 +135,23 @@ export default function Hero() {
   }, [popupStep]);
 
   return (
-    <section className="relative h-[100svh] md:h-screen overflow-hidden bg-black mb-0">
-      {/* 背景動画（ヒーロー） */}
-      <video
-        className="absolute inset-0 z-10 w-full h-full object-cover"
-        autoPlay
-        muted
-        playsInline
-        loop
-        preload="metadata"
-        poster="/og.jpg"
-      >
-        <source src="/hero.mp4" type="video/mp4" />
-      </video>
+   <section className="relative min-h-[100svh] md:min-h-screen mb-0">
+    
+        {/* 固定（sticky）背景動画：セクション内では常に最背面（=前景より下、背景より上） */}
+        <div className="sticky top-0 h-[100svh] z-0 relative pointer-events-none">
+          <video
+            className="w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+            loop
+            preload="metadata"
+            poster="/og.jpg"
+          >
+            <source src="/hero.mp4" type="video/mp4" />
+          </video>
+        </div>
+
 
       {/* ヒーローテキスト */}
       <div className="absolute inset-x-0 top-10 z-20 text-center px-6 text-white">
@@ -131,18 +159,37 @@ export default function Hero() {
         <p className="mt-1 text-sm md:text-l drop-shadow">- 青春の延命治療</p>
       </div>
 
-      {/* 中央CTA：クリックでSTEP1を開く */}
-<AnimatePresence>
-  {showCTA && popupStep === 0 && (
-    <div className="absolute inset-0 z-[1200] grid place-items-center">
-      <SummonCTA
-        label="Click"
-        onClick={openStep1}
-        autoShowAfterMs={0}  // ← 既にHero側で1秒遅延しているので0に
-      />
-    </div>
-  )}
-</AnimatePresence>
+    {/* 中央CTA：クリックでSTEP1を開く */}
+      <AnimatePresence>
+        {showCTA && popupStep === 0 && (
+          <div
+            className={
+              hasSeenPopup
+                ? "relative z-20 mt-14 flex justify-center"      // STEP2後＝フローに合流
+                : "fixed inset-0 z-[1200] grid place-items-center" // 初回＝画面中央に固定
+            }
+          >
+            {/* 初回はCTAだけクリック可にするため pointer-events を分離 */}
+            <div className={hasSeenPopup ? "" : "pointer-events-auto"}>
+              <SummonCTA
+                label="Click"
+                onClick={openStep1}
+                autoShowAfterMs={0}
+              />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!hasSeenPopup && popupStep === 0 && showCTA && (
+          <div className="fixed inset-0 z-[1200] grid place-items-center">
+            <div className="pointer-events-auto">
+              <SummonCTA label="Click" onClick={() => setPopupStep(1)} autoShowAfterMs={0} />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
 
     {/* ポップアップ（STEP1: 縦長映像 / STEP2: 物語）*/}
     <AnimatePresence>
@@ -281,6 +328,117 @@ export default function Hero() {
       )}
     </AnimatePresence>
 
+{/* ===== 前景：STEP2終了後に、背景動画の上を“流れる”ゾーン ===== */}
+{hasSeenPopup && (
+  <div className="relative z-20 mx-auto max-w-5xl px-6 pt-16 pb-28 text-white">
+    {/* 必要ならここに魔法陣やタイトルも置く（背景と一緒に動かしたくない=前景に置く） */}
+    <div className="flex justify-center">
+    </div>
+
+    <h2 className="mt-10 text-2xl md:text-3xl font-bold">ピクミン風コンテンツ群</h2>
+    <p className="mt-4 opacity-90">
+      スクロール解禁後、背景は固定のまま、これらが上に流れていきます。
+    </p>
+
+    <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="/link-1" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード①
+      </a>
+      <a href="/link-2" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード②
+      </a>
+      <a href="/link-3" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード③
+      </a>
+      <a href="/link-1" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード①
+      </a>
+      <a href="/link-2" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード②
+      </a>
+      <a href="/link-3" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード③
+      </a>
+      <a href="/link-1" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード①
+      </a>
+      <a href="/link-2" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード②
+      </a>
+      <a href="/link-3" className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition">
+        カード③
+      </a>
+    </div>
+  </div>
+)}
+{/* ===== 既読専用：右下 “ミニCTA（魔法陣）” 固定 ===== */}
+<AnimatePresence>
+  {hasSeenPopup && popupStep === 0 && (
+    <motion.button
+      key="mini-cta-illus"
+      initial={{ opacity: 0, scale: 0.98, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98, y: 6 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      onClick={() => setPopupStep(1)}  // ← ポップアップ再表示
+      aria-label="ストーリーをもう一度見る"
+      className="fixed z-[62] tg-mini-cta-illus pointer-events-auto grid place-items-center rounded-full"
+      style={{
+        // 右端から同じベース値に、(チケット幅-ミニ幅)/2 を足す → 中心が一致
+        right:
+          "calc(16px + env(safe-area-inset-right) + (clamp(120px, 20vw, 340px) - clamp(72px, 10vw, 112px)) / 2)",
+        // 下端からは“チケット高さ + 余白12px”を足す → ミニCTAがチケットの真上に
+        bottom:
+          "calc(16px + env(safe-area-inset-bottom) + clamp(120px, 20vw, 340px) + 12px)",
+        // ミニCTA自体のサイズ（イラスト円）
+        width: "clamp(72px, 10vw, 112px)",
+        height: "clamp(72px, 10vw, 112px)",
+      }}
+    >
+      {/* ここはあなたの魔法陣イラスト（前のSVGか画像）をそのまま入れてOK */}
+      <svg
+        className="tg-mini-cta-illus-svg"
+        viewBox="0 0 100 100"
+        role="img"
+        aria-hidden="true"
+      >
+        <defs>
+          <radialGradient id="g" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.9" />
+            <stop offset="70%" stopColor="white" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* 発光の下地 */}
+        <circle cx="50" cy="50" r="48" fill="url(#g)" />
+
+        {/* 外周円（ゆる回転） */}
+        <g className="tg-mini-cta-illus-rot">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeOpacity="0.85" strokeWidth="1.5" />
+          <circle
+            cx="50" cy="50" r="36"
+            fill="none" stroke="white" strokeOpacity="0.55" strokeWidth="1"
+            strokeDasharray="4 4"
+          />
+          {/* 簡易ルーン */}
+          {[0,1,2,3,4,5,6,7].map(i => {
+            const a = (i * 45 * Math.PI) / 180;
+            const x = 50 + Math.cos(a) * 28;
+            const y = 50 + Math.sin(a) * 28;
+            return <circle key={i} cx={x} cy={y} r="1.6" fill="white" fillOpacity="0.9" />
+          })}
+        </g>
+
+        {/* 中心の紋（わずかにスケール） */}
+        <g className="tg-mini-cta-illus-pulse">
+          <polygon points="50,35 58,50 50,65 42,50" fill="white" fillOpacity="0.8" />
+          <circle cx="50" cy="50" r="2.4" fill="white" />
+        </g>
+      </svg>
+    </motion.button>
+  )}
+</AnimatePresence>
 
       {/* 右下：チケット購入ボタン（STEP2終了後に出現） */}
       <AnimatePresence>
@@ -386,6 +544,92 @@ export default function Hero() {
             transform: translateY(0);
           }
         }
+         /* ===== ミニCTA（魔法陣イラスト） ===== */
+.tg-mini-cta-illus {
+  width: clamp(72px, 10vw, 112px);
+  height: clamp(72px, 10vw, 112px);
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.28),
+    0 0 18px rgba(0, 180, 255, 0.35) inset;
+  display: grid;
+  place-items: center;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* 画像版を使うなら */
+.tg-mini-cta-illus-img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  animation: tg-mini-rotate 9s linear infinite, tg-mini-glow 2s ease-in-out 1.2s infinite alternate;
+}
+
+/* SVG版（推奨） */
+.tg-mini-cta-illus-svg {
+  width: 88%;
+  height: 88%;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(0,180,255,.55));
+  animation: tg-mini-glow 2s ease-in-out 1.2s infinite alternate;
+}
+.tg-mini-cta-illus-rot {
+  transform-origin: 50% 50%;
+  animation: tg-mini-rotate 9s linear infinite;
+}
+.tg-mini-cta-illus-pulse {
+  transform-origin: 50% 50%;
+  animation: tg-mini-pulse 1.8s ease-in-out infinite;
+}
+
+/* hover/focus */
+.tg-mini-cta-illus:hover,
+.tg-mini-cta-illus:focus-visible {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.10);
+  box-shadow:
+    0 10px 28px rgba(0,0,0,0.32),
+    0 0 28px rgba(0, 180, 255, 0.55) inset;
+  outline: none;
+}
+
+/* アニメーション */
+@keyframes tg-mini-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes tg-mini-pulse {
+  0%   { transform: scale(1.00); }
+  50%  { transform: scale(1.04); }
+  100% { transform: scale(1.00); }
+}
+@keyframes tg-mini-glow {
+  0% {
+    filter: drop-shadow(0 0 0px rgba(255,255,255,0))
+            drop-shadow(0 0 0px rgba(0,180,255,0));
+  }
+  100% {
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.85))
+            drop-shadow(0 0 20px rgba(0,180,255,0.65));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-mini-cta-illus,
+  .tg-mini-cta-illus-img,
+  .tg-mini-cta-illus-svg,
+  .tg-mini-cta-illus-rot,
+  .tg-mini-cta-illus-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
       `}</style>
     </section>
   );
