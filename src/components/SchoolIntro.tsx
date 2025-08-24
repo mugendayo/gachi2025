@@ -17,7 +17,7 @@ type Person = {
 // ---- ダミーデータ（必要に応じ差し替え） ----
 const PRINCIPAL: Person = {
   role: "principal",
-  name: "しまじろうとTシャツのつかね",
+  name: "しまじろうとTシャツの塚根",
   title: "ガチ文高等学校 校長",
   bio: "“いつでも高校生に戻れる社会をつくる” を合言葉に、生徒一人ひとりに青い春と希望を与える。前職はマザーテレサ。趣味は世界平和。",
   thumb: "/principal/thumb.jpg",
@@ -75,20 +75,33 @@ export default function SchoolIntro() {
       </div>
 
       {/* ▼ スロー文字（画像カードの上、ボタンの下） */}
-      <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute -left-[50vw] top-1/3 whitespace-nowrap text-[8vw] font-extrabold tracking-widest animate-marquee opacity-[0.06]">
-          魂の熱量がすべてを変える！　タイムマシーンをつくってます　目に見えない大切なもの
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <div className="absolute -left-[-80vw] top-[27%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-fast opacity-[0.35]">
+          魂の熱量がすべてを変える！タイムマシーンをつくってます！いつでもガチで生きよう！
         </div>
-        <div className="absolute -left-[40vw] top-[60%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-slow opacity-[0.06]">
-          SASUKEを作りたい　ガチ文化祭=人生　自己実現のMVPを作り続ける
+        <div className="absolute -left-[-25vw] top-[36%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
+          SASUKEを作りたい アーティストになりたい　夢見心地で生きていきたい 諦めたくない　死ぬまでやりたい
+        </div>
+        <div className="absolute -left-[-38vw] top-[40%] whitespace-nowrap text-[3vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
+          自己実現のMVPを作り続ける それがガチ文化祭の使命
+        </div>
+        <div className="absolute -left-[-20vw] top-[54%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
+          目に見えない大切なもの　ガチ文化祭=人生　お前らみたいな大人がいるから涙を流せる感動が殺されていくんだ
+        </div>
+        <div className="absolute -left-[-40vw] top-[62%] whitespace-nowrap text-[4vw] font-extrabold tracking-widest animate-marquee-extra opacity-[0.35]">
+          超悔しい　あのときああすれば
+        </div>
+        <div className="absolute -left-[-30vw] top-[50%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow opacity-[0.35]">
+          もっとやればよかった
         </div>
       </div>
+
 
       {/* コンテンツ */}
       <div className="relative z-20 mx-auto max-w-6xl px-4 sm:px-6 py-16 md:py-24 pb-36 md:pb-44">
         {/* 見出し */}
         <motion.h2
-          className="text-2xl md:text-4xl font-bold mb-6"
+          className="relative z-40 text-2xl md:text-4xl font-bold mb-6"
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -114,26 +127,6 @@ export default function SchoolIntro() {
               draggable={false}
             />
           </motion.div>
-          {/* ▼ 1枚目と2枚目の “間・中央” CTA（重なり配置） */}
-            <motion.a
-              href="/admission"
-              className="gb-cta group absolute left-1/2 bottom-0 z-40 -translate-x-1/2 translate-y-1/2"
-              initial={{ opacity: 0, scale: 0.94 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, amount: 0.6 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            >
-              <span className="relative inline-flex items-center gap-3 rounded-full px-7 py-3 md:px-9 md:py-4 font-semibold text-black bg-white/95 hover:bg-white focus-visible:ring-4 focus-visible:ring-white/40 transition shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
-                アドミッション・ポリシーを見る
-                <svg width="22" height="22" viewBox="0 0 24 24" className="inline-block">
-                  <path d="M13 5l7 7-7 7M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
-                {/* 左→右の“キラン” */}
-                <span className="pointer-events-none absolute -inset-1 overflow-hidden rounded-full">
-                  <span className="gb-shine absolute -left-1/2 top-0 h-full w-[55%]" />
-                </span>
-              </span>
-            </motion.a>
 
           {/* 教頭ボタン（アイコン拡大・右に傾け・丸・高透過／文字は読める） */}
           <motion.button
@@ -152,28 +145,62 @@ export default function SchoolIntro() {
                 <img
                   src={VICE.thumb}
                   alt={VICE.name}
-                  className="h-32 w-32 md:h-40 md:w-40 rounded-full object-cover ring-2 ring-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.35)] rotate-[10deg]                  "
-                  draggable={false}
+                  className="h-28 w-28 sm:h-36 sm:w-36 aspect-square rounded-full object-coverring-2 ring-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.35)] rotate-[20deg]"
                 />
+
                 <span className="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_6px_rgba(255,255,255,0.06)]" />
               </div>
 
               {/* テキストは読みやすく（テキストシャドウ） */}
-              <div className="text-left">
-                <div className="text-lg md:text-xl text-white/85" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
-                  {VICE.title}
-                </div>
-                <div className="text-2xl md:text-3xl font-bold" style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>
-                  {VICE.name}
-                </div>
-                <div className="text-base text-white/80 mt-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
-                  クリックでプロフィールを見る
-                </div>
+             <div className="text-left">
+              <div className="text-sm sm:text-base text-white/85 leading-tight"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
+                {VICE.title /* or PRINCIPAL.title */}
               </div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight break-keep"
+                  style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>
+                {VICE.name /* or PRINCIPAL.name */}
+              </div>
+              <div className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
+                プロフィールを見る
+              </div>
+            </div>
+
             </div>
           </motion.button>
         </div>
+        {/* 1枚目と2枚目の「間・中央」に配置（相対/絶対は使わない） */}
+        <div className="relative -mt-10 mb-10 flex justify-center z-40">
+          <motion.a
+            href="/admission"
+            className="group relative inline-flex items-center gap-3 rounded-full
+                      px-6 py-3 sm:px-8 sm:py-4 font-semibold text-black
+                      bg-white/95 hover:bg-white focus-visible:ring-4 focus-visible:ring-white/40
+                      transition shadow-[0_12px_35px_rgba(0,0,0,0.35)]"
+            initial={{ opacity: 0, scale: 0.96, y: 6 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          >
+            アドミッション・ポリシーを見る
+            <svg width="22" height="22" viewBox="0 0 24 24" className="inline-block">
+              <path d="M13 5l7 7-7 7M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" />
+            </svg>
 
+            {/* 左→右に“キラン” */}
+            <span className="pointer-events-none absolute -inset-1 overflow-hidden rounded-full">
+            <span
+              className={`
+                absolute -left-1/2 top-0 h-full w-[55%]
+                bg-gradient-to-r from-transparent via-white/60 to-transparent
+                translate-x-[-60%] skew-x-[-20deg]
+                animate-[shine_2.8s_ease-in-out_infinite]
+              `}
+            />
+            </span>
+          </motion.a>
+        </div>
         {/* ================== 横長カード #2（校長ボタン：左下） ================== */}
         <div className="relative mb-24 md:mb-32">
           {/* 画像（下層） */}
@@ -207,24 +234,26 @@ export default function SchoolIntro() {
             <div className="flex items-center gap-6 p-6 pr-8">
               <div className="relative">
                 <img
-                  src={PRINCIPAL.thumb}
-                  alt={PRINCIPAL.name}
-                  className="h-32 w-32 md:h-40 md:w-40 rounded-full object-cover ring-2 ring-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.35)] -rotate-[10deg]"
-                  draggable={false}
-                />
+                src={PRINCIPAL.thumb}
+                alt={PRINCIPAL.name}
+                className="h-28 w-28 sm:h-36 sm:w-36 aspect-square rounded-full object-cover ring-2 ring-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.35)] -rotate-[10deg]"
+              />
                 <span className="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_6px_rgba(255,255,255,0.06)]" />
               </div>
 
               <div className="text-left">
-                <div className="text-lg md:text-xl text-white/85" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
-                  {PRINCIPAL.title}
-                </div>
-                <div className="text-2xl md:text-3xl font-bold" style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>
-                  {PRINCIPAL.name}
-                </div>
-                <div className="text-base text-white/80 mt-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
-                  クリックでプロフィールを見る
-                </div>
+                <div className="text-sm sm:text-base text-white/85 leading-tight"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
+                {PRINCIPAL.title /* or PRINCIPAL.title */}
+              </div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight break-keep"
+                  style={{ textShadow: "0 2px 6px rgba(0,0,0,.7)" }}>
+                {PRINCIPAL.name /* or PRINCIPAL.name */}
+              </div>
+              <div className="text-xs sm:text-sm text-white/85 mt-1 sm:mt-2"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>
+                プロフィールを見る
+              </div>
               </div>
             </div>
           </motion.button>
@@ -310,10 +339,29 @@ export default function SchoolIntro() {
 
       {/* スロー背景テキストのアニメーションCSS */}
       <style jsx global>{`
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .animate-marquee { animation: marquee 28s linear infinite; }
-        .animate-marquee-slow { animation: marquee 40s linear infinite; }
+        @keyframes marquee {
+          0%   { transform: translateX(0); opacity: 0; }
+          5%   { opacity: 1; }
+          100% { transform: translateX(-100%); opacity: 1; }
+        }
+
+        /* 速度ごとにクラスを分ける */
+        .animate-marquee-fast   { animation: marquee 11s linear infinite; }
+        .animate-marquee-medium { animation: marquee 18s linear infinite; }
+        .animate-marquee-slow   { animation: marquee 20s linear infinite; }
+        .animate-marquee-extra  { animation: marquee 24s linear infinite; }
+        /* 遅延バリエーション */
+        .delay-1 { animation-delay: 0s; }
+        .delay-2 { animation-delay: 4s; }
+        .delay-3 { animation-delay: 8s; }
+        .delay-4 { animation-delay: 12s; }
+
+        .marquee-once {
+          animation: marquee-once 18s linear forwards; /* forwardsで最後の位置を保持 */
+        }
       `}</style>
+
     </section>
   );
 }
+
