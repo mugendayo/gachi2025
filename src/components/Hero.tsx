@@ -144,133 +144,145 @@ export default function Hero() {
   )}
 </AnimatePresence>
 
-      {/* ===== ポップアップ（STEP1: 縦長映像 / STEP2: 物語） ===== */}
-  <AnimatePresence>
-    {popupStep !== 0 && (
-      <>
-        {/* ← オーバーレイは STEP1 のときだけ出す */}
-        {popupStep === 1 && (
+      // ▼ ここから置き換え：ポップアップ（STEP1: 縦長映像 / STEP2: 物語）
+    <AnimatePresence>
+      {popupStep !== 0 && (
+        <>
+          {/* オーバーレイ（外側タップで閉じる） */}
           <motion.div
             className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={finishPopup} /* 外側タップで閉じる */
+            role="presentation"
+            aria-hidden="true"
           />
-        )}
 
-        {/* ラッパー（中央寄せ）。ここは共通でOK（STEP2でも背景は出ない） */}
-        <motion.div
-          className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.25 }}
-          aria-modal="true"
-          role="dialog"
-        >
+          {/* ダイアログ本体 */}
           <motion.div
-            key={`step-${popupStep}`}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
+            className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.25 }}
-            className="pointer-events-auto"
+            aria-modal="true"
+            role="dialog"
+            onKeyDown={(e) => { if (e.key === "Escape") finishPopup(); }}
+            tabIndex={-1}
           >
-            {popupStep === 1 ? (
-              /* STEP1: 縦長映像 + 最上位“次へ”ボタン */
-              <div
-                className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
-                style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
-              >
-                <video
-                  ref={step1VideoRef}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  muted
-                  playsInline
-                  controls={false}
-                  loop={false}
-                  preload="metadata"
-                  poster="/goal-poster.jpg"
-                  onCanPlay={() => {
-                    try { step1VideoRef.current?.play?.(); } catch {}
-                  }}
+            <motion.div
+              key={`step-${popupStep}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.25 }}
+              className="pointer-events-auto"
+              onClick={(e) => e.stopPropagation()} /* カード内タップは閉じさせない */
+            >
+              {popupStep === 1 ? (
+                /* STEP1: 縦長映像 + 次へ */
+                <div
+                  className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
+                  style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
                 >
-                  <source src="/goal.mp4" type="video/mp4" />
-                </video>
-
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent" />
-
-                <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                  <button
-                    onClick={goStep2}
-                    className="rounded-full bg-white/95 text-black px-6 py-2 text-sm font-medium hover:bg-white transition"
+                  <video
+                    ref={step1VideoRef}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    autoPlay
+                    muted
+                    playsInline
+                    controls={false}
+                    loop={false}
+                    preload="metadata"
+                    poster="/goal-poster.jpg"
+                    onCanPlay={() => {
+                      try { step1VideoRef.current?.play?.(); } catch {}
+                    }}
                   >
-                    次へ
-                  </button>
+                    <source src="/goal.mp4" type="video/mp4" />
+                  </video>
+
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent" />
+
+                  <div className="absolute inset-x-0 bottom-4 flex justify-center">
+                    <button
+                      onClick={goStep2}
+                      className="rounded-full bg-white/95 text-black px-6 py-2 text-sm font-medium hover:bg-white transition"
+                    >
+                      次へ
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              /* STEP2: カード表示（全画面オーバーレイなし） */
-              <div
-                className="step2-panel relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-white flex flex-col justify-between"
-                style={{ width: "min(92vw, 480px)", padding: "2rem" }}
-              >
-                <motion.h2
-                  className="text-2xl font-bold mb-4"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
+              ) : (
+                /* STEP2: 同規格(9:16)カード + テキスト行アニメ + 外側タップで閉じる対応 */
+                <div
+                  className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-white"
+                  style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
                 >
-                  ストーリー
-                </motion.h2>
+                  {/* スクロール領域（本文だけスクロール） */}
+                  <div className="absolute inset-0 p-6 overflow-y-auto overscroll-contain">
+                    <motion.h2
+                      className="text-2xl font-bold mb-4"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      ストーリー
+                    </motion.h2>
 
-                <motion.div
-                  variants={vLinesContainer}
-                  initial="hidden"
-                  animate="show"
-                  className="text-[17px] md:text-lg leading-relaxed text-left space-y-3"
-                  onAnimationComplete={() => {
-                    const el = document.getElementById("gbf-close-btn");
-                    if (el) el.classList.add("gbf-attn");
-                  }}
-                >
-                  {step2Lines.map((line, i) => {
-                    const decorated = line
-                      .replace("ガチ文高等学校", "<b>ガチ文高等学校</b>")
-                      .replace("最高の文化祭", "<b>最高の文化祭</b>")
-                      .replace("バレないように", "<b>バレないように</b>");
-                    return (
-                      <motion.p
-                        key={i}
-                        variants={vLine}
-                        className="text-gray-900"
-                        dangerouslySetInnerHTML={{ __html: decorated }}
-                      />
-                    );
-                  })}
-                </motion.div>
+                    <motion.div
+                      variants={vLinesContainer}
+                      initial="hidden"
+                      animate="show"
+                      className="text-[17px] leading-relaxed text-left space-y-3"
+                      onAnimationComplete={() => {
+                        const el = document.getElementById("gbf-close-btn");
+                        if (el) el.classList.add("gbf-attn");
+                      }}
+                    >
+                      {step2Lines.map((line, i) => {
+                        const decorated = line
+                          .replace("ガチ文高等学校", "<b>ガチ文高等学校</b>")
+                          .replace("最高の文化祭", "<b>最高の文化祭</b>")
+                          .replace("バレないように", "<b>バレないように</b>");
+                        return (
+                          <motion.p
+                            key={i}
+                            variants={vLine}
+                            className="text-gray-900"
+                            dangerouslySetInnerHTML={{ __html: decorated }}
+                          />
+                        );
+                      })}
+                    </motion.div>
 
-                <div className="mt-8 flex justify-center">
-                  <button
-                    id="gbf-close-btn"
-                    onClick={finishPopup}
-                    className="rounded-full border px-6 py-2 text-sm hover:bg-gray-50 transition gbf-attn-base"
-                  >
-                    閉じる
-                  </button>
+                    {/* 下部ボタン */}
+                    <div className="mt-8 flex justify-center pb-2">
+                      <button
+                        id="gbf-close-btn"
+                        onClick={finishPopup}
+                        className="rounded-full border px-6 py-2 text-sm hover:bg-gray-50 transition gbf-attn-base"
+                      >
+                        閉じる
+                      </button>
+                    </div>
+
+                    {/* iOSセーフエリア確保 */}
+                    <div style={{ height: "env(safe-area-inset-bottom)" }} />
+                  </div>
+
+                  {/* タイトル可読性UPの上部グラデ（任意） */}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white to-transparent" />
                 </div>
-
-                <p className="mt-3 text-xs text-gray-500 text-center">
-                  ※ 画面外側のクリックでは閉じません
-                </p>
-              </div>
-            )}
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      </>
-    )}
-  </AnimatePresence>
+        </>
+      )}
+    </AnimatePresence>
+    // ▲ ここまで置き換え
+
 
       {/* 右下：チケット購入ボタン（STEP2終了後に出現） */}
       <AnimatePresence>
