@@ -144,7 +144,7 @@ export default function Hero() {
   )}
 </AnimatePresence>
 
-      // ▼ ここから置き換え：ポップアップ（STEP1: 縦長映像 / STEP2: 物語）
+    {/* ポップアップ（STEP1: 縦長映像 / STEP2: 物語）*/}
     <AnimatePresence>
       {popupStep !== 0 && (
         <>
@@ -154,8 +154,7 @@ export default function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={finishPopup} /* 外側タップで閉じる */
-            role="presentation"
+            onClick={finishPopup}
             aria-hidden="true"
           />
 
@@ -281,7 +280,6 @@ export default function Hero() {
         </>
       )}
     </AnimatePresence>
-    // ▲ ここまで置き換え
 
 
       {/* 右下：チケット購入ボタン（STEP2終了後に出現） */}
