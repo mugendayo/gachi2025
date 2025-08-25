@@ -39,6 +39,54 @@ export default function Hero() {
   const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0); // 0=なし, 1=動画, 2=ストーリー
   const [hasSeenPopup, setHasSeenPopup] = useState(false); // STEP2を閉じたらtrue
   const step1VideoRef = useRef<HTMLVideoElement | null>(null);
+  // === STEP2（妖精のセリフ）タイプライター用 ===
+  const lines = step2Lines;                 // 既存の文面配列を利用
+  const [lineIdx, setLineIdx] = useState(0);
+  const [typed, setTyped] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const typeSpeed = 34;                     // 1文字の速度(ms) 調整可
+
+  const startTyping = (text: string) => {
+    setTyped("");
+    setIsTyping(true);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setTyped(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(timer);
+        setIsTyping(false);
+      }
+    }, typeSpeed);
+  };
+
+  const revealAll = () => {
+    // 途中クリックで全文表示
+    if (isTyping) {
+      setTyped(lines[lineIdx]);
+      setIsTyping(false);
+    }
+  };
+
+  const nextLine = () => {
+    if (lineIdx < lines.length - 1) {
+      const next = lineIdx + 1;
+      setLineIdx(next);
+      startTyping(lines[next]);
+    } else {
+      // 最後の行まで読んだら閉じる or ボタンを押してもらう
+      // ここでは閉じるボタンを設置しているので何もしない
+    }
+  };
+
+  // STEP2 が開いたら毎回最初の行からタイプ開始
+  useEffect(() => {
+    if (popupStep === 2) {
+      setLineIdx(0);
+      startTyping(lines[0]);
+    }
+  }, [popupStep]); // eslint-disable-line
+
 
 // 初回判定（マウント時）
 useEffect(() => {
@@ -188,142 +236,144 @@ useEffect(() => {
         )}
       </AnimatePresence>
 
-    {/* ポップアップ（STEP1: 縦長映像 / STEP2: 物語）*/}
-    <AnimatePresence>
-      {popupStep !== 0 && (
-        <>
-          {/* オーバーレイ（外側タップで閉じる） */}
-          <motion.div
-            className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={finishPopup}
-            aria-hidden="true"
-          />
+{/* ポップアップ（STEP1: 縦長映像 / STEP2: キャラ紹介） */}
+<AnimatePresence>
+  {popupStep !== 0 && (
+    <>
+      {/* オーバーレイ（外側タップで閉じる） */}
+      <motion.div
+        className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={finishPopup}
+        aria-hidden="true"
+      />
 
-          {/* ダイアログ本体 */}
-          <motion.div
-            className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.25 }}
-            aria-modal="true"
-            role="dialog"
-            onKeyDown={(e) => { if (e.key === "Escape") finishPopup(); }}
-            tabIndex={-1}
+      {/* ダイアログ本体 */}
+      <motion.div
+        className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.25 }}
+        aria-modal="true"
+        role="dialog"
+        onKeyDown={(e) => { if (e.key === "Escape") finishPopup(); }}
+        tabIndex={-1}
+      >
+        <motion.div
+          key={`step-${popupStep}`}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.25 }}
+          className="pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+        {popupStep === 1 ? (
+          // STEP1: 縦長映像 + 次へ（画像ボタン・レスポンシブ）
+          <div
+            className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
+            style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
           >
-            <motion.div
-              key={`step-${popupStep}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.25 }}
-              className="pointer-events-auto"
-              onClick={(e) => e.stopPropagation()} /* カード内タップは閉じさせない */
+            <video
+              ref={step1VideoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
+              controls={false}
+              loop={false}
+              preload="metadata"
+              poster="/goal-poster.jpg"
+              onCanPlay={() => {
+                try { step1VideoRef.current?.play?.(); } catch {}
+              }}
             >
-              {popupStep === 1 ? (
-                /* STEP1: 縦長映像 + 次へ */
-                <div
-                  className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
-                  style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
-                >
-                  <video
-                    ref={step1VideoRef}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    autoPlay
-                    muted
-                    playsInline
-                    controls={false}
-                    loop={false}
-                    preload="metadata"
-                    poster="/goal-poster.jpg"
-                    onCanPlay={() => {
-                      try { step1VideoRef.current?.play?.(); } catch {}
-                    }}
-                  >
-                    <source src="/goal.mp4" type="video/mp4" />
-                  </video>
+              <source src="/goal.mp4" type="video/mp4" />
+            </video>
 
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent" />
+            {/* 下部グラデ */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/75 to-transparent" />
 
-                  <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                    <button
-                      onClick={goStep2}
-                      className="rounded-full bg-white/95 text-black px-6 py-2 text-sm font-medium hover:bg-white transition"
-                    >
-                      次へ
-                    </button>
-                  </div>
+            {/* 画像ボタン（大きめ・レスポンシブ） */}
+            <div className="absolute inset-x-0 bottom-5 flex justify-center">
+              <button
+                onClick={goStep2}
+                aria-label="次へ"
+                className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                style={{ width: "clamp(160px, 40vw, 280px)" }} // ← ワンサイズ大きめ
+              >
+                <img
+                  src="/btn-next.png"
+                  alt=""
+                  className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] hover:brightness-110 transition"
+                  draggable={false}
+                />
+                <span className="sr-only">次へ</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+         /* STEP2: 妖精が喋る（タイプライター） */
+        <div
+          className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white"
+          style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
+        >
+          {/* 中央寄せレイヤー */}
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="flex flex-col items-center -translate-y-6 w-full px-4">
+              {/* 妖精（中央より少し上） */}
+              <motion.img
+                src="/fairy.png"  // 立ち絵を /public に置く
+                alt="妖精"
+                className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
+                draggable={false}
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+              />
+
+              {/* セリフ吹き出し：クリックで「全文表示 → 次の行」 */}
+              <motion.button
+                type="button"
+                onClick={() => (isTyping ? revealAll() : nextLine())}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28 }}
+                className="w-full bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+                style={{ fontFamily: "DotGothic16, system-ui, sans-serif" }}
+              >
+                <p className="text-[15px] leading-relaxed text-gray-800 break-words">
+                  「{typed}」
+                  {/* タイピング中だけカーソル点滅 */}
+                  {isTyping && <span className="tw-caret">▋</span>}
+                </p>
+                <div className="mt-2 text-[11px] text-gray-500 select-none">
+                  {isTyping ? "タップで全文表示" : (lineIdx < lines.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる")}
                 </div>
-              ) : (
-                /* STEP2: 同規格(9:16)カード + テキスト行アニメ + 外側タップで閉じる対応 */
-                <div
-                  className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-white"
-                  style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
-                >
-                  {/* スクロール領域（本文だけスクロール） */}
-                  <div className="absolute inset-0 p-6 overflow-y-auto overscroll-contain">
-                    <motion.h2
-                      className="text-2xl font-bold mb-4"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25 }}
-                    >
-                      ストーリー
-                    </motion.h2>
+              </motion.button>
+            </div>
+          </div>
 
-                    <motion.div
-                      variants={vLinesContainer}
-                      initial="hidden"
-                      animate="show"
-                      className="text-[17px] leading-relaxed text-left space-y-3"
-                      onAnimationComplete={() => {
-                        const el = document.getElementById("gbf-close-btn");
-                        if (el) el.classList.add("gbf-attn");
-                      }}
-                    >
-                      {step2Lines.map((line, i) => {
-                        const decorated = line
-                          .replace("ガチ文高等学校", "<b>ガチ文高等学校</b>")
-                          .replace("最高の文化祭", "<b>最高の文化祭</b>")
-                          .replace("バレないように", "<b>バレないように</b>");
-                        return (
-                          <motion.p
-                            key={i}
-                            variants={vLine}
-                            className="text-gray-900"
-                            dangerouslySetInnerHTML={{ __html: decorated }}
-                          />
-                        );
-                      })}
-                    </motion.div>
+          {/* 閉じる（最後の行まで読んだら誘導文が変わる） */}
+          <div className="absolute right-3 bottom-3">
+            <button
+              onClick={finishPopup}
+              className="px-4 py-2 text-xs rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
 
-                    {/* 下部ボタン */}
-                    <div className="mt-8 flex justify-center pb-2">
-                      <button
-                        id="gbf-close-btn"
-                        onClick={finishPopup}
-                        className="rounded-full border px-6 py-2 text-sm hover:bg-gray-50 transition gbf-attn-base"
-                      >
-                        閉じる
-                      </button>
-                    </div>
 
-                    {/* iOSセーフエリア確保 */}
-                    <div style={{ height: "env(safe-area-inset-bottom)" }} />
-                  </div>
-
-                  {/* タイトル可読性UPの上部グラデ（任意） */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white to-transparent" />
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          )}
+        </motion.div>
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
 
 {/* ===== 前景：STEP2終了後に、背景動画の上を“流れる”ゾーン ===== */}
 {hasSeenPopup && (
