@@ -5,6 +5,7 @@ import type { PanInfo } from "framer-motion";
 import AdmissionCTA from "@/components/AdmissionCTA";
 import TimeSlipTeaser from "@/components/TimeSlipTeaser";
 
+
 type GalleryItem = { src: string; caption?: string };
 
 type Person = {
