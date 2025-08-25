@@ -9,6 +9,7 @@ export type Slide = {
   points?: string[];
   ctaText?: string;
   ctaHref?: string;
+  imageSrc?: string;   // ← 追加
 };
 
 type Props = {
@@ -89,6 +90,16 @@ export default function AdmissionSlides({ slides }: Props) {
                     </a>
                   </div>
                 )}
+                { s.imageSrc && (
+                <div className="mt-4 flex justify-center">
+                    <img
+                    src={s.imageSrc}
+                    alt={s.title}
+                    className="max-h-[320px] w-auto object-contain rounded-lg shadow"
+                    />
+                </div>
+                )}
+
               </motion.div>
             </section>
           ))}

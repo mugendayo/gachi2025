@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { PanInfo } from "framer-motion";
 import AdmissionCTA from "@/components/AdmissionCTA";
 import TimeSlipTeaser from "@/components/TimeSlipTeaser";
+import AnimatedChars from "@/components/AnimatedChars";
 
 
 type GalleryItem = { src: string; caption?: string };
@@ -94,13 +95,31 @@ export default function SchoolIntro() {
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <h3 className="text-xl md:text-5xl font-bold mb-3">
-            「文化祭の前夜」のような高揚を
-          </h3>
-          <p className="text-sm md:text-base leading-relaxed text-white/90">
+          {/* 文字だけ中央寄せ（ラッパーのmin-hをやめる） */}
+          <div className="text-center">
+            <AnimatedChars
+              text={"「文化祭の前夜」\nのような高揚を"}
+              as="h3"
+              /* フォントを文字だけ拡大（ラッパーは伸びない） */
+              className="
+                font-bold leading-[1.1] tracking-[0.06em]
+                text-[clamp(24px,8vw,56px)]
+                md:text-[clamp(50px,5vw,64px)]
+              "
+              initialDelay={0.10}
+              lineStep={0.18}    // 行と行の間の“タメ”
+              step={0.08}        // 1文字ずつ落ちるテンポを速めに
+              bobDuration={4.0}  // ふわ揺れをゆっくり
+              lineGap="0.40em"   // ← 追加（次の変更②で使えるように）
+            />
+          </div>
+
+          <p className="mt-4 text-sm md:text-base leading-relaxed text-white/90 text-center">
             ガチ文高等学校とは、年に1回の文化祭に重きをおいた高校です。“青春の装置”として機能します。
           </p>
         </motion.div>
+
+
       </div>
 {/* ================== 横長カード #1（教頭＋校長を角に置く→門寄せ＆対角配置） ================== */}
 <div
@@ -366,24 +385,6 @@ export default function SchoolIntro() {
           </>
         )}
       </AnimatePresence>
-
-      {/* スロー背景テキストのアニメーションCSS */}
-      <style jsx global>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); opacity: 0; }
-          5% { opacity: 1; }
-          100% { transform: translateX(-100%); opacity: 1; }
-        }
-        .animate-marquee-fast   { animation: marquee 11s linear infinite; }
-        .animate-marquee-medium { animation: marquee 18s linear infinite; }
-        .animate-marquee-slow   { animation: marquee 20s linear infinite; }
-        .animate-marquee-extra  { animation: marquee 24s linear infinite; }
-        .delay-1 { animation-delay: 0s; }
-        .delay-2 { animation-delay: 4s; }
-        .delay-3 { animation-delay: 8s; }
-        .delay-4 { animation-delay: 12s; }
-        .marquee-once { animation: marquee-once 18s linear forwards; }
-      `}</style>
 
 <style jsx global>{`
   .marquee-line{

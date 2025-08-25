@@ -56,7 +56,13 @@ export default function TimeSlipTeaser({
       {/* 見出し：画像より“上”に配置 */}
       <h2 className="mb-6 md:mb-8 text-center font-bold leading-[1.15] text-white drop-shadow text-[8.5vw] sm:text-5xl md:text-6xl">
         {lines.map((line, li) => (
-          <span key={`ln-${li}`} className="block">
+          <span
+            key={`ln-${li}`}
+            className="block"
+            style={{
+              marginBottom: li < lines.length - 1 ? "0.3em" : "0", // 👈 ここで改行余白を指定
+            }}
+          >
             {Array.from(line).map((ch, i) => (
               <motion.span
                 key={`ch-${li}-${i}`}
@@ -89,6 +95,7 @@ export default function TimeSlipTeaser({
           </span>
         ))}
       </h2>
+
 
       {/* 画像＋粒子：画像を基準に絶対配置 */}
       <div className="relative mx-auto w-[58vw] max-w-[520px] min-w-[240px]">

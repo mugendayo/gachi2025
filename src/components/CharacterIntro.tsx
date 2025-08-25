@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import SectionHeadingCard from "@/components/SectionHeadingCard";
 
 /** 画像は /public/chars/*.png に入れてください（横長 16:9 推奨） */
 type Line = { text: string };
@@ -168,16 +169,11 @@ export default function CharacterIntro() {
           className="w-full h-full object-cover"
           draggable={false}
         />
-        <div className="absolute inset-0 bg-black/40" /> {/* うっすら暗幕 */}
       </div>
-
-      {/* コンテナ */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-0 pb-12 md:pb-10">
-        {/* タイトル */}
-       <h3 className="text-xl md:text-5xl font-bold mb-3">ガチ文高等学校の人たち</h3>
-          <p className="text-sm md:text-base leading-relaxed text-white/90">
-            ガチ文高等学校には、ユニークな人がたくさんいます。
-          </p>
+      <SectionHeadingCard
+  label="ガチ文高等学校の人たち"
+  title="高2病な人がたくさんいます"
+/>
 
         {/* ====== カード：画像(16:9) + セリフ(画像高さの約20%) ====== */}
         <div className="rounded-2xl overflow-hidden ring-1 ring-white/10 bg-black/40">
@@ -280,8 +276,9 @@ export default function CharacterIntro() {
             ))}
           </div>
         </div>
-      </div>
       <div className="h-24 md:h-32" />
+
+      
       
     </section>
   );
