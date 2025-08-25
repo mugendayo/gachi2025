@@ -18,8 +18,8 @@ const vLine = {
    STEP2: 行ごと演出の素材
    ========================= */
 const step2Lines = [
-  "生徒証を拾ったのね！ようこそ！",
-  "きみはガチ文高等学校に「生徒」としてタイムスリップしてきたんだよ！",
+  "生徒証を手に入れたのね！ガチ文高等学校へようこそ！",
+  "きみは「生徒」としてタイムスリップしてきたのよ！さあ、文化祭の準備をしなくっちゃ！",
 ];
 
 // 親→子にステップ表示
@@ -419,10 +419,10 @@ export default function Hero() {
           <div className="flex justify-center"></div>
 
           <h2 className="mt-10 text-2xl md:text-3xl font-bold">
-            ピクミン風コンテンツ群
+            ガチ文化祭2025
           </h2>
           <p className="mt-4 opacity-90">
-            スクロール解禁後、背景は固定のまま、これらが上に流れていきます。
+            2025年11月1日（土）～3日（祝）
           </p>
 
           <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
