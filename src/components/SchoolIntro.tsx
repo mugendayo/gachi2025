@@ -220,16 +220,16 @@ export default function SchoolIntro() {
           魂の熱量がすべてを変える！タイムマシーンをつくってます！いつでもガチで生きよう！
         </div>
         <div className="marquee-line top-[15%] text-[5vw] font-extrabold tracking-widest opacity-[0.35] [--dur:34s] [--delay:-4s]">
-          SASUKEを作りたい アーティストになりたい　夢見心地で生きていきたい 諦めたくない　死ぬまでやりたい
+          SASUKEを作りたい アーティストになりたい 夢見心地で生きていきたい 諦めたくない 死ぬまでやりたい
         </div>
         <div className="marquee-line top-[30%] text-[3vw] font-extrabold tracking-widest opacity-[0.35] [--dur:38s] [--delay:-8s]">
           自己実現のMVPを作り続ける それがガチ文化祭の使命
         </div>
         <div className="marquee-line top-[75%] text-[7vw] font-extrabold tracking-widest opacity-[0.35] [--dur:32s] [--delay:-2s]">
-          目に見えない大切なもの　ガチ文化祭=人生　お前らみたいな大人がいるから涙を流せる感動が殺されていくんだ
+          目に見えない大切なもの ガチ文化祭=人生 お前らみたいな大人がいるから涙を流せる感動が殺されていくんだ
         </div>
         <div className="marquee-line top-[62%] text-[4vw] font-extrabold tracking-widest opacity-[0.35] [--dur:40s] [--delay:-6s]">
-          超悔しい　あのときああすれば
+          超悔しい あのときああすれば
         </div>
         <div className="marquee-line top-[40%] text-[5vw] font-extrabold tracking-widest opacity-[0.35] [--dur:36s] [--delay:-10s]">
           もっとやればよかった
