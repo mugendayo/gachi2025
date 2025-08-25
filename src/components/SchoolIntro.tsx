@@ -215,12 +215,13 @@ export default function SchoolIntro() {
   </motion.button>
 </div>
 
-{/* ★★★ スロー文字（フルブリード版） ★★★ */}
+{/* ★★★ スロー文字（フルブリード版｜any不使用） ★★★ */}
 <div className="my-16 md:my-24">
+  {/* 中央レイアウトを一時解除して画面幅いっぱいに */}
   <div className="relative -mx-[calc(50vw-50%)] [--speed:1.6]">
     <div className="relative w-screen h-[28vh] md:h-[36vh] overflow-hidden pointer-events-none">
       <div className="absolute inset-0">
-        <div className="marquee-line top-[0%] text-[7vw] font-extrabold tracking-widest opacity-[0.35] [--dur:28s]">
+        <div className="marquee-line top-[0%]  text-[7vw] font-extrabold tracking-widest opacity-[0.35] [--dur:28s]">
           魂の熱量がすべてを変える！タイムマシーンをつくってます！いつでもガチで生きよう！
         </div>
         <div className="marquee-line top-[15%] text-[5vw] font-extrabold tracking-widest opacity-[0.35] [--dur:34s] [--delay:-4s]">
@@ -242,25 +243,7 @@ export default function SchoolIntro() {
     </div>
   </div>
 </div>
-
-<style jsx global>{`
-  .marquee-line{
-    position:absolute;
-    left:0;
-    white-space:nowrap;
-    will-change: transform;
-    animation: marqueeX calc(var(--dur, 20s) * var(--speed, 1)) linear infinite;
-    animation-delay: var(--delay, 0s);
-    transform: translateZ(0);
-  }
-  @keyframes marqueeX {
-    0%   { transform: translateX(100vw); }
-    100% { transform: translateX(-100%); }
-  }
-`}</style>
-
-
-      
+   
       <div className="relative mb-24 md:mb-32 mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div
           className="relative z-10 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl"
@@ -407,15 +390,15 @@ export default function SchoolIntro() {
         .marquee-once { animation: marquee-once 18s linear forwards; }
       `}</style>
 
-      <style jsx global>{`
-  /* フルブリードの横流し。テキスト自身の幅に依存せず“画面幅”で端→端 */
+<style jsx global>{`
   .marquee-line{
     position:absolute;
     left:0;
     white-space:nowrap;
     will-change: transform;
-    animation: marqueeX var(--dur, 20s) linear infinite;
+    animation: marqueeX calc(var(--dur, 20s) * var(--speed, 1)) linear infinite;
     animation-delay: var(--delay, 0s);
+    transform: translateZ(0);
   }
   @keyframes marqueeX {
     0%   { transform: translateX(100vw); }
