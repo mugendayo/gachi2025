@@ -158,7 +158,7 @@ export default function CharacterIntro() {
   return (
     <section
       id="characters"
-      className="relative bg-black text-white isolate"
+      className="relative bg-black text-white pt-32 md:pt-40 isolate"
     >
       {/* ▼ セクション背景画像（任意のパスに変更） */}
       <div className="absolute inset-0 -z-10">
@@ -174,7 +174,10 @@ export default function CharacterIntro() {
       {/* コンテナ */}
       <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-0 pb-12 md:pb-10">
         {/* タイトル */}
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">登場人物</h2>
+       <h3 className="text-xl md:text-5xl font-bold mb-3">ガチ文高等学校の人たち</h3>
+          <p className="text-sm md:text-base leading-relaxed text-white/90">
+            ガチ文高等学校には、ユニークな人がたくさんいます。
+          </p>
 
         {/* ====== カード：画像(16:9) + セリフ(画像高さの約20%) ====== */}
         <div className="rounded-2xl overflow-hidden ring-1 ring-white/10 bg-black/40">
@@ -206,33 +209,47 @@ export default function CharacterIntro() {
             </div>
           </div>
 
-          {/* セリフ：画像の下に独立領域（画像の高さ * 20% ≒ 横幅の 9/80） */}
-          <div
-            className="relative w-full bg-black/75 ring-1 ring-white/10"
-            // aspect-[80/9] ＝ width / height = 80/9 → 高さ = 幅 * 9/80 = 画像高さ(16:9)の約20%
-            style={{ backdropFilter: "blur(6px)" }}
-          >
-            <div className="aspect-[80/9] px-4 md:px-6 flex items-center">
+          {/* セリフ：画像の下に独立領域（RPG吹き出し調） */}
+          <div className="relative w-full bg-white/95 rounded-xl ring-2 ring-black/20 shadow-[0_10px_28px_rgba(0,0,0,.25)]">
+            {/* 吹き出しの“しっぽ” */}
+            <span
+              aria-hidden
+              className="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-white/95 rotate-45 border-l border-t border-black/20"
+            />
+            {/* 内側の薄い輪郭（立体感） */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-black/10"
+            />
+
+            {/* ← サイズはここで調整（高さ＆余白） */}
+            <div className="relative px-4 md:px-6 py-3 md:py-4 flex items-center min-h-[140px] md:min-h-[160px]">
+
               <button
                 onClick={handleAdvance}
                 className="w-full text-left"
                 aria-label="セリフを進める"
               >
-                <p className="leading-snug text-[clamp(12px,2.8vw,16px)] md:text-[clamp(14px,1.4vw,17px)]">
+                <p className="leading-snug text-black text-[clamp(13px,2.8vw,16px)] md:text-[clamp(14px,1.4vw,18px)]">
                   {text}
                   <span
-                    className={`ml-1 inline-block w-[7px] h-[16px] align-middle ${
-                      isTyping ? "opacity-100 animate-pulse" : "opacity-0"
-                    }`}
-                    style={{ background: "#fff" }}
+                    className={`ml-1 inline-block w-[7px] h-[16px] align-middle ${isTyping ? "opacity-100 animate-pulse" : "opacity-0"}`}
+                    style={{ background: "#000" }}
                   />
                 </p>
-                <div className="mt-1 text-[11px] md:text-xs text-white/70">
-                  {isTyping ? "タップで全文表示" : "タップで次へ"}
-                </div>
+        {/* 右下の常時点滅 ▼ インジケータ（青） */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-8 bottom-2 md:right-4 md:bottom-3
+                    text-sky-500 text-[30px] md:text-sm select-none animate-pulse"
+        >
+          ▼
+        </span>
               </button>
             </div>
           </div>
+
+
         </div>
 
         {/* サムネ行（横スクロール） */}
@@ -264,6 +281,15 @@ export default function CharacterIntro() {
           </div>
         </div>
       </div>
+      <div className="h-24 md:h-32" />
+      
     </section>
   );
 }
+
+<style jsx global>{`
+  .rpg-textbox-inner--mask {
+    -webkit-mask-image: linear-gradient(180deg, #000 85%, rgba(0,0,0,0));
+            mask-image: linear-gradient(180deg, #000 85%, rgba(0,0,0,0));
+  }
+`}</style>

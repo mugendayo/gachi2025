@@ -198,13 +198,6 @@ useEffect(() => {
           </video>
         </div>
 
-
-      {/* ヒーローテキスト */}
-      <div className="absolute inset-x-0 top-10 z-20 text-center px-6 text-white">
-        <h1 className="text-sm md:text-3xl font-bold drop-shadow">ガチ文化祭2025</h1>
-        <p className="mt-1 text-sm md:text-l drop-shadow">- 青春の延命治療</p>
-      </div>
-
     {/* 中央CTA：クリックでSTEP1を開く */}
       <AnimatePresence>
         {showCTA && popupStep === 0 && (
@@ -344,53 +337,57 @@ useEffect(() => {
 </div>
   </div>
 ) : (
-  // ===== STEP2: 妖精が喋る（タイプライター） =====
-  <div
-    className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white"
-    style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
-  >
-    <div className="absolute inset-0 grid place-items-center">
-      <div className="flex flex-col items-center -translate-y-6 w-full px-4">
-        {/* 妖精（中央より少し上） */}
-        <motion.img
-          src="/fairy.png"
-          alt="妖精"
-          className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
-          draggable={false}
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        {/* セリフ（タイプライター） */}
-        <motion.button
-          type="button"
-          onClick={() => (isTyping ? revealAll() : nextLine())}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28 }}
-          className="w-full bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
-          style={{ fontFamily: "DotGothic16, system-ui, sans-serif" }}
+// ===== STEP2: 妖精が喋る（タイプライター） =====
+<div
+  className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white"
+  style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
+>
+  <div className="absolute inset-0 grid place-items-center">
+    <div className="flex flex-col items-center -translate-y-4 w-full px-4">
+      {/* 妖精（中央より少し上） */}
+      <motion.img
+        src="/fairy.png"
+        alt="妖精"
+        className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
+        draggable={false}
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* セリフ（タイプライター） ※サイズUP */}
+      <motion.button
+        type="button"
+        onClick={() => (isTyping ? revealAll() : nextLine())}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28 }}
+        className="w-[92%] md:w-[85%] bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-4 md:p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+        style={{ fontFamily: "DotGothic16, system-ui, sans-serif", minHeight: 120 }}
+      >
+        <p className="text-[17px] md:text-[18px] leading-relaxed text-gray-800 break-words">
+          {typed}
+          {isTyping && <span className="tw-caret">▋</span>}
+        </p>
+        <div className="mt-2 text-[11px] text-gray-500 select-none">
+          {isTyping ? "タップで全文表示" : (lineIdx < lines.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる")}
+        </div>
+      </motion.button>
+
+      {/* ★ ここに中央揃えの閉じるボタンを追加 */}
+      <div className="mt-9 flex justify-center w-full">
+        <button
+          onClick={finishPopup}
+          className="px-5 py-2 text-sm rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
         >
-          <p className="text-[15px] leading-relaxed text-gray-800 break-words">
-            {typed}
-            {isTyping && <span className="tw-caret">▋</span>}
-          </p>
-          <div className="mt-2 text-[11px] text-gray-500 select-none">
-            {isTyping ? "タップで全文表示" : (lineIdx < lines.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる")}
-          </div>
-        </motion.button>
+          閉じる
+        </button>
       </div>
     </div>
-
-    {/* 閉じる */}
-    <div className="absolute right-3 bottom-3">
-      <button
-        onClick={finishPopup}
-        className="px-4 py-2 text-xs rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
-      >
-        閉じる
-      </button>
-    </div>
   </div>
+
+  {/* 右下の絶対配置の閉じるボタンは削除しました */}
+</div>
+
 )}
 
         </motion.div>

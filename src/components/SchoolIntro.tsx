@@ -2,6 +2,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PanInfo } from "framer-motion"; 
+import AdmissionCTA from "@/components/AdmissionCTA";
+
+
 
 type GalleryItem = { src: string; caption?: string };
 
@@ -62,20 +65,20 @@ export default function SchoolIntro() {
 };
 
   return (
-    <section id="about-gachibun" className="relative isolate overflow-x-hidden bg-black text-white">
+    <section id="about-gachibun" className="relative isolate overflow-hidden bg-black text-white pt-70 md:pt-96 ">
       {/* ▼ セクション背景（imgのまま・スタッキング安定） */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/school/bg-vert.jpg"   /* public/school/bg-vert.jpg */
+          src="/school/bg-vert.png"   /* public/school/bg-vert.jpg */
           alt=""
           className="w-full h-full object-cover object-center block"
           draggable={false}
         />
-        <div className="absolute inset-0 bg-black/35" />
+        <div className="absolute inset-0" />
       </div>
 
       {/* ▼ スロー文字（画像カードの上、ボタンの下） */}
-      <div className="pointer-events-none absolute inset-0 z-30">
+      <div className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
         <div className="absolute -left-[-80vw] top-[27%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-fast opacity-[0.35]">
           魂の熱量がすべてを変える！タイムマシーンをつくってます！いつでもガチで生きよう！
         </div>
@@ -174,37 +177,6 @@ export default function SchoolIntro() {
             </div>
           </motion.button>
         </div>
-        {/* 1枚目と2枚目の「間・中央」に配置（相対/絶対は使わない） */}
-        <div className="relative -mt-10 mb-10 flex justify-center z-40">
-          <motion.a
-            href="/admission"
-            className="group relative inline-flex items-center gap-3 rounded-full
-                      px-6 py-3 sm:px-8 sm:py-4 font-semibold text-black
-                      bg-white/95 hover:bg-white focus-visible:ring-4 focus-visible:ring-white/40
-                      transition shadow-[0_12px_35px_rgba(0,0,0,0.35)]"
-            initial={{ opacity: 0, scale: 0.96, y: 6 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
-          >
-            アドミッション・ポリシーを見る
-            <svg width="22" height="22" viewBox="0 0 24 24" className="inline-block">
-              <path d="M13 5l7 7-7 7M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" />
-            </svg>
-
-            {/* 左→右に“キラン” */}
-            <span className="pointer-events-none absolute -inset-1 overflow-hidden rounded-full">
-            <span
-              className={`
-                absolute -left-1/2 top-0 h-full w-[55%]
-                bg-gradient-to-r from-transparent via-white/60 to-transparent
-                translate-x-[-60%] skew-x-[-20deg]
-                animate-[shine_2.8s_ease-in-out_infinite]
-              `}
-            />
-            </span>
-          </motion.a>
-        </div>
         {/* ================== 横長カード #2（校長ボタン：左下） ================== */}
         <div className="relative mb-24 md:mb-32">
           {/* 画像（下層） */}
@@ -260,7 +232,12 @@ export default function SchoolIntro() {
             </div>
           </motion.button>
         </div>
-        </div> {/* コンテンツここまで */}
+        </div>
+         {/* （校長の紹介/挨拶の直後） */}
+          <div className="mt-10 md:mt-14">
+            <AdmissionCTA />
+          </div>
+
 
       {/* モーダル */}
       <AnimatePresence>
@@ -362,7 +339,7 @@ export default function SchoolIntro() {
           animation: marquee-once 18s linear forwards; /* forwardsで最後の位置を保持 */
         }
       `}</style>
-
+     <div className="h-40 md:h-56" />
     </section>
   );
 }
