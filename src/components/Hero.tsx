@@ -532,7 +532,7 @@ useEffect(() => {
         className="tg-inv-label"
         onClick={() => setPopupStep(2)}   // ← クリックでストーリー再表示
       >
-        あなたの持ち物
+        もちもの
       </button>
 
       {/* アイテム枠：3スロット（1つ目に“生徒証”） */}
@@ -853,12 +853,13 @@ useEffect(() => {
 /* ===== 左上インベントリ（あなたの持ち物） ===== */
 .tg-inventory{
   display:flex;
-  align-items:center;
-  gap:10px;
+  flex-direction: column;     /* ← ラベルの下にボックスを縦配置 */
+  align-items:flex-start;     /* ← 左寄せ */
+  gap:6px;                   /* ← ラベルとボックス群の間隔 */
 }
 
 .tg-inv-label{
-  font-size: clamp(11px, 2.6vw, 12px);
+  font-size: clamp(9px, 2vw, 5px);
   line-height: 1;
   padding: 6px 10px;
   border-radius: 9999px;
@@ -871,10 +872,12 @@ useEffect(() => {
 .tg-inv-label:hover{ transform: translateY(-1px); background:#fff; }
 
 .tg-inv-grid{
-  --inv-size: clamp(44px, 10vw, 68px);
+  --inv-size: clamp(40px, 9vw, 56px); /* ← ボックスの一辺（下で解説） */
   display:grid;
-  grid-auto-flow: column;
-  gap: 6px;
+  grid-auto-flow: row;                  /* ← 縦方向に自動配置 */
+  grid-template-columns: 1fr;           /* ← 1列だけ */
+  grid-auto-rows: var(--inv-size);      /* ← 行の高さをボックスサイズに揃える */
+  gap: 6px;                             /* ← ボックス同士の縦の間隔 */
 }
 
 .tg-inv-slot{
