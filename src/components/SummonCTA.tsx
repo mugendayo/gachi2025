@@ -32,19 +32,19 @@ export default function SummonCTA({
   }, [autoShowAfterMs]);
 
   return (
-    <div className="relative w-full flex items-center justify-center py-16">
+    <div className="relative w-full flex items-center justify-center py-8 sm:py-12">
       <AnimatePresence>
         {show && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.8, filter: "blur(6px)" }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            onClick={onClick}
-            aria-label={label}
-            className="relative group select-none"
+           <motion.button
+             initial={{ opacity: 0, scale: 0.8, filter: "blur(6px)" }}
+             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+             exit={{ opacity: 0, scale: 0.8, filter: "blur(6px)" }}
+             transition={{ duration: 0.6, ease: "easeOut" }}
+             onClick={onClick}
+             aria-label={label}
+            className="relative group select-none cursor-pointer"
           >
-            <div className="relative w-[400px] h-[400px] md:w-[480px] md:h-[480px] filter transition duration-500 group-hover:saturate-0 group-hover:brightness-125 group-hover:contrast-110">
+            <div className="relative w-[220px] h-[220px] sm:w-[280px] sm:h-[280px] md:w-[360px] md:h-[360px] lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] filter transition duration-500 group-hover:saturate-0 group-hover:brightness-125 group-hover:contrast-110">
               {/* 外周オーラ */}
              <div className="absolute inset-[-28%] rounded-full bg-[radial-gradient(circle,rgba(80,255,180,0.40)_0%,rgba(0,200,150,0.25)_50%,transparent_80%)] blur-3xl pointer-events-none" />
               {/* 中央ブルーム */}
@@ -63,9 +63,9 @@ export default function SummonCTA({
               {/* 粒子エフェクト */}
               <Particles reduced={reduced} />
               {/* CTA文字 */}
-              <div className="absolute inset-0 grid place-items-center">
-                <span className="px-8 py-3 rounded-full text-white/95 tracking-wide text-6xl md:text-3xl backdrop-blur-[2px] bg-white/10 ring-1 ring-white/30 shadow-[0_0_40px_rgba(255,255,255,0.35)] group-hover:shadow-[0_0_72px_rgba(255,255,255,0.5)] transition">
-                {label}
+               <div className="absolute inset-0 grid place-items-center">
+                <span className="rounded-full text-white/95 tracking-widetext-base sm:text-lg md:text-2xl lg:text-3xl px-4 py-2 md:px-6 md:py-3 backdrop-blur-[2px] bg-white/10 ring-1 ring-white/30 shadow-[0_0_40px_rgba(255,255,255,0.35)] group-hover:shadow-[0_0_72px_rgba(255,255,255,0.5)] transition">
+                  {label}
                 </span>
               </div>
             </div>

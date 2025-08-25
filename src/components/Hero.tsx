@@ -20,7 +20,8 @@ const vLine = {
    STEP2: 行ごと演出の素材
    ========================= */
 const step2Lines = [
-  "君はガチ文高等学校に生徒としてタイムスリップしてきたんだよ。",
+  "生徒証を拾ったのね！ようこそ！",
+   "きみはガチ文高等学校に「生徒」としてタイムスリップしてきたんだよ！",
 ];
 
 // 親→子にステップ表示
@@ -271,104 +272,127 @@ useEffect(() => {
           className="pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
-        {popupStep === 1 ? (
-          // STEP1: 縦長映像 + 次へ（画像ボタン・レスポンシブ）
-          <div
-            className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
-            style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
-          >
-            <video
-              ref={step1VideoRef}
-              className="absolute inset-0 w-full h-full object-cover"
-              autoPlay
-              muted
-              playsInline
-              controls={false}
-              loop={false}
-              preload="metadata"
-              poster="/goal-poster.jpg"
-              onCanPlay={() => {
-                try { step1VideoRef.current?.play?.(); } catch {}
-              }}
-            >
-              <source src="/goal.mp4" type="video/mp4" />
-            </video>
+       {popupStep === 1 ? (
+  // ===== STEP1: 縦長映像 + 次へ（画像ボタン・RPGテキスト） =====
+  <div
+    className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
+    style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
+  >
+    <video
+      ref={step1VideoRef}
+      className="absolute inset-0 w-full h-full object-cover"
+      autoPlay
+      muted
+      playsInline
+      controls={false}
+      loop={false}
+      preload="metadata"
+      poster="/goal-poster.jpg"
+      onCanPlay={() => {
+        try { step1VideoRef.current?.play?.(); } catch {}
+      }}
+    >
+      <source src="/goal.mp4" type="video/mp4" />
+    </video>
 
-            {/* 下部グラデ */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/75 to-transparent" />
+    {/* 下部グラデ */}
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/75 to-transparent" />
 
-            {/* 画像ボタン（大きめ・レスポンシブ） */}
-            <div className="absolute inset-x-0 bottom-5 flex justify-center">
-              <button
-                onClick={goStep2}
-                aria-label="次へ"
-                className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-                style={{ width: "clamp(160px, 40vw, 280px)" }} // ← ワンサイズ大きめ
-              >
-                <img
-                  src="/btn-next.png"
-                  alt=""
-                  className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] hover:brightness-110 transition"
-                  draggable={false}
-                />
-                <span className="sr-only">次へ</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-         /* STEP2: 妖精が喋る（タイプライター） */
-        <div
-          className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white"
-          style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
+ {/* 画像ボタン＋RPG風テキスト */}
+<div className="absolute inset-x-0 bottom-5 flex justify-center">
+  <div className="flex flex-col items-center">
+    {/* Nextボタン */}
+   <motion.button
+      onClick={goStep2}
+      aria-label="次へ"
+      className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 group cursor-pointer"
+      style={{ width: "clamp(160px, 40vw, 280px)" }}
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: [0.92, 1.06, 1.0] }}
+      transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
+      whileHover={{ scale: 1.03, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <img
+        src="/btn-next.png"
+        alt=""
+        className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] transition will-change-transform"
+        draggable={false}
+      />
+      {/* キラン */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+        <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
+      </span>
+      <span className="sr-only">次へ</span>
+    </motion.button>
+
+    {/* RPG風テキスト：生徒証を拾う（Nextと半分重なる） */}
+    <motion.div
+      onClick={goStep2}
+      role="button"
+      tabIndex={0}
+      className="rpg-chip cursor-pointer select-none -mt-14" 
+      initial={{ opacity: 0, y: 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.85, duration: 0.35, ease: "easeOut" }}
+    >
+      <span className="rpg-chip-deco" aria-hidden>◆</span>
+      生徒証を拾う
+      <span className="rpg-chip-caret" aria-hidden>▸</span>
+    </motion.div>
+  </div>
+</div>
+  </div>
+) : (
+  // ===== STEP2: 妖精が喋る（タイプライター） =====
+  <div
+    className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white"
+    style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}
+  >
+    <div className="absolute inset-0 grid place-items-center">
+      <div className="flex flex-col items-center -translate-y-6 w-full px-4">
+        {/* 妖精（中央より少し上） */}
+        <motion.img
+          src="/fairy.png"
+          alt="妖精"
+          className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
+          draggable={false}
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* セリフ（タイプライター） */}
+        <motion.button
+          type="button"
+          onClick={() => (isTyping ? revealAll() : nextLine())}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28 }}
+          className="w-full bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+          style={{ fontFamily: "DotGothic16, system-ui, sans-serif" }}
         >
-          {/* 中央寄せレイヤー */}
-          <div className="absolute inset-0 grid place-items-center">
-            <div className="flex flex-col items-center -translate-y-6 w-full px-4">
-              {/* 妖精（中央より少し上） */}
-              <motion.img
-                src="/fairy.png"  // 立ち絵を /public に置く
-                alt="妖精"
-                className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
-                draggable={false}
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-              />
-
-              {/* セリフ吹き出し：クリックで「全文表示 → 次の行」 */}
-              <motion.button
-                type="button"
-                onClick={() => (isTyping ? revealAll() : nextLine())}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.28 }}
-                className="w-full bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
-                style={{ fontFamily: "DotGothic16, system-ui, sans-serif" }}
-              >
-                <p className="text-[15px] leading-relaxed text-gray-800 break-words">
-                  「{typed}」
-                  {/* タイピング中だけカーソル点滅 */}
-                  {isTyping && <span className="tw-caret">▋</span>}
-                </p>
-                <div className="mt-2 text-[11px] text-gray-500 select-none">
-                  {isTyping ? "タップで全文表示" : (lineIdx < lines.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる")}
-                </div>
-              </motion.button>
-            </div>
+          <p className="text-[15px] leading-relaxed text-gray-800 break-words">
+            {typed}
+            {isTyping && <span className="tw-caret">▋</span>}
+          </p>
+          <div className="mt-2 text-[11px] text-gray-500 select-none">
+            {isTyping ? "タップで全文表示" : (lineIdx < lines.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる")}
           </div>
+        </motion.button>
+      </div>
+    </div>
 
-          {/* 閉じる（最後の行まで読んだら誘導文が変わる） */}
-          <div className="absolute right-3 bottom-3">
-            <button
-              onClick={finishPopup}
-              className="px-4 py-2 text-xs rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
-            >
-              閉じる
-            </button>
-          </div>
-        </div>
+    {/* 閉じる */}
+    <div className="absolute right-3 bottom-3">
+      <button
+        onClick={finishPopup}
+        className="px-4 py-2 text-xs rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
+      >
+        閉じる
+      </button>
+    </div>
+  </div>
+)}
 
-
-          )}
         </motion.div>
       </motion.div>
     </>
@@ -674,6 +698,104 @@ useEffect(() => {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* タイプライターの点滅カーソル */
+.tw-caret {
+  display: inline-block;
+  margin-left: 2px;
+  animation: tw-blink 1s steps(1, end) infinite;
+}
+@keyframes tw-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+/* ============ キラン（Nextボタンのハイライト） ============ */
+.btn-glint {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.0) 10%,
+    rgba(255,255,255,0.35) 45%,
+    rgba(255,255,255,0.8) 50%,
+    rgba(255,255,255,0.35) 55%,
+    rgba(255,255,255,0.0) 90%,
+    rgba(255,255,255,0) 100%
+  );
+  filter: blur(0.5px);
+  height: 140%;
+  animation: btn-glint-move 2.6s ease-in-out 0.9s infinite; /* 遅延して周期的にキラン */
+  /* group-hover で速度アップしたい時は以下を使う:
+     .group:hover .btn-glint { animation-duration: 1.6s; } */
+}
+@keyframes btn-glint-move {
+  0%   { transform: translateX(-120%) skewX(-12deg); opacity: 0; }
+  15%  { opacity: 1; }
+  35%  { transform: translateX(180%) skewX(-12deg); opacity: 0.9; }
+  45%  { opacity: 0; }
+  100% { transform: translateX(180%) skewX(-12deg); opacity: 0; }
+}
+
+/* ============ タイプライターの点滅カーソル（STEP2） ============ */
+.tw-caret {
+  display: inline-block;
+  margin-left: 2px;
+  animation: tw-blink 1s steps(1, end) infinite;
+}
+@keyframes tw-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+/* ===== RPG風チップ（コマンド） ===== */
+.rpg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: clamp(12px, 2.6vw, 14px);
+  line-height: 1;
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.75) 100%),
+    radial-gradient(120% 140% at 0% 0%, rgba(0,180,255,0.25), transparent 60%);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.08),
+    0 8px 22px rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  letter-spacing: 0.02em;
+  position: relative;
+  user-select: none;
+}
+
+.rpg-chip::after { /* 上のハイライトライン */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  opacity: .55;
+  pointer-events: none;
+}
+
+.rpg-chip-deco {
+  color: #7fe3ff;
+  text-shadow: 0 0 8px rgba(0,180,255,0.75);
+  transform: translateY(-1px);
+  font-size: 1.05em;
+}
+
+.rpg-chip-caret {
+  margin-left: 4px;
+  opacity: .9;
+  animation: rpg-caret-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rpg-caret-pulse {
+  0%, 100% { transform: translateX(0); opacity: .7; }
+  50%      { transform: translateX(2px); opacity: 1; }
 }
 
 
