@@ -104,22 +104,16 @@ export default function SchoolIntro() {
       </div>
 {/* ================== 横長カード #1（教頭＋校長を角に置く→門寄せ＆対角配置） ================== */}
 <div
-  className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-16 mb-32 md:mb-40"
-  style={
-    {
-      // 基本の外側距離（はみ出し量）
-      ['--ov' as any]: 'clamp(10px, 5.5vw, 88px)',
-      // 教頭（右上）の「右端からの内側距離」→門に合わせて微調整
-      ['--top-edge' as any]: 'clamp(8px, 3vw, 48px)',
-      // 校長（左下）の「左端からの内側距離」
-      ['--bottom-edge' as any]: 'clamp(8px, 3vw, 48px)',
-      // 対角線方向への追加オフセット（両者に同量を足す）
-      ['--diag' as any]: 'clamp(0px, 2vw, 36px)',
-      // サムネサイズ
-      ['--avatar' as any]: 'clamp(64px, 10vw, 144px)',
-    } as React.CSSProperties
-  }
+  className={`
+    relative mx-auto max-w-6xl px-4 sm:px-6 mt-16 mb-32 md:mb-40
+    [--ov:clamp(10px,5.5vw,88px)]
+    [--top-edge:clamp(8px,3vw,48px)]
+    [--bottom-edge:clamp(8px,3vw,48px)]
+    [--diag:clamp(0px,2vw,36px)]
+    [--avatar:clamp(64px,10vw,144px)]
+ `} 
 >
+  
   {/* 画像（基準面） */}
   <div className="relative z-10 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
     <img
@@ -214,6 +208,7 @@ export default function SchoolIntro() {
     </div>
   </motion.button>
 </div>
+
 
 {/* ★★★ スロー文字（フルブリード版｜any不使用） ★★★ */}
 <div className="my-16 md:my-24">
