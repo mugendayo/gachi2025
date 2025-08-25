@@ -303,16 +303,16 @@ useEffect(() => {
   <div className="flex flex-col items-center">
     {/* Nextボタン */}
    <motion.button
-      onClick={goStep2}
-      aria-label="次へ"
-      className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 group cursor-pointer"
-      style={{ width: "clamp(160px, 40vw, 280px)" }}
-      initial={{ opacity: 0, scale: 0.92 }}
-      animate={{ opacity: 1, scale: [0.92, 1.06, 1.0] }}
-      transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
-      whileHover={{ scale: 1.03, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-    >
+    onClick={goStep2}
+    aria-label="次へ"
+    className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 group cursor-pointer"
+    style={{ width: "clamp(160px, 40vw, 280px)" }}
+    initial={{ opacity: 0, scale: 0.92 }}
+    animate={{ opacity: 1, scale: [0.92, 1.06, 1.0] }}
+    transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
+    whileHover={{ scale: 1.03, y: -2 }}
+    whileTap={{ scale: 0.98 }}
+  >
       <img
         src="/btn-next.png"
         alt=""
@@ -510,6 +510,58 @@ useEffect(() => {
     </motion.button>
   )}
 </AnimatePresence>
+
+{/* ===== 既読専用：左上 “インベントリ（あなたの持ち物）” 固定 ===== */}
+<AnimatePresence>
+  {hasSeenPopup && popupStep === 0 && (
+    <motion.div
+      key="inventory"
+      className="fixed z-[61] tg-inventory"
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      style={{
+        left: "calc(16px + env(safe-area-inset-left))",
+        top:  "calc(16px + env(safe-area-inset-top))",
+      }}
+    >
+      {/* ラベル（テキストボタン） */}
+      <button
+        type="button"
+        className="tg-inv-label"
+        onClick={() => setPopupStep(2)}   // ← クリックでストーリー再表示
+      >
+        あなたの持ち物
+      </button>
+
+      {/* アイテム枠：3スロット（1つ目に“生徒証”） */}
+      <div className="tg-inv-grid">
+        {/* 1: 生徒証（クリックでSTEP2を再表示） */}
+        <button
+          type="button"
+          className="tg-inv-slot tg-inv-hasitem"
+          onClick={() => setPopupStep(2)}
+          aria-label="生徒証（ストーリーをもう一度）"
+        >
+          <img
+            src="/btn-next.png"
+            alt=""
+            className="tg-inv-item tg-glow-img"
+            draggable={false}
+          />
+        </button>
+
+        {/* 2: 空きスロット */}
+        <div className="tg-inv-slot tg-inv-empty" aria-hidden />
+
+        {/* 3: 空きスロット */}
+        <div className="tg-inv-slot tg-inv-empty" aria-hidden />
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
 
       {/* 右下：チケット購入ボタン（STEP2終了後に出現） */}
       <AnimatePresence>
@@ -797,6 +849,83 @@ useEffect(() => {
   0%, 100% { transform: translateX(0); opacity: .7; }
   50%      { transform: translateX(2px); opacity: 1; }
 }
+
+/* ===== 左上インベントリ（あなたの持ち物） ===== */
+.tg-inventory{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.tg-inv-label{
+  font-size: clamp(11px, 2.6vw, 12px);
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  color:#111;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transition: transform .15s ease, background .15s ease;
+}
+.tg-inv-label:hover{ transform: translateY(-1px); background:#fff; }
+
+.tg-inv-grid{
+  --inv-size: clamp(44px, 10vw, 68px);
+  display:grid;
+  grid-auto-flow: column;
+  gap: 6px;
+}
+
+.tg-inv-slot{
+  width: var(--inv-size);
+  height: var(--inv-size);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.55) 100%),
+    radial-gradient(120% 120% at 0% 0%, rgba(0,180,255,0.12), transparent 60%);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 -1px 0 rgba(0,0,0,0.04),
+    0 8px 20px rgba(0,0,0,0.12);
+  display:grid;
+  place-items:center;
+}
+
+.tg-inv-slot::after{ /* 外枠のうっすらハイライト */
+  content:"";
+  position:absolute; inset:0;
+  border-radius:12px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+  pointer-events:none;
+}
+
+.tg-inv-empty{
+  background:
+    linear-gradient(180deg, rgba(240,242,247,0.85) 0%, rgba(235,238,245,0.85) 100%),
+    repeating-linear-gradient(45deg, transparent 0 8px, rgba(0,0,0,0.03) 8px 16px);
+  border-style: dashed;
+  border-color: rgba(0,0,0,0.12);
+}
+
+.tg-inv-item{
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  /* 発光は既存 .tg-glow-img のアニメがのる */
+}
+
+.tg-inv-hasitem{
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.tg-inv-hasitem:hover{ transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,0.16); }
+
 
 
       `}</style>
