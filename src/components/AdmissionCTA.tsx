@@ -19,7 +19,7 @@ export default function AdmissionCTA() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="もっと知りたい！ガチ文高等学校について"
+          aria-label="ちゃんと知りたい！ガチ文高等学校について"
           className="group relative select-none cursor-pointer"
         >
           {/* 親のサイズでボタンサイズを管理 */}
@@ -55,12 +55,12 @@ export default function AdmissionCTA() {
                   text-[28px] md:text-[40px] drop-shadow-[0_2px_0_rgba(0,0,0,.18)]
                 `}>
 
-                  もっと知りたい！
+                  ガチ文高等学校を知りたい！
                 </div>
                 <div className={`mt-2 text-white/95 font-semibold tracking-wide text-[14px] md:text-[18px]`}>
 
                   <span className="mx-1">✿</span>
-                  ガチ文高等学校について
+                  アドミッション・ポリシーはこちら
                   <span className="mx-1">✿</span>
                 </div>
               </div>

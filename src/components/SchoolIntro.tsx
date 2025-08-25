@@ -88,7 +88,7 @@ export default function SchoolIntro() {
 
         {/* 2) 学校の説明（“文化祭の前夜”カード） */}
         <motion.div
-          className="relative z-30 rounded-2xl bg-black/35 ring-1 ring-white/10 backdrop-blur-sm p-5 md:p-8"
+          className="relative z-30 rounded-2xl ring-1 ring-white/10 backdrop-blur-sm p-5 md:p-8"
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
@@ -215,33 +215,51 @@ export default function SchoolIntro() {
   </motion.button>
 </div>
 
-
-      {/* ★★★ スロー文字（教頭カードのあと／独立の相対コンテナ） ★★★ */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 my-16 md:my-24">
-        <div className="relative h-[28vh] md:h-[36vh] pointer-events-none overflow-hidden z-0">
-          {/* ここから内側だけ absolute。top-% はそのまま使えます */}
-          <div className="absolute inset-0">
-            <div className="absolute -left-[-80vw] top-[0%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
-              魂の熱量がすべてを変える！タイムマシーンをつくってます！いつでもガチで生きよう！
-            </div>
-            <div className="absolute -left-[-25vw] top-[15%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
-              SASUKEを作りたい アーティストになりたい　夢見心地で生きていきたい 諦めたくない　死ぬまでやりたい
-            </div>
-            <div className="absolute -left-[-38vw] top-[30%] whitespace-nowrap text-[3vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
-              自己実現のMVPを作り続ける それがガチ文化祭の使命
-            </div>
-            <div className="absolute -left-[-20vw] top-[75%] whitespace-nowrap text-[7vw] font-extrabold tracking-widest animate-marquee-medium opacity-[0.35]">
-              目に見えない大切なもの　ガチ文化祭=人生　お前らみたいな大人がいるから涙を流せる感動が殺されていくんだ
-            </div>
-            <div className="absolute -left-[-40vw] top-[62%] whitespace-nowrap text-[4vw] font-extrabold tracking-widest animate-marquee-extra opacity-[0.35]">
-              超悔しい　あのときああすれば
-            </div>
-            <div className="absolute -left-[-30vw] top-[40%] whitespace-nowrap text-[5vw] font-extrabold tracking-widest animate-marquee-slow opacity-[0.35]">
-              もっとやればよかった
-            </div>
-          </div>
+{/* ★★★ スロー文字（フルブリード版） ★★★ */}
+<div className="my-16 md:my-24">
+  <div className="relative -mx-[calc(50vw-50%)] [--speed:1.6]">
+    <div className="relative w-screen h-[28vh] md:h-[36vh] overflow-hidden pointer-events-none">
+      <div className="absolute inset-0">
+        <div className="marquee-line top-[0%] text-[7vw] font-extrabold tracking-widest opacity-[0.35] [--dur:28s]">
+          魂の熱量がすべてを変える！タイムマシーンをつくってます！いつでもガチで生きよう！
+        </div>
+        <div className="marquee-line top-[15%] text-[5vw] font-extrabold tracking-widest opacity-[0.35] [--dur:34s] [--delay:-4s]">
+          SASUKEを作りたい アーティストになりたい　夢見心地で生きていきたい 諦めたくない　死ぬまでやりたい
+        </div>
+        <div className="marquee-line top-[30%] text-[3vw] font-extrabold tracking-widest opacity-[0.35] [--dur:38s] [--delay:-8s]">
+          自己実現のMVPを作り続ける それがガチ文化祭の使命
+        </div>
+        <div className="marquee-line top-[75%] text-[7vw] font-extrabold tracking-widest opacity-[0.35] [--dur:32s] [--delay:-2s]">
+          目に見えない大切なもの　ガチ文化祭=人生　お前らみたいな大人がいるから涙を流せる感動が殺されていくんだ
+        </div>
+        <div className="marquee-line top-[62%] text-[4vw] font-extrabold tracking-widest opacity-[0.35] [--dur:40s] [--delay:-6s]">
+          超悔しい　あのときああすれば
+        </div>
+        <div className="marquee-line top-[40%] text-[5vw] font-extrabold tracking-widest opacity-[0.35] [--dur:36s] [--delay:-10s]">
+          もっとやればよかった
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<style jsx global>{`
+  .marquee-line{
+    position:absolute;
+    left:0;
+    white-space:nowrap;
+    will-change: transform;
+    animation: marqueeX calc(var(--dur, 20s) * var(--speed, 1)) linear infinite;
+    animation-delay: var(--delay, 0s);
+    transform: translateZ(0);
+  }
+  @keyframes marqueeX {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+`}</style>
+
+
       
       <div className="relative mb-24 md:mb-32 mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div
@@ -388,6 +406,23 @@ export default function SchoolIntro() {
         .delay-4 { animation-delay: 12s; }
         .marquee-once { animation: marquee-once 18s linear forwards; }
       `}</style>
+
+      <style jsx global>{`
+  /* フルブリードの横流し。テキスト自身の幅に依存せず“画面幅”で端→端 */
+  .marquee-line{
+    position:absolute;
+    left:0;
+    white-space:nowrap;
+    will-change: transform;
+    animation: marqueeX var(--dur, 20s) linear infinite;
+    animation-delay: var(--delay, 0s);
+  }
+  @keyframes marqueeX {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+`}</style>
+
 
       {/* 余白（下） */}
       <div className="h-40 md:h-56" />
