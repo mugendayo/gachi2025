@@ -49,59 +49,69 @@ export default function AdmissionSlides({ slides }: Props) {
       >
         <div className="flex h-full w-full">
           {slides.map((s, i) => (
-            <section
-              key={i}
-              className="snap-start shrink-0 w-full h-full px-4 md:px-8 py-5"
-              aria-roledescription="slide"
-              aria-label={`${i + 1} / ${slides.length}`}
+          // ...中略...
+          <section
+            key={i}
+            className="snap-start shrink-0 w-full h-full px-4 md:px-8 py-5"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} / ${slides.length}`}
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="h-full min-h-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 flex flex-col"
             >
-              <motion.div
-                initial={{ y: 16, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="h-full rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 flex flex-col"
-              >
-                <h3 className="text-lg md:text-xl font-bold text-gray-900">{s.title}</h3>
+              {/* 固定ヘッダ部分（タイトル） */}
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 flex-shrink-0">
+                {s.title}
+              </h3>
 
+              {/* 画像（あれば表示）: つぶれ防止 & 画面に応じて上限 */}
+              {s.imageSrc && (
+                <div className="mt-3 flex justify-center flex-shrink-0">
+                  <img
+                    src={s.imageSrc}
+                    alt={s.title}
+                    className="w-auto object-contain rounded-lg shadow max-h-[48svh] md:max-h-[42vh]"
+                  />
+                </div>
+              )}
+
+              {/* 可変領域：本文やリストはここで縦スクロール可能 */}
+              <div className="mt-3 flex-1 overflow-y-auto pr-1 overscroll-contain">
                 {s.body && (
-                  <p className="mt-3 text-[15px] md:text-[16px] leading-relaxed text-gray-800">
+                  <p className="text-[15px] md:text-[16px] leading-relaxed text-gray-800">
                     {s.body}
                   </p>
                 )}
 
                 {s.points && s.points.length > 0 && (
-                  <ul className="mt-4 space-y-2 text-[15px] text-gray-800 list-disc pl-5">
+                  <ul className="mt-3 space-y-2 text-[15px] text-gray-800 list-disc pl-5">
                     {s.points.map((p, pi) => (
                       <li key={pi}>{p}</li>
                     ))}
                   </ul>
                 )}
+              </div>
 
-                {s.ctaText && s.ctaHref && (
-                  <div className="mt-auto pt-5">
-                    <a
-                      href={s.ctaHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center rounded-full bg-black text-white px-5 py-2 text-sm hover:opacity-90"
-                    >
-                      {s.ctaText}
-                    </a>
-                  </div>
-                )}
-                { s.imageSrc && (
-                <div className="mt-4 flex justify-center">
-                    <img
-                    src={s.imageSrc}
-                    alt={s.title}
-                    className="max-h-[320px] w-auto object-contain rounded-lg shadow"
-                    />
+              {/* CTA は最下部に固定されるイメージ（あれば） */}
+              {s.ctaText && s.ctaHref && (
+                <div className="mt-4 pt-2 flex-shrink-0">
+                  <a
+                    href={s.ctaHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded-full bg-black text-white px-5 py-2 text-sm hover:opacity-90"
+                  >
+                    {s.ctaText}
+                  </a>
                 </div>
-                )}
+              )}
+            </motion.div>
+          </section>
 
-              </motion.div>
-            </section>
           ))}
         </div>
       </div>
