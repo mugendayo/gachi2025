@@ -61,3 +61,16 @@ html, body {
   }
 }
 
+@font-face {
+  font-family: 'ChalkHand';
+  src: url('/fonts/sora.ttf') format('truetype');
+  font-display: swap;
+}
+
+.font-chalk {
+  font-family: 'ChalkHand', sans-serif;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.8),
+    0 0 3px rgba(255,255,255,.6),
+    0 0 6px rgba(255,255,255,.3);
+}

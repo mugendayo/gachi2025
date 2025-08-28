@@ -180,6 +180,13 @@ export default function Hero() {
     }
   }, [popupStep]);
 
+  const cardButtons = [
+  { label: "わかばガイド", href: "/link-1", color: "from-amber-400 to-orange-500 text-white" },
+  { label: "去年の動画",   href: "/link-2", color: "from-sky-400 to-blue-600 text-white" },
+  { label: "第1回目の動画", href: "/link-3", color: "from-emerald-400 to-teal-600 text-white" },
+];
+
+
   return (
     <section className="relative min-h-[100svh] md:min-h-screen mb-0">
       {/* 背景動画（sticky） */}
@@ -424,18 +431,43 @@ export default function Hero() {
           <p className="mt-4 opacity-90">
             2025年11月1日（土）～3日（祝）
           </p>
-
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {Array.from({ length: 9 }).map((_, i) => (
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 place-items-center">
+            {cardButtons.map((btn) => (
               <a
-                key={i}
-                href={`/link-${(i % 3) + 1}`}
-                className="block rounded-xl border border-white/20 p-6 hover:bg-white/10 transition"
+                key={btn.href}
+                href={btn.href}
+                className={[
+                  // サイズ：画像の“半分くらい”想定（上限320px）
+                  "w-[90%] max-w-[320px] sm:w-full",
+                  "h-14 rounded-full px-6",
+                      "flex items-center justify-center",
+                      "bg-gradient-to-b " + btn.color,
+                      "text-base font-semibold tracking-wide text-white",
+                      "shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-black/10",
+                      "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
+                      "relative overflow-hidden",
+                  // 色（カードごとに違う）＋グラデ
+                  "bg-gradient-to-b " + btn.color,
+                  // 文字
+                  "text-center text-base font-semibold tracking-wide",
+                  // 影と動き
+                  "shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-black/10",
+                  "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
+                  "relative overflow-hidden",
+                ].join(" ")}
               >
-                カード{["①", "②", "③"][(i % 3)]}
+                {/* 上面ハイライト（任意） */}
+                <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
+                {/* 斜めの“キラン”（既存の .btn-glint を流用） */}
+                <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+                  <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
+                </span>
+                <span className="relative z-10">{btn.label}</span>
               </a>
             ))}
           </div>
+
+
         </div>
       )}
 

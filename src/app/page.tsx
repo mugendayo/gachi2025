@@ -1,7 +1,9 @@
 import Hero from "@/components/Hero";
 import Info from "@/components/Info";
 import CharacterIntro from "@/components/CharacterIntro";
+import StageIntroSection from "@/components/StageIntroSection";
 import SchoolIntro from "@/components/SchoolIntro"; // or 相対パス ../components/SchoolIntro
+import TimeScheduleSection from "@/components/TimeScheduleSection";
 import ImageMarquee, { type MarqueeImage } from "@/components/ImageMarquee";
 
 export default function Page() {
@@ -30,6 +32,8 @@ export default function Page() {
         respectReducedMotion={false}   // ← これがポイント
       />      {/* 追加 */}
       <CharacterIntro />   {/* 追加 */}
+      <StageIntroSection />
+      <TimeScheduleSection />
       <Info />
     </main>
   );
