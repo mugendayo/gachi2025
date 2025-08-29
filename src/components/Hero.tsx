@@ -4,6 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import SummonCTA from "../components/SummonCTA";
 
+// Hero.tsx の最上部(モジュールスコープ)に追加
+declare global {
+  interface Window {
+    __resetCrest?: () => void;
+  }
+}
+
+
 const vLine = {
   hidden: { opacity: 0, y: 8, filter: "blur(2px)" },
   show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.42, ease: "easeOut" } },
@@ -55,8 +63,7 @@ export default function Hero() {
       setCrestAcquired(localStorage.getItem("gbf_crest_acquired") === "1");
 
       // デバッグ用: リセット関数
-      // @ts-ignore
-      window.__resetCrest = () => localStorage.removeItem("gbf_crest_acquired");
+    window.__resetCrest = () => localStorage.removeItem("gbf_crest_acquired");
     } catch { setHasSeenPopup(false); setPopupStep(0); setShowCTA(true); }
   }, []);
 
