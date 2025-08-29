@@ -6,6 +6,7 @@ import SchoolIntro from "@/components/SchoolIntro"; // or 相対パス ../compon
 import TimeScheduleSection from "@/components/TimeScheduleSection";
 import ImageMarquee, { type MarqueeImage } from "@/components/ImageMarquee";
 
+
 export default function Page() {
 
    // ガチ文化祭の写真データをここで定義
@@ -21,6 +22,7 @@ export default function Page() {
       <Hero />
       <SchoolIntro />
         {/* ★ここに追加する！ School → Character の橋渡し帯 */}
+      <StageIntroSection />
       <ImageMarquee
         images={past}
         duration={30}
@@ -32,7 +34,6 @@ export default function Page() {
         respectReducedMotion={false}   // ← これがポイント
       />      {/* 追加 */}
       <CharacterIntro />   {/* 追加 */}
-      <StageIntroSection />
       <TimeScheduleSection />
       <Info />
     </main>

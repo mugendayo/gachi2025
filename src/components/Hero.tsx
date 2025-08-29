@@ -1,43 +1,29 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import SummonCTA from "../components/SummonCTA";
 
 const vLine = {
   hidden: { opacity: 0, y: 8, filter: "blur(2px)" },
-  show: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.42, ease: "easeOut" },
-  },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.42, ease: "easeOut" } },
 } satisfies Variants;
 
-/* =========================
-   STEP2: 行ごと演出の素材
-   ========================= */
 const step2Lines = [
   "生徒証を手に入れたのね！ガチ文高等学校へようこそ！",
   "きみは「生徒」としてタイムスリップしてきたのよ！さあ、文化祭の準備をしなくっちゃ！",
 ];
 
-// 親→子にステップ表示
-const vLinesContainer = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { delayChildren: 0.08, staggerChildren: 0.22 },
-  },
-};
-
 export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
-  const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0); // 0=なし, 1=動画, 2=ストーリー
-  const [hasSeenPopup, setHasSeenPopup] = useState(false); // STEP2を閉じたらtrue
+  const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0);
+  const [hasSeenPopup, setHasSeenPopup] = useState(false);
   const step1VideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // === STEP2（妖精のセリフ）タイプライター用 ===
+  // ★ 校章の取得フラグ（インベントリ表示用）
+  const [crestAcquired, setCrestAcquired] = useState(false);
+
+  // ===== タイプライター =====
   const lines = step2Lines;
   const [lineIdx, setLineIdx] = useState(0);
   const [typed, setTyped] = useState("");
@@ -45,161 +31,114 @@ export default function Hero() {
   const typeSpeed = 34;
 
   const startTyping = (text: string) => {
-    setTyped("");
-    setIsTyping(true);
+    setTyped(""); setIsTyping(true);
     let i = 0;
     const timer = setInterval(() => {
-      i++;
-      setTyped(text.slice(0, i));
-      if (i >= text.length) {
-        clearInterval(timer);
-        setIsTyping(false);
-      }
+      i++; setTyped(text.slice(0, i));
+      if (i >= text.length) { clearInterval(timer); setIsTyping(false); }
     }, typeSpeed);
   };
-
-  const revealAll = () => {
-    if (isTyping) {
-      setTyped(lines[lineIdx]);
-      setIsTyping(false);
-    }
-  };
-
+  const revealAll = () => { if (isTyping) { setTyped(lines[lineIdx]); setIsTyping(false); } };
   const nextLine = () => {
     if (lineIdx < lines.length - 1) {
-      const next = lineIdx + 1;
-      setLineIdx(next);
-      startTyping(lines[next]);
+      const next = lineIdx + 1; setLineIdx(next); startTyping(lines[next]);
     }
   };
 
-  // STEP2 が開いたら毎回最初の行からタイプ開始
-  useEffect(() => {
-    if (popupStep === 2) {
-      setLineIdx(0);
-      startTyping(lines[0]);
-    }
-  }, [popupStep]); // eslint-disable-line
-
-  // 初回判定（マウント時）
+  // ===== 初期化・状態復元 =====
   useEffect(() => {
     try {
-      const seen =
-        typeof window !== "undefined" &&
-        localStorage.getItem("gbf_seen_popup") === "1";
-      setHasSeenPopup(seen);
-      setPopupStep(0);
-      setShowCTA(!seen);
-    } catch {
-      setHasSeenPopup(false);
-      setPopupStep(0);
-      setShowCTA(true);
-    }
+      const seen = typeof window !== "undefined" && localStorage.getItem("gbf_seen_popup") === "1";
+      setHasSeenPopup(seen); setPopupStep(0); setShowCTA(!seen);
+
+      // 取得済み校章
+      setCrestAcquired(localStorage.getItem("gbf_crest_acquired") === "1");
+
+      // デバッグ用: リセット関数
+      // @ts-ignore
+      window.__resetCrest = () => localStorage.removeItem("gbf_crest_acquired");
+    } catch { setHasSeenPopup(false); setPopupStep(0); setShowCTA(true); }
   }, []);
 
-  // CTAは未読のときだけ1秒後に出す
+  // StageIntro が取得完了時に投げるカスタムイベントで同一タブ更新
   useEffect(() => {
-    if (hasSeenPopup) {
-      setShowCTA(false);
-      return;
-    }
+    const onAcq = () => {
+      setCrestAcquired(true);
+      try { localStorage.setItem("gbf_crest_acquired", "1"); } catch {}
+    };
+    window.addEventListener("crest:acquired", onAcq);
+    return () => window.removeEventListener("crest:acquired", onAcq);
+  }, []);
+
+  // 別タブ同期（同一タブには発火しないが一応）
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "gbf_crest_acquired") setCrestAcquired(e.newValue === "1");
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  useEffect(() => { if (popupStep === 2) { setLineIdx(0); startTyping(lines[0]); } }, [popupStep]); // eslint-disable-line
+
+  useEffect(() => {
+    if (hasSeenPopup) { setShowCTA(false); return; }
     const t = setTimeout(() => setShowCTA(true), 1000);
     return () => clearTimeout(t);
   }, [hasSeenPopup]);
 
-  // ポップアップ表示中はスクロールロック
   useEffect(() => {
     const lock = popupStep !== 0;
-    const html = document.documentElement;
-    const body = document.body;
-
+    const html = document.documentElement, body = document.body;
     if (lock) {
-      html.style.overflow = "hidden";
-      body.style.overscrollBehavior = "none";
+      html.style.overflow = "hidden"; body.style.overscrollBehavior = "none";
       const prevent = (e: TouchEvent) => e.preventDefault();
       body.addEventListener("touchmove", prevent, { passive: false });
-      return () => {
-        body.removeEventListener("touchmove", prevent);
-        html.style.overflow = "";
-        body.style.overscrollBehavior = "";
-      };
-    } else {
-      html.style.overflow = "";
-      body.style.overscrollBehavior = "";
-    }
+      return () => { body.removeEventListener("touchmove", prevent); html.style.overflow = ""; body.style.overscrollBehavior = ""; };
+    } else { html.style.overflow = ""; body.style.overscrollBehavior = ""; }
   }, [popupStep]);
 
-  /* ポップアップ完了までスクロールロック（初回のみ） */
   useEffect(() => {
     const lock = !hasSeenPopup;
-    const html = document.documentElement;
-    const body = document.body;
-
+    const html = document.documentElement, body = document.body;
     if (lock) {
-      html.style.overflow = "hidden";
-      body.style.overscrollBehavior = "none";
+      html.style.overflow = "hidden"; body.style.overscrollBehavior = "none";
       const prevent = (e: TouchEvent) => e.preventDefault();
       body.addEventListener("touchmove", prevent, { passive: false });
-      return () => {
-        body.removeEventListener("touchmove", prevent);
-        html.style.overflow = "";
-        body.style.overscrollBehavior = "";
-      };
-    } else {
-      html.style.overflow = "";
-      body.style.overscrollBehavior = "";
-    }
+      return () => { body.removeEventListener("touchmove", prevent); html.style.overflow = ""; body.style.overscrollBehavior = ""; };
+    } else { html.style.overflow = ""; body.style.overscrollBehavior = ""; }
   }, [hasSeenPopup]);
 
   const openStep1 = () => setPopupStep(1);
-  const goStep2 = () => setPopupStep(2);
+  const goStep2   = () => setPopupStep(2);
 
-  /* STEP2のみ外側クリックで終了 */
   const finishPopup = () => {
     setPopupStep(0);
     if (!hasSeenPopup) {
-      setHasSeenPopup(true);
-      setShowCTA(false);
-      try {
-        localStorage.setItem("gbf_seen_popup", "1");
-      } catch {}
+      setHasSeenPopup(true); setShowCTA(false);
+      try { localStorage.setItem("gbf_seen_popup", "1"); } catch {}
     }
   };
 
-  /* STEP1: 縦動画 自動再生フォールバック */
   useEffect(() => {
     if (popupStep === 1 && step1VideoRef.current) {
       const v = step1VideoRef.current;
-      const tryPlay = () => {
-        const p = v.play?.();
-        if (p && typeof p.then === "function") p.catch(() => {});
-      };
-      tryPlay();
-      const t = setTimeout(tryPlay, 250);
-      return () => clearTimeout(t);
+      const tryPlay = () => { const p = v.play?.(); if (p && typeof p.then === "function") p.catch(() => {}); };
+      tryPlay(); const t = setTimeout(tryPlay, 250); return () => clearTimeout(t);
     }
   }, [popupStep]);
 
-  const cardButtons = [
-  { label: "わかばガイド", href: "/link-1", color: "from-amber-400 to-orange-500 text-white" },
-  { label: "去年の動画",   href: "/link-2", color: "from-sky-400 to-blue-600 text-white" },
-  { label: "第1回目の動画", href: "/link-3", color: "from-emerald-400 to-teal-600 text-white" },
-];
-
+  const cardButtons = useMemo(() => ([
+    { label: "わかばガイド",  href: "/link-1", color: "from-amber-400 to-orange-500 text-white" },
+    { label: "去年の動画",    href: "/link-2", color: "from-sky-400 to-blue-600 text-white" },
+    { label: "第1回目の動画", href: "/link-3", color: "from-emerald-400 to-teal-600 text-white" },
+  ]), []);
 
   return (
     <section className="relative min-h-[100svh] md:min-h-screen mb-0">
-      {/* 背景動画（sticky） */}
+      {/* 背景動画 */}
       <div className="sticky top-0 h-[100svh] z-0 relative pointer-events-none">
-        <video
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-          loop
-          preload="metadata"
-          poster="/og.jpg"
-        >
+        <video className="w-full h-full object-cover" autoPlay muted playsInline loop preload="metadata" poster="/og.jpg">
           <source src="/hero.mp4" type="video/mp4" />
         </video>
       </div>
@@ -207,13 +146,7 @@ export default function Hero() {
       {/* 中央CTA */}
       <AnimatePresence>
         {showCTA && popupStep === 0 && (
-          <div
-            className={
-              hasSeenPopup
-                ? "relative z-20 mt-14 flex justify-center"
-                : "fixed inset-0 z-[1200] grid place-items-center"
-            }
-          >
+          <div className={hasSeenPopup ? "relative z-20 mt-14 flex justify-center" : "fixed inset-0 z-[1200] grid place-items-center"}>
             <div className={hasSeenPopup ? "" : "pointer-events-auto"}>
               <SummonCTA label="Click" onClick={openStep1} autoShowAfterMs={0} />
             </div>
@@ -221,194 +154,45 @@ export default function Hero() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {!hasSeenPopup && popupStep === 0 && showCTA && (
-          <div className="fixed inset-0 z-[1200] grid place-items-center">
-            <div className="pointer-events-auto">
-              <SummonCTA
-                label="Click"
-                onClick={() => setPopupStep(1)}
-                autoShowAfterMs={0}
-              />
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ポップアップ（STEP1/STEP2） */}
+      {/* ポップアップ */}
       <AnimatePresence>
         {popupStep !== 0 && (
           <>
-            <motion.div
-              className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={finishPopup}
-              aria-hidden="true"
-            />
-
-            <motion.div
-              className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.25 }}
-              aria-modal="true"
-              role="dialog"
-              onKeyDown={(e) => {
-                if (e.key === "Escape") finishPopup();
-              }}
-              tabIndex={-1}
-            >
-              <motion.div
-                key={`step-${popupStep}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.25 }}
-                className="pointer-events-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
+            <motion.div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={finishPopup} aria-hidden="true" />
+            <motion.div className="fixed inset-0 z-[1001] grid place-items-center p-6 pointer-events-none" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.25 }} aria-modal="true" role="dialog" tabIndex={-1} onKeyDown={(e)=>{ if(e.key==="Escape") finishPopup(); }}>
+              <motion.div key={`step-${popupStep}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.25 }} className="pointer-events-auto" onClick={(e)=>e.stopPropagation()}>
                 {popupStep === 1 ? (
-                  // ===== STEP1: 縦長映像 =====
-                  <div
-                    className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black"
-                    style={{
-                      width: "min(92vw, 480px)",
-                      aspectRatio: "9 / 16",
-                    }}
-                  >
-                    <video
-                      ref={step1VideoRef}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      autoPlay
-                      muted
-                      playsInline
-                      controls={false}
-                      loop={false}
-                      preload="metadata"
-                      poster="/goal-poster.jpg"
-                      onCanPlay={() => {
-                        try {
-                          step1VideoRef.current?.play?.();
-                        } catch {}
-                      }}
-                    >
+                  // STEP1: 縦動画
+                  <div className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-black" style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}>
+                    <video ref={step1VideoRef} className="absolute inset-0 w-full h-full object-cover" autoPlay muted playsInline controls={false} loop={false} preload="metadata" poster="/goal-poster.jpg" onCanPlay={()=>{ try { step1VideoRef.current?.play?.(); } catch {} }}>
                       <source src="/goal.mp4" type="video/mp4" />
                     </video>
-
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/75 to-transparent" />
-
-                    {/* 画像ボタン＋RPG風テキスト */}
                     <div className="absolute inset-x-0 bottom-5 flex justify-center">
                       <div className="flex flex-col items-center">
-                        <motion.button
-                          onClick={goStep2}
-                          aria-label="次へ"
-                          className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 group cursor-pointer"
-                          style={{ width: "clamp(160px, 40vw, 280px)" }}
-                          initial={{ opacity: 0, scale: 0.92 }}
-                          animate={{ opacity: 1, scale: [0.92, 1.06, 1.0] }}
-                          transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
-                          whileHover={{ scale: 1.03, y: -2 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <img
-                            src="/btn-next.png"
-                            alt=""
-                            className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] transition will-change-transform"
-                            draggable={false}
-                          />
-                          <span
-                            aria-hidden
-                            className="pointer-events-none absolute inset-0 overflow-hidden rounded-full"
-                          >
-                            <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
-                          </span>
+                        <motion.button onClick={goStep2} aria-label="次へ" className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 group cursor-pointer" style={{ width: "clamp(160px, 40vw, 280px)" }} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: [0.92, 1.06, 1.0] }} transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }} whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
+                          <img src="/btn-next.png" alt="" className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] transition will-change-transform" draggable={false} />
+                          <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full"><span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" /></span>
                           <span className="sr-only">次へ</span>
                         </motion.button>
-
-                        <motion.div
-                          onClick={goStep2}
-                          role="button"
-                          tabIndex={0}
-                          className="rpg-chip cursor-pointer select-none -mt-14"
-                          initial={{ opacity: 0, y: 0 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            delay: 0.85,
-                            duration: 0.35,
-                            ease: "easeOut",
-                          }}
-                        >
-                          <span className="rpg-chip-deco" aria-hidden>
-                            ◆
-                          </span>
-                          生徒証を拾う
-                          <span className="rpg-chip-caret" aria-hidden>
-                            ▸
-                          </span>
+                        <motion.div onClick={goStep2} role="button" tabIndex={0} className="rpg-chip cursor-pointer select-none -mt-14" initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.35, ease: "easeOut" }}>
+                          <span className="rpg-chip-deco" aria-hidden>◆</span>生徒証を拾う<span className="rpg-chip-caret" aria-hidden>▸</span>
                         </motion.div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  // ===== STEP2: 妖精が喋る =====
-                  <div
-                    className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white"
-                    style={{
-                      width: "min(92vw, 480px)",
-                      aspectRatio: "9 / 16",
-                    }}
-                  >
+                  // STEP2: 妖精のセリフ
+                  <div className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white" style={{ width: "min(92vw, 480px)", aspectRatio: "9 / 16" }}>
                     <div className="absolute inset-0 grid place-items-center">
                       <div className="flex flex-col items-center -translate-y-4 w-full px-4">
-                        <motion.img
-                          src="/fairy.png"
-                          alt="妖精"
-                          className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
-                          draggable={false}
-                          animate={{ y: [0, -6, 0] }}
-                          transition={{
-                            duration: 2.8,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                        />
-
-                        <motion.button
-                          type="button"
-                          onClick={() => (isTyping ? revealAll() : nextLine())}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.28 }}
-                          className="w-[92%] md:w-[85%] bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-4 md:p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
-                          style={{
-                            fontFamily: "DotGothic16, system-ui, sans-serif",
-                            minHeight: 120,
-                          }}
-                        >
-                          <p className="text-[17px] md:text-[18px] leading-relaxed text-gray-800 break-words">
-                            {typed}
-                            {isTyping && <span className="tw-caret">▋</span>}
-                          </p>
-                          <div className="mt-2 text-[11px] text-gray-500 select-none">
-                            {isTyping
-                              ? "タップで全文表示"
-                              : lineIdx < lines.length - 1
-                              ? "タップで次のセリフ"
-                              : "下のボタンで閉じる"}
-                          </div>
+                        <motion.img src="/fairy.png" alt="妖精" className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5" draggable={false} animate={{ y: [0, -6, 0] }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }} />
+                        <motion.button type="button" onClick={() => (isTyping ? revealAll() : nextLine())} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }} className="w-[92%] md:w-[85%] bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-4 md:p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400" style={{ fontFamily: "DotGothic16, system-ui, sans-serif", minHeight: 120 }}>
+                          <p className="text-[17px] md:text-[18px] leading-relaxed text-gray-800 break-words">{typed}{isTyping && <span className="tw-caret">▋</span>}</p>
+                          <div className="mt-2 text-[11px] text-gray-500 select-none">{isTyping ? "タップで全文表示" : lineIdx < lines.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる"}</div>
                         </motion.button>
-
                         <div className="mt-9 flex justify-center w-full">
-                          <button
-                            onClick={finishPopup}
-                            className="px-5 py-2 text-sm rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
-                          >
-                            閉じる
-                          </button>
+                          <button onClick={finishPopup} className="px-5 py-2 text-sm rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition">閉じる</button>
                         </div>
                       </div>
                     </div>
@@ -419,6 +203,7 @@ export default function Hero() {
           </>
         )}
       </AnimatePresence>
+      
 
       {/* ===== 前景：STEP2終了後のコンテンツ ===== */}
       {hasSeenPopup && (
@@ -471,49 +256,32 @@ export default function Hero() {
         </div>
       )}
 
-      {/* ===== 左上：もちもの ===== */}
-      <AnimatePresence>
-        {hasSeenPopup && popupStep === 0 && (
-          <motion.div
-            key="inventory"
-            className="fixed z-[61] tg-inventory"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            style={{
-              left: "calc(16px + env(safe-area-inset-left))",
-              top: "calc(16px + env(safe-area-inset-top))",
-            }}
-          >
-            <button
-              type="button"
-              className="tg-inv-label"
-              onClick={() => setPopupStep(2)}
-            >
-              もちもの
-            </button>
+{/* ===== 左上：もちもの（常時DOMに存在・表示はフェード） ===== */}
+<div
+  className="fixed z-[61] tg-inventory"
+  style={{
+    left: "calc(16px + env(safe-area-inset-left))",
+    top: "calc(16px + env(safe-area-inset-top))",
+    opacity: hasSeenPopup && popupStep === 0 ? 1 : 0,
+    pointerEvents: hasSeenPopup && popupStep === 0 ? "auto" : "none",
+  }}
+>
+  <button type="button" className="tg-inv-label" onClick={() => setPopupStep(2)}>
+    もちもの
+  </button>
+  <div className="tg-inv-grid">
+    {/* 生徒証（既存） */}
+    <button type="button" className="tg-inv-slot tg-inv-hasitem" onClick={() => setPopupStep(2)}>
+      <img src="/btn-next.png" alt="" className="tg-inv-item tg-glow-img" />
+    </button>
 
-            <div className="tg-inv-grid">
-              <button
-                type="button"
-                className="tg-inv-slot tg-inv-hasitem"
-                onClick={() => setPopupStep(2)}
-                aria-label="生徒証（ストーリーをもう一度）"
-              >
-                <img
-                  src="/btn-next.png"
-                  alt=""
-                  className="tg-inv-item tg-glow-img"
-                  draggable={false}
-                />
-              </button>
-              <div className="tg-inv-slot tg-inv-empty" aria-hidden />
-              <div className="tg-inv-slot tg-inv-empty" aria-hidden />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    {/* 校章の着地点（空でも常時存在） */}
+    <div id="inv-crest-slot" className="tg-inv-slot tg-inv-empty" aria-hidden />
+
+    {/* 予備スロット */}
+    <div className="tg-inv-slot tg-inv-empty" aria-hidden />
+  </div>
+</div>
 
       {/* ===== 右下：魔法陣（上）＋チケット（下） ===== */}
       <AnimatePresence>
@@ -903,3 +671,4 @@ export default function Hero() {
     </section>
   );
 }
+
