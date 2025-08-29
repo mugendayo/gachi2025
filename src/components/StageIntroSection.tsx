@@ -359,16 +359,16 @@ export default function StageIntroSection({
   ];
 
   return (
-    <section
-      id="stage"
-      className="relative pt-20 md:pt-28 bg-cover bg-center"
-      style={{ backgroundImage: "url('/stage/bg-vert.png')" }}
-    >
+  <section
+   id="stage"
+   className="relative pt-20 md:pt-28 bg-cover bg-center"
+   style={{ backgroundImage: "url('/stage/bg-vert.png')", overflowX: "clip" }}
+ >
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white to-white/60" />
 
       <div className="mx-auto max-w-[1100px] px-4 sm:px-6">
         {/* タイトル＋右側画像（sp: タイトル上に重ねる / md+: 2カラム） */}
-        <div className="relative grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-10 overflow-visible">
+        <div className="relative grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-10">
           <VerticalTitle small="舞台は" big="奈良の学校" align="left" />
 
           {/* nara-1：右に大胆にはみ出す（bpで強弱） */}
