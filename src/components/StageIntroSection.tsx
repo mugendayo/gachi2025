@@ -185,7 +185,7 @@ function FallingFour({
   const startOffsetY = bp === "lg" ? fallDistance.lg : bp === "md" ? fallDistance.md : fallDistance.sm;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-0">
+    <div className="pointer-events-none absolute inset-0 z-30">
       {items.map((it, i) => {
         const tx = (bp === "lg" ? it.dxLg ?? it.dxMd ?? it.dx : bp === "md" ? it.dxMd ?? it.dx : it.dx) + centerOffset.x;
         const ty = (bp === "lg" ? it.dyLg ?? it.dyMd ?? it.dy : bp === "md" ? it.dyMd ?? it.dy : it.dy) + centerOffset.y;
@@ -292,12 +292,55 @@ export default function StageIntroSection({
   const [showDrops, setShowDrops] = useState(false);
   const [ctaOpen, setCtaOpen] = useState(false); // ポップアップ制御
 
-  const drops: DropItem[] = [
-    { src: "/stage/drop-1.jpg", dx: 0,   dy: -110, dxMd: 0,    dyMd: -170, dxLg: 0,    dyLg: -210, delay: 0.00, rotate: -6, z: 4, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-2.jpg", dx: -90, dy:  -60, dxMd: -170, dyMd: -100, dxLg: -210, dyLg: -130, delay: 0.18, rotate: -4, z: 8, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-3.jpg", dx: 120, dy:   10, dxMd: 200,  dyMd:   30, dxLg: 260,  dyLg:   40, delay: 0.36, rotate:  6, z: 8, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-4.jpg", dx: -70, dy:  110, dxMd: -150, dyMd:  160, dxLg: -200, dyLg:  200, delay: 0.54, rotate:  8, z: 4, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
-  ];
+// ★ 下方向へ深くブリードする座標に更新
+const drops: DropItem[] = [
+  {
+    src: "/stage/drop-1.jpg",
+    dx: 0,
+    dy: 460,     // sp
+    dxMd: 0,
+    dyMd: 760,   // md
+    dxLg: 0,
+    dyLg: 900,   // lg
+    delay: 0.00, rotate: -6, z: 12,
+    w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]"
+  },
+  {
+    src: "/stage/drop-2.jpg",
+    dx: -90,
+    dy: 420,
+    dxMd: -170,
+    dyMd: 720,
+    dxLg: -210,
+    dyLg: 860,
+    delay: 0.18, rotate: -4, z: 14,
+    w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]"
+  },
+  {
+    src: "/stage/drop-3.jpg",
+    dx: 120,
+    dy: 520,
+    dxMd: 200,
+    dyMd: 820,
+    dxLg: 260,
+    dyLg: 960,
+    delay: 0.36, rotate: 6, z: 14,
+    w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]"
+  },
+  {
+    src: "/stage/drop-4.jpg",
+    dx: -70,
+    dy: 600,
+    dxMd: -150,
+    dyMd: 900,
+    dxLg: -200,
+    dyLg: 1040,
+    delay: 0.54, rotate: 8, z: 12,
+    w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]"
+  },
+];
+
+
 
   return (
     <section
