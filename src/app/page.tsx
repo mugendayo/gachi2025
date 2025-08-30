@@ -23,7 +23,12 @@ export default function Page() {
       <SchoolIntro />
         {/* ★ここに追加する！ School → Character の橋渡し帯 */}
       <StageIntroSection />
-      <ImageMarquee
+      
+      <CharacterIntro />   {/* 追加 */}
+      <TimeScheduleSection />
+      <Info />
+
+    <ImageMarquee
         images={past}
         duration={30}
         heightClass="h-24 md:h-28"
@@ -33,9 +38,6 @@ export default function Page() {
         framed
         respectReducedMotion={false}   // ← これがポイント
       />      {/* 追加 */}
-      <CharacterIntro />   {/* 追加 */}
-      <TimeScheduleSection />
-      <Info />
     </main>
   );
 }

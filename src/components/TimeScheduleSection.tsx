@@ -56,16 +56,8 @@ function ChalkText({ text }: { text: string }) {
 
 /* ========= 縦書き「次へ」ボタン（発光） ========= */
 function ChalkNextButton({
-  label,
-  onClick,
-  className = "",
-  style,
-}: {
-  label: string;
-  onClick: () => void;
-  className?: string;
-  style?: CSSProperties;
-}) {
+  label, onClick, className = "", style,
+}: { label: string; onClick: () => void; className?: string; style?: CSSProperties }) {
   return (
     <button
       type="button"
@@ -130,14 +122,8 @@ function ChalkNextButton({
 
 /* ========= Variants / Data ========= */
 const EASE = [0.16, 1, 0.3, 1] as const;
-const listVariants: Variants = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { staggerChildren: 0.1, duration: 0.35, ease: EASE } },
-};
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 6 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: EASE } },
-};
+const listVariants: Variants = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { staggerChildren: 0.1, duration: 0.35, ease: EASE } } };
+const itemVariants: Variants = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: EASE } } };
 
 type OneDay = {
   key: "day1" | "day2" | "final";
@@ -148,55 +134,46 @@ type OneDay = {
 };
 
 const schedules: OneDay[] = [
-  {
-    key: "day1",
-    heading: "1日目 - 集合＆導入",
-    sub: "舞台に入場。はじまりのベル。",
-    items: [
+  { key: "day1", heading: "1日目 - 集合＆導入", sub: "舞台に入場。はじまりのベル。", items: [
       { time: "13:00", label: "集合・オープニング／ホームルーム" },
       { time: "14:00", label: "校内探検ツアー" },
-    ],
-    youtubeId: "Ade3z8gsutw",
-  },
-  {
-    key: "day2",
-    heading: "2日目 - 準備＆体育祭",
-    sub: "汗かいて笑って、文化祭の芯を作る。",
-    items: [
+    ], youtubeId: "Ade3z8gsutw" },
+  { key: "day2", heading: "2日目 - 準備＆体育祭", sub: "汗かいて笑って、文化祭の芯を作る。", items: [
       { time: "09:00", label: "朝礼・準備開始" },
       { time: "11:00", label: "体育祭（全体競技・クラス対抗）" },
-    ],
-    youtubeId: "pk7cy_tVsjs",
-  },
-  {
-    key: "final",
-    heading: "ガチ文化祭 当日！",
-    sub: "全部を乗せて、幕が上がる。",
-    items: [
+    ], youtubeId: "pk7cy_tVsjs" },
+  { key: "final", heading: "ガチ文化祭 当日！", sub: "全部を乗せて、幕が上がる。", items: [
       { time: "09:30", label: "開会式・来場者入場" },
       { time: "11:00", label: "出し物一斉スタート" },
-    ],
-    youtubeId: "adO_ZaShq34",
-  },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+      { time: "11:00", label: "出し物一斉スタート" },
+
+    ], youtubeId: "adO_ZaShq34" },
 ];
 
 /* ========= 本体 ========= */
 export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: string }) {
   const [idx, setIdx] = useState(0);
   const day = schedules[idx];
-
   const nextLabel = useMemo(() => (idx === 0 ? "次へ ▶︎" : idx === 1 ? "当日へ ▶︎" : "最初に戻る"), [idx]);
   const handleNext = () => setIdx((p) => (p + 1) % schedules.length);
 
   return (
     <section id="schedule" className="relative text-white">
       {/* 背景は常に cover */}
-      <div
-        className="relative w-screen left-1/2 -translate-x-1/2 bg-cover bg-center"
-        style={{ backgroundImage: `url(${bg})` }}
-      >
+      <div className="relative w-screen left-1/2 -translate-x-1/2 bg-cover bg-center" style={{ backgroundImage: `url(${bg})` }}>
         <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-10 md:py-14">
-          {/* 見出し＋本文＋時間割 */}
+          {/* 見出し～時間割 */}
           <div className="relative">
             <ChalkHeading text={day.heading} />
             <div className="mt-1 text-[clamp(12px,1.2vw,22px)] text-white/85">{day.sub}</div>
@@ -218,58 +195,52 @@ export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: s
                 ))}
               </motion.ul>
             </AnimatePresence>
-
-            {/* ===== YouTube（右上にボタンを重ねる） ===== */}
-            <div className="mt-6 md:mt-8 flex flex-col items-center">
-              <div className="w-full max-w-[360px] md:max-w-[860px]">
-                <div className="relative w-full aspect-video rounded-xl overflow-hidden ring-1 ring-white/20 shadow-[0_12px_28px_rgba(0,0,0,.35)] bg-black/30">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${day.youtubeId}?rel=0&modestbranding=1&cc_load_policy=0`}
-                    title="YouTube video"
-                    className="absolute inset-0 w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allowFullScreen
-                    loading="lazy"
-                  />
-
-                  {/* ボタン：md+ は右上に重ね、少し外側へ（調整は right/top/translate で） */}
-                  <div className="hidden md:block absolute right-0 top-0 z-10 pointer-events-none">
-                    <div
-                      className="pointer-events-auto rotate-[6deg] translate-x-3 -translate-y-3"
-                      style={{ transformOrigin: "50% 50%" }}
-                    >
-                      <ChalkNextButton label={nextLabel} onClick={handleNext} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* SP時：動画の下・右寄せにボタン（重なり回避） */}
-              <div className="mt-2 w-full max-w-[720px] flex justify-end md:hidden">
-                <ChalkNextButton label={nextLabel} onClick={handleNext} />
-              </div>
-
-              {/* 画像ボタン 2つ（中央・横並び） */}
-              <div className="mt-4 md:mt-5 w-full max-w-[720px] grid grid-cols-2 place-items-center gap-4 md:gap-6">
-                <a href="/seishun" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                  <img
-                    src="/schedule/btn-seishun.png"
-                    alt="青春の延命治療"
-                    loading="lazy"
-                    className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5"
-                  />
-                </a>
-                <a href="/archives" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                  <img
-                    src="/schedule/btn-archive.png"
-                    alt="過去企画一覧"
-                    loading="lazy"
-                    className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5"
-                  />
-                </a>
-              </div>
+        {/* ==== YouTube：この“内側”を relative にして、右上に1つだけ絶対配置 ==== */}
+        <div className="mt-6 md:mt-8">
+        <div className="relative mx-auto w-full max-w-[360px] md:max-w-[430px]">
+            {/* 右上のCTA（transformで外側に寄せる／1個だけ） */}
+            <div
+            className="absolute z-30 top-0 right-0
+                        translate-x-[10%] -translate-y-[60%]
+                        md:translate-x-[12%] md:-translate-y-[64%]
+                        lg:translate-x-[14%] lg:-translate-y-[70%]"
+            >
+            <div className="rotate-[6deg]" style={{ transformOrigin: "50% 50%" }}>
+                <ChalkNextButton
+                label={nextLabel}
+                onClick={handleNext}
+                className="scale-[0.84] sm:scale-[0.92] md:scale-100"
+                />
             </div>
+            </div>
+
+            {/* 動画本体 */}
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden ring-1 ring-white/20 shadow-[0_12px_28px_rgba(0,0,0,.35)] bg-black/30">
+            <iframe
+                src={`https://www.youtube.com/embed/${day.youtubeId}?rel=0&modestbranding=1&cc_load_policy=0`}
+                title="YouTube video"
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                loading="lazy"
+            />
+            </div>
+        </div>
+
+        {/* 画像ボタン 2つ（中央・横並び） */}
+        <div className="mt-4 md:mt-5 w-full max-w-[720px] mx-auto grid grid-cols-2 place-items-center gap-4 md:gap-6">
+            <a href="/seishun" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+            <img src="/schedule/btn-seishun.png" alt="青春の延命治療"
+                className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5" />
+            </a>
+            <a href="/archives" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+            <img src="/schedule/btn-archive.png" alt="過去企画一覧"
+                className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5" />
+            </a>
+        </div>
+        </div>
+
           </div>
         </div>
       </div>

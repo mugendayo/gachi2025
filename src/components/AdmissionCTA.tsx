@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import AdmissionSlides, { type Slide } from "@/components/AdmissionSlides";
+import CtaButton from "@/components/CtaButton"; // ★ 追加
+
 
 export default function AdmissionCTA() {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      {/* ====== オレンジCTAボタン ====== */}
+      {/* ====== オレンジCTAボタン（共通化） ====== */}
       <motion.div
         initial={{ x: 40, opacity: 0, filter: "blur(2px)" }}
         whileInView={{ x: 0, opacity: 1, filter: "blur(0px)" }}
@@ -18,68 +20,15 @@ export default function AdmissionCTA() {
         transition={{ duration: 0.55, ease: "easeOut" }}
         className="flex justify-center px-4"
       >
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="ちゃんと知りたい！ガチ文高等学校について"
-          className="group relative select-none cursor-pointer"
-        >
-          {/* 親のサイズでボタンサイズを管理 */}
-          <div className="relative w-[min(92vw,740px)]">
-            <div
-              className="relative rounded-[18px] px-6 md:px-10 py-5 md:py-7 text-center w-full  shadow-[0_12px_28px_rgba(0,0,0,.18)]  ring-1 ring-black/5  transition  hover:translate-y-[-2px]  active:translate-y-[0px] "
-              style={{
-                background:
-                  "linear-gradient(180deg,#FFA91A 0%, #FF8A00 100%)",
-              }}
-            >
-              {/* テクスチャ/ハイライト */}
-              <span className="pointer-events-none absolute inset-0 rounded-[18px] bg-[radial-gradient(120%_140%_at_0%_0%,rgba(255,255,255,.25),transparent_60%)] opacity-60 mix-blend-soft-light" />
-              <span className="pointer-events-none absolute inset-0 rounded-[18px] shadow-[inset_0_1.5px_0_rgba(255,255,255,.65)]" />
-              {/* ホバー時カラー強調 */}
-              <span
-                className="pointer-events-none absolute inset-0 rounded-[18px] opacity-0 group-hover:opacity-100 transition"
-                style={{
-                  background:
-                    "linear-gradient(180deg,#FFBE3B00 0%, #FF9C1A66 100%)",
-                }}
-              />
-              {/* 文字：2段 */}
-              <div className="relative z-10">
-                <div className="text-white font-extrabold tracking-wide leading-none text-[28px] md:text-[40px] drop-shadow-[0_2px_0_rgba(0,0,0,.18)]">
-                  ガチ文高等学校を知りたい！
-                </div>
-                <div className="mt-2 text-white/95 font-semibold tracking-wide text-[14px] md:text-[18px]">
-                  <span className="mx-1">✿</span>
-                  アドミッション・ポリシーはこちら
-                  <span className="mx-1">✿</span>
-                </div>
-              </div>
-              {/* きらん */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -inset-y-4 -left-1/3 w-1/2 rotate-12 rounded-[18px]"
-                style={{
-                  background:
-                    "linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)",
-                  filter: "blur(2px)",
-                }}
-              />
-            </div>
-
-            {/* ホバー演出 */}
-            <style jsx>{`
-              .group:hover > div { transform: scale(1.015); }
-              .group:hover > div > span:first-child { opacity: .75; }
-              .group:hover > span { animation: shine 1.2s ease-out both; }
-              @keyframes shine {
-                0% { transform: translateX(-120%) rotate(12deg); opacity: 0; }
-                20% { opacity: .9; }
-                100% { transform: translateX(220%) rotate(12deg); opacity: 0; }
-              }
-            `}</style>
-          </div>
-        </button>
+        <CtaButton
+          onClick={() => setOpen(true)}     // ← ここでモーダルを開く
+          label="ガチ文高等学校って何！？"
+          subLabel="✿ アドミッション・ポリシーはこちら ✿"
+          variant="orange"
+          fullWidth
+          className="w-[min(92vw,740px)]"
+          ariaLabel="ちゃんと知りたい！ガチ文高等学校について"
+        />
       </motion.div>
 
       {/* ====== モーダル（ポータル + スクロールロック） ====== */}
@@ -143,7 +92,7 @@ function ModalPortal({ onClose }: { onClose: () => void }) {
     {
       title: "求める生徒",
       imageSrc: "/past/B.png",
-      body: "本校では陽キャインフルエンサーを拒むことはありません。しかし本校の文化で大切にしているのはここでいう「空想初心者」が「引きこもりアーティスト」に育まれる風土です。恥ずかしいことを真剣にできる生徒を求めています。",
+      body: "本校では陽キャインフルエンサーを拒むことはありません。しかし本校の文化で大切にしているのはここでいう「空想初心者」が「引きこもりアーティスト」恥ずかしいことを真剣にできる生徒を求めています。",
     },
     {
       title: "本校が歓迎する資質・人物項目",
