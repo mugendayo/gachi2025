@@ -1,14 +1,12 @@
 // components/TimeScheduleSection.tsx
 "use client";
-import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { Variants } from "framer-motion";
-import type { CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
-/* ========== 手書き見出し ========== */
+/* ========= 手書き見出し ========= */
 function ChalkHeading({ text }: { text: string }) {
   return (
-    <h3 className="text-3xl md:text-5xl font-chalk leading-relaxed mb-2 text-left">
+    <h3 className="font-chalk leading-relaxed mb-2 text-left text-[clamp(28px,5.2vw,100px)]">
       {text.split("").map((char, i) => {
         const r = (Math.random() - 0.5) * 8;
         const x = (Math.random() - 0.5) * 6;
@@ -20,6 +18,7 @@ function ChalkHeading({ text }: { text: string }) {
               display: "inline-block",
               transform: `translate(${x}px, ${y}px) rotate(${r}deg)`,
               marginRight: char === " " ? "0.6em" : "0.1em",
+              textShadow: "0 0 8px rgba(0,0,0,.35), 0 2px 10px rgba(0,0,0,.35)",
             }}
           >
             {char}
@@ -30,10 +29,10 @@ function ChalkHeading({ text }: { text: string }) {
   );
 }
 
-/* ========== 手書き本文 ========== */
+/* ========= 手書き本文 ========= */
 function ChalkText({ text }: { text: string }) {
   return (
-    <p className="text-white text-[14px] md:text-lg font-chalk leading-relaxed text-left">
+    <p className="text-white font-chalk leading-relaxed text-left text-[clamp(14px,1.4vw,26px)]">
       {text.split("").map((char, i) => {
         const r = (Math.random() - 0.5) * 6;
         const y = (Math.random() - 0.5) * 4;
@@ -44,6 +43,7 @@ function ChalkText({ text }: { text: string }) {
               display: "inline-block",
               transform: `rotate(${r}deg) translateY(${y}px)`,
               marginRight: char === " " ? "0.5em" : "0.05em",
+              textShadow: "0 0 6px rgba(0,0,0,.3), 0 1px 6px rgba(0,0,0,.3)",
             }}
           >
             {char}
@@ -54,7 +54,7 @@ function ChalkText({ text }: { text: string }) {
   );
 }
 
-/* ========== 「次へ」ボタン（円なし・文字大きめ） ========== */
+/* ========= 縦書き「次へ」ボタン（発光） ========= */
 function ChalkNextButton({
   label,
   onClick,
@@ -72,34 +72,63 @@ function ChalkNextButton({
       onClick={onClick}
       aria-label={label}
       className={[
-        "relative grid place-items-center select-none",
-        "text-white font-chalk",
-        "text-4xl md:text-2xl leading-none", // ← サイズ大きく
+        "relative inline-block select-none",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/80 rounded-md",
         className,
       ].join(" ")}
       style={style}
     >
-      {label.split("").map((ch, i) => {
-        const r = (Math.random() - 0.5) * 6;
-        const y = (Math.random() - 0.5) * 4;
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              transform: `rotate(${r}deg) translateY(${y}px)`,
-              marginRight: ch === " " ? "0.4em" : "0.06em",
-            }}
-          >
-            {ch}
-          </span>
-        );
-      })}
+      <span className="tg-breath relative inline-block">
+        <span aria-hidden className="tg-aurora absolute -inset-4 rounded-[16px] blur-xl pointer-events-none" />
+        <span
+          className="tg-text relative z-10 text-white font-chalk leading-none block text-[clamp(36px,5.2vw,86px)]"
+          style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+        >
+          {label.split("").map((ch, i) => {
+            const r = (Math.random() - 0.5) * 6;
+            const y = (Math.random() - 0.5) * 4;
+            return (
+              <span
+                key={i}
+                style={{
+                  display: "inline-block",
+                  transform: `rotate(${r}deg) translateY(${y}px)`,
+                  marginBottom: ch === " " ? "0.6em" : "0.06em",
+                }}
+              >
+                {ch}
+              </span>
+            );
+          })}
+        </span>
+      </span>
+
+      <style jsx>{`
+        .tg-breath { animation: tg-breath-kf 3.2s ease-in-out 0.4s infinite; }
+        @keyframes tg-breath-kf { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+        .tg-aurora{
+          background:
+            radial-gradient(60% 60% at 30% 40%, rgba(255,120,180,.45), transparent 70%),
+            radial-gradient(50% 50% at 70% 60%, rgba(120,220,255,.35), transparent 70%);
+          animation: tg-aurora-move 7.5s ease-in-out infinite alternate, tg-aurora-hue 9s linear infinite;
+          opacity:.75;
+        }
+        @keyframes tg-aurora-move { 0%{transform:translate(-6%,-4%)} 100%{transform:translate(6%,4%)} }
+        @keyframes tg-aurora-hue { 0%{filter:hue-rotate(0deg) saturate(110%)} 50%{filter:hue-rotate(18deg) saturate(130%)} 100%{filter:hue-rotate(0deg) saturate(110%)} }
+        .tg-text{
+          text-shadow:0 0 6px rgba(255,255,255,.55),0 0 18px rgba(255,120,180,.35),0 2px 10px rgba(0,0,0,.30);
+          animation: tg-text-glow 4.2s ease-in-out infinite;
+        }
+        @keyframes tg-text-glow{
+          0%,100%{color:#fff;text-shadow:0 0 6px rgba(255,255,255,.55),0 0 18px rgba(255,120,180,.35),0 2px 10px rgba(0,0,0,.30)}
+          50%{color:#ffd6ea;text-shadow:0 0 8px rgba(255,170,210,.85),0 0 22px rgba(255,120,180,.55),0 2px 12px rgba(0,0,0,.35)}
+        }
+      `}</style>
     </button>
   );
 }
 
-/* ========== Variants ========== */
+/* ========= Variants / Data ========= */
 const EASE = [0.16, 1, 0.3, 1] as const;
 const listVariants: Variants = {
   hidden: { opacity: 0, y: 8 },
@@ -110,14 +139,12 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: EASE } },
 };
 
-/* ========== データ ========== */
 type OneDay = {
   key: "day1" | "day2" | "final";
   heading: string;
   sub: string;
   items: { time: string; label: string }[];
-  chekis: string[];
-  youtubeId: string;   // ← 追加
+  youtubeId: string;
 };
 
 const schedules: OneDay[] = [
@@ -128,20 +155,8 @@ const schedules: OneDay[] = [
     items: [
       { time: "13:00", label: "集合・オープニング／ホームルーム" },
       { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-      { time: "14:00", label: "校内探検ツアー" },
-
     ],
-    chekis: ["/day1-1.jpg", "/day1-2.webp", "/day1-3.jpg"],
-     youtubeId: "Ade3z8gsutw",   // ← 追加
+    youtubeId: "Ade3z8gsutw",
   },
   {
     key: "day2",
@@ -151,8 +166,7 @@ const schedules: OneDay[] = [
       { time: "09:00", label: "朝礼・準備開始" },
       { time: "11:00", label: "体育祭（全体競技・クラス対抗）" },
     ],
-    chekis: ["/day2-1.jpg", "/day2-2.webp", "/day2-3.jpg"],
-     youtubeId: "pk7cy_tVsjs",   // ← 追加
+    youtubeId: "pk7cy_tVsjs",
   },
   {
     key: "final",
@@ -162,69 +176,31 @@ const schedules: OneDay[] = [
       { time: "09:30", label: "開会式・来場者入場" },
       { time: "11:00", label: "出し物一斉スタート" },
     ],
-    chekis: ["/final-1.jpg", "/final-2.jpg", "/final-3.jpg"],
-     youtubeId: "adO_ZaShq34",   // ← 追加
+    youtubeId: "adO_ZaShq34",
   },
 ];
 
-/* ========== 本体 ========== */
+/* ========= 本体 ========= */
 export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: string }) {
   const [idx, setIdx] = useState(0);
   const day = schedules[idx];
 
-  const nextLabel = useMemo(() => {
-    if (idx === 0) return "次へ ▶︎";
-    if (idx === 1) return "当日へ ▶︎";
-    return "最初に戻る";
-  }, [idx]);
-
+  const nextLabel = useMemo(() => (idx === 0 ? "次へ ▶︎" : idx === 1 ? "当日へ ▶︎" : "最初に戻る"), [idx]);
   const handleNext = () => setIdx((p) => (p + 1) % schedules.length);
 
   return (
     <section id="schedule" className="relative text-white">
+      {/* 背景は常に cover */}
       <div
-        className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.5)]"
-        style={{ backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+        className="relative w-screen left-1/2 -translate-x-1/2 bg-cover bg-center"
+        style={{ backgroundImage: `url(${bg})` }}
       >
-        <div className="relative aspect-[9/16] md:aspect-[16/9]">
-          {/* 左：テキスト */}
-          {/* ===== 左下：YouTube 埋め込み（各日で切替） ===== */}
-<div
-  className="absolute z-[35]"
-  style={{
-    left: "3%",
-    bottom: "20%",                     // ← 低すぎる時は値を大きく
-    width: "min(64vw, 520px)",         // ← 横幅上限
-  }}
->
-  <div className="relative w-full aspect-video rounded-xl overflow-hidden ring-1 ring-white/20 shadow-[0_12px_28px_rgba(0,0,0,.35)] bg-black/30">
-    <iframe
-      src={`https://www.youtube.com/embed/${day.youtubeId}?rel=0&modestbranding=1&cc_load_policy=0`}
-      title="YouTube video"
-      className="absolute inset-0 w-full h-full"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      referrerPolicy="strict-origin-when-cross-origin"
-      allowFullScreen
-      loading="lazy"
-    />
-  </div>
-</div>
-
-          <div className="absolute top-[8%] left-[7%] w-[60%] md:w-[50%] z-[20]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={day.key}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } }}
-                exit={{ opacity: 0, y: -8, transition: { duration: 0.25, ease: EASE } }}
-                className="mb-3 md:mb-4 text-left"
-              >
-                <ChalkHeading text={day.heading} />
-                <div className="mt-1 text-sm md:text-base text-white/85">{day.sub}</div>
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="mb-4 md:mb-6 h-[2px] w-2/3 bg-white/60 blur-[0.5px]" />
+        <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-10 md:py-14">
+          {/* 見出し＋本文＋時間割 */}
+          <div className="relative">
+            <ChalkHeading text={day.heading} />
+            <div className="mt-1 text-[clamp(12px,1.2vw,22px)] text-white/85">{day.sub}</div>
+            <div className="my-4 md:my-6 h-[2px] w-2/3 bg-white/60 blur-[0.5px]" />
 
             <AnimatePresence mode="wait">
               <motion.ul
@@ -242,57 +218,63 @@ export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: s
                 ))}
               </motion.ul>
             </AnimatePresence>
-          </div>
 
-          {/* 右：チェキ */}
-          <div
-            className="absolute z-[30]"
-            style={{
-              right: "8%",
-              top: "5%",
-              width: "clamp(160px, 38vw, 280px)",
-              height: "clamp(220px, 46vw, 360px)",
-            }}
-          >
-            <div className="relative w-full h-full">
-              <div
-                className="absolute w-[44%] md:w-[46%] aspect-[3/4] bg-white rounded-sm shadow-xl border border-gray-200 overflow-hidden"
-                style={{ top: 0, right: "30%", transform: "rotate(-8deg)" }}
-              >
-                <img src={day.chekis[0]} alt="cheki-1" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute bottom-0 w-full h-[14%] bg-white" />
+            {/* ===== YouTube（右上にボタンを重ねる） ===== */}
+            <div className="mt-6 md:mt-8 flex flex-col items-center">
+              <div className="w-full max-w-[360px] md:max-w-[860px]">
+                <div className="relative w-full aspect-video rounded-xl overflow-hidden ring-1 ring-white/20 shadow-[0_12px_28px_rgba(0,0,0,.35)] bg-black/30">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${day.youtubeId}?rel=0&modestbranding=1&cc_load_policy=0`}
+                    title="YouTube video"
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+
+                  {/* ボタン：md+ は右上に重ね、少し外側へ（調整は right/top/translate で） */}
+                  <div className="hidden md:block absolute right-0 top-0 z-10 pointer-events-none">
+                    <div
+                      className="pointer-events-auto rotate-[6deg] translate-x-3 -translate-y-3"
+                      style={{ transformOrigin: "50% 50%" }}
+                    >
+                      <ChalkNextButton label={nextLabel} onClick={handleNext} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div
-                className="absolute w-[46%] md:w-[48%] aspect-[3/4] bg-white rounded-sm shadow-xl border border-gray-200 overflow-hidden"
-                style={{ top: "18%", right: "0%", transform: "rotate(6deg)" }}
-              >
-                <img src={day.chekis[1]} alt="cheki-2" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute bottom-0 w-full h-[14%] bg-white" />
+
+              {/* SP時：動画の下・右寄せにボタン（重なり回避） */}
+              <div className="mt-2 w-full max-w-[720px] flex justify-end md:hidden">
+                <ChalkNextButton label={nextLabel} onClick={handleNext} />
               </div>
-              <div
-                className="absolute w-[44%] md:w-[46%] aspect-[3/4] bg-white rounded-sm shadow-xl border border-gray-200 overflow-hidden"
-                style={{ top: "50%", right: "15%", transform: "rotate(2deg)" }}
-              >
-                <img src={day.chekis[2]} alt="cheki-3" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute bottom-0 w-full h-[14%] bg-white" />
+
+              {/* 画像ボタン 2つ（中央・横並び） */}
+              <div className="mt-4 md:mt-5 w-full max-w-[720px] grid grid-cols-2 place-items-center gap-4 md:gap-6">
+                <a href="/seishun" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                  <img
+                    src="/schedule/btn-seishun.png"
+                    alt="青春の延命治療"
+                    loading="lazy"
+                    className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5"
+                  />
+                </a>
+                <a href="/archives" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                  <img
+                    src="/schedule/btn-archive.png"
+                    alt="過去企画一覧"
+                    loading="lazy"
+                    className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5"
+                  />
+                </a>
               </div>
             </div>
-          </div>
-
-          {/* 右下：「次へ」テキストボタン */}
-          <div className="absolute inset-0 z-[80] pointer-events-none">
-            <ChalkNextButton
-              label={nextLabel}
-              onClick={handleNext}
-              className="absolute pointer-events-auto left-1/2 top-1/2"
-              style={{
-                transform: "translate(calc(-50% + 24vw), calc(-50% + 16vh))",
-              }}
-            />
           </div>
         </div>
       </div>
 
+      {/* 下マージン */}
       <div className="h-10 md:h-16" />
     </section>
   );
