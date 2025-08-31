@@ -9,7 +9,7 @@ export default function FinalProductSection({
   coverSrc = "/icons/cover.png",
   badgeText = "タイムスリップ版",
   msrp = "31,800円（税込）",
-  infoTitle = "商品に含まれるもの",
+  infoTitle = "購入する",
   infoBody = "ダミー",
   rows = [
     { iconSrc: "/icons/ticket-red.png", label: "はじめての人向けページ", href: "/getting-started" },
@@ -18,7 +18,15 @@ export default function FinalProductSection({
   thirdItemSrc = "/icons/arm.png",
   companyLogoSrc = "/icons/thg.png",
   ariaLabelThird = "不思議なアイテムを手に入れる",
+  // ▼ 追加
+  purchaseHref = "/buy",
+  purchaseSubText = "マイニンテンドーストア",
 }: {
+  
+  ariaLabelThird?: string;
+  purchaseHref?: string;       // ← 追加
+  purchaseSubText?: string;    // ← 追加
+
   coverSrc?: string;
   badgeText?: string;
   msrp?: string;
@@ -27,7 +35,6 @@ export default function FinalProductSection({
   rows?: InfoRow[];
   thirdItemSrc?: string;
   companyLogoSrc?: string;
-  ariaLabelThird?: string;
 }) {
   /* ---------------- セッション内の所持状況（永続化しない） ---------------- */
   const [crestAcquired, setCrestAcquired] = useState(false); // 2つ目（校章）
@@ -167,20 +174,42 @@ const [showThgSweep, setShowThgSweep] = useState(false);
           {/* 下段：白い枠 */}
           <div className="bg-white text-[#1b1b1b] p-5 md:p-7">
             <div className="rounded-2xl border border-[#e6e6e6] shadow-sm bg-white overflow-hidden">
-              {/* ピンク枠タイトル */}
-              <div className="px-4 md:px-6 pt-5">
-                <div
-                  className="inline-flex items-center justify-center rounded-[12px] px-4 py-2 text-white font-bold tracking-wide shadow-[inset_0_1px_0_rgba(255,255,255,.6)]"
-                  style={{ background: "linear-gradient(180deg,#FF7DAE 0%, #FF4F90 100%)" }}
-                >
-                  {infoTitle}
-                </div>
-              </div>
+           {/* 購入ボタン（Nintendo風） */}
+<div className="px-4 md:px-6 pt-5">
+  <a
+    href={purchaseHref}
+    aria-label={`${infoTitle}`}
+    target={purchaseHref.startsWith("http") ? "_blank" : undefined}
+    rel="noreferrer"
+    className="group relative block w-full rounded-[14px] px-5 py-4 md:py-5 text-center text-white bg-gradient-to-b from-[#FF6A9E] to-[#FF4F90] ring-1 ring-black/10 shadow-[0_10px_26px_rgba(0,0,0,.25)] transition-transform duration-200 will-change-transform transform-gpu hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(0,0,0,.32)] active:scale-[0.995]"
+  >
+    <span className="flex items-center justify-center gap-3">
+      {/* シンプルなカートアイコン（白） */}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+        <path d="M7 6h14l-1.6 8.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-1.9-1.4L5 3H2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="10" cy="21" r="1.6" fill="white"/>
+        <circle cx="18" cy="21" r="1.6" fill="white"/>
+      </svg>
+      <span className="text-[18px] md:text-[20px] font-extrabold tracking-wide">
+        {infoTitle || "購入する"}
+      </span>
+    </span>
+    <span className="mt-1 block text-[11px] md:text-[12px] opacity-90">
+      {purchaseSubText}
+    </span>
 
-              {/* 本文 */}
-              <div className="px-4 md:px-6 py-4">
-                <p className="text-[15px] md:text-[16px] leading-relaxed text-[#333]">{infoBody}</p>
-              </div>
+    {/* 上面ハイライト */}
+    <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-[14px] bg-white/10" />
+  </a>
+
+  {/* ボタン直下の補足テキスト（細字） */}
+  {infoBody && (
+    <p className="mt-3 text-[13px] md:text-[14px] leading-relaxed text-[#374151]">
+      {infoBody}
+    </p>
+  )}
+</div>
+
 
               {/* 行カード */}
               <div className="px-4 md:px-6 pb-5 md:pb-6 space-y-3">
@@ -211,7 +240,7 @@ const [showThgSweep, setShowThgSweep] = useState(false);
       </div>
 
       {/* ===== 下中央：第3アイテム／変身／ロゴ ===== */}
-      <div className="absolute z-[70] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-3" style={{ bottom: "clamp(12px,3.2vw,20px)" }}>
+      <div className="absolute z-[70] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-3" style={{ bottom: "clamp(12px,3.2vw,20px)" }} >
         {isTransforming ? (
           // 変身ステージ
           <div className="pointer-events-none relative grid place-items-center">
@@ -257,7 +286,7 @@ const [showThgSweep, setShowThgSweep] = useState(false);
 
             {/* 揃ったらロゴ（直後だけピカーン） */}
             {hasAllItems && (
-              <div className="pointer-events-none relative grid place-items-center">
+              <div className="pointer-events-none relative grid place-items-center -translate-y-3 md:-translate-y-4 ">
                 {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
                 <img
                   src={companyLogoSrc}
