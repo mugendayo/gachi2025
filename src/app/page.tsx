@@ -5,6 +5,7 @@ import StageIntroSection from "@/components/StageIntroSection";
 import SchoolIntro from "@/components/SchoolIntro"; // or 相対パス ../components/SchoolIntro
 import TimeScheduleSection from "@/components/TimeScheduleSection";
 import ImageMarquee, { type MarqueeImage } from "@/components/ImageMarquee";
+import FinalProductSection from "@/components/FinalProductSection";
 
 
 export default function Page() {
@@ -21,23 +22,10 @@ export default function Page() {
     <main className="min-h-screen">
       <Hero />
       <SchoolIntro />
-        {/* ★ここに追加する！ School → Character の橋渡し帯 */}
       <StageIntroSection />
-      
-      <CharacterIntro />   {/* 追加 */}
+      <CharacterIntro />
       <TimeScheduleSection />
-      <Info />
-
-    <ImageMarquee
-        images={past}
-        duration={30}
-        heightClass="h-24 md:h-28"
-        gapClass="gap-2 md:gap-3"
-        pauseOnHover
-        edgeFade
-        framed
-        respectReducedMotion={false}   // ← これがポイント
-      />      {/* 追加 */}
+      <FinalProductSection/>
     </main>
   );
 }

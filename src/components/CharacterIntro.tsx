@@ -55,7 +55,7 @@ const CHARACTERS: Character[] = [
     accent: "#8b5cf6",
     lines: [
       { text: "『仕事が辛い。転職を考えている。』と相談されることがある。「変えたきゃ変えろよ」と答えると『いや、でも・・・』と別の言葉が出てくる。「だったら続けろよ」と言うと、『好きだったことが嫌いになるのが怖い』という。" },
-      { text: "ボクがやっていることを実践してみてほしい。「どうやって面白さを見出せる自分になるか」を考えながら取り組む。「好き・楽しい」は楽な状態でしか感じられない。「面白い」はしんどい状況でも感じられる。長続きしないと思う自身がいるなら試してみてくれ。" },
+      { text: "ボクがやっていることを実践してみてほしい。「どうやって面白さを見出せる自分になるか」を考えながら取り組む。「好き・楽しい」は楽な状態でしか感じられない。「面白い」はしんどい状況でも感じられる。試してみてくれ。" },
       { text: "最後にはなるが、ボクたちが、このガチ文高等学校の神童。GACKT（学徒）だ。よろしく。" }
     ],
   },
@@ -160,7 +160,7 @@ export default function CharacterIntro() {
         <img src="/section-bg/characters-bg.jpg" alt="" className="w-full h-full object-cover" draggable={false} />
       </div>
 
-      <SectionHeadingCard label="ガチ文高等学校の人たち" title="高2病な人がたくさんいます" />
+      <SectionHeadingCard label="ガチ文高等学校の人たち" title="厨二病（高二病？）です" />
 
       {/* ====== カード：画像(16:9) + セリフ ====== */}
       <div className="relative rounded-2xl overflow-hidden ring-1 ring-white/10 bg-black/40">

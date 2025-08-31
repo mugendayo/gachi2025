@@ -134,6 +134,10 @@ function CrestCenter({
       slot.classList.add("inv-bling");
       setTimeout(() => slot.classList.remove("inv-bling"), 700);
     }
+    // ★ 追加（ここから）
+    try { localStorage.setItem("gbf_crest_acquired", "1"); } catch {}
+    window.dispatchEvent(new Event("crest:acquired")); 
+    // ★ 追加（ここまで）
     onAcquire?.();
   };
 

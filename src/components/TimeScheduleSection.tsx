@@ -197,7 +197,7 @@ export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: s
             </AnimatePresence>
         {/* ==== YouTube：この“内側”を relative にして、右上に1つだけ絶対配置 ==== */}
         <div className="mt-6 md:mt-8">
-        <div className="relative mx-auto w-full max-w-[360px] md:max-w-[430px]">
+        <div className="relative mx-auto w-full max-w-[240px] md:max-w-[300px]">
             {/* 右上のCTA（transformで外側に寄せる／1個だけ） */}
             <div
             className="absolute z-30 top-0 right-0

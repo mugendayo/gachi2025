@@ -305,18 +305,19 @@ export default function Hero() {
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            {/* ✨ 魔法陣（参考画像風） */}
-            <motion.button
-              onClick={() => setPopupStep(1)}
-              aria-label="ストーリーをもう一度見る"
-              className="pointer-events-auto grid place-items-center rounded-full"
-              style={{
-                width: "clamp(72px, 12vw, 112px)",
-                height: "clamp(72px, 12vw, 112px)",
-                background: "transparent",
-              }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
+            {/* ✨ 魔法陣：少し下げる（translate-y） */}
+            <div className="translate-y-2 md:translate-y-3">
+              <motion.button
+                onClick={() => setPopupStep(1)}
+                aria-label="ストーリーをもう一度見る"
+                className="pointer-events-auto grid place-items-center rounded-full"
+                style={{
+                  width: "clamp(72px, 12vw, 112px)",
+                  height: "clamp(72px, 12vw, 112px)",
+                  background: "transparent",
+                }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
             >
               <svg
                 viewBox="0 0 200 200"
@@ -439,29 +440,30 @@ export default function Hero() {
                 />
               </svg>
             </motion.button>
-
-            {/* 🎟 チケット（下） */}
-            <a
-              href="https://gachibun.studio.site/ticket"
-              aria-label="チケットを購入する"
-              className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-              rel="noopener"
-            >
-              <div className="rounded-full p-1 tg-glow-wrap">
-                <img
-                  src="/ticket-btn.png"
-                  alt="ガチ文高等学校の生徒になる"
-                  className="block select-none pointer-events-none rounded-full tg-glow-img"
-                  style={{
-                    width: "clamp(90px, 18vw, 130px)",
-                    height: "clamp(90px, 18vw, 130px)",
-                  }}
-                  draggable={false}
-                />
-              </div>
-            </a>
-          </motion.div>
-        )}
+            </div>
+ {/* 🎟 チケット：一回り大きく（サイズを上げる） */}
+      <a
+        href="https://gachibun.studio.site/ticket"
+        aria-label="チケットを購入する"
+        className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+        rel="noopener"
+      >
+        <div className="rounded-full p-1 tg-glow-wrap">
+          <img
+            src="/ticket-btn.png"
+            alt="ガチ文高等学校の生徒になる"
+            className="block select-none pointer-events-none rounded-full tg-glow-img"
+            style={{
+              /* 旧: clamp(90px, 18vw, 130px) → ひと回りUP */
+              width: "clamp(110px, 20vw, 160px)",
+              height: "clamp(110px, 20vw, 160px)",
+            }}
+            draggable={false}
+          />
+        </div>
+      </a>
+    </motion.div>
+  )}
       </AnimatePresence>
 
       {/* ===== スタイル ===== */}
