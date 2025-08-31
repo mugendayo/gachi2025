@@ -21,11 +21,13 @@ export default function FinalProductSection({
   // ▼ 追加
   purchaseHref = "/buy",
   purchaseSubText = "マイニンテンドーストア",
+  thgHref = "https://thanatos-games-jqgx8mo.gamma.site/", // ← 追加（本番は公式URLに変更）
 }: {
   
   ariaLabelThird?: string;
   purchaseHref?: string;       // ← 追加
   purchaseSubText?: string;    // ← 追加
+  thgHref?: string;        // ← 追加
 
   coverSrc?: string;
   badgeText?: string;
@@ -286,15 +288,23 @@ const [showThgSweep, setShowThgSweep] = useState(false);
 
             {/* 揃ったらロゴ（直後だけピカーン） */}
             {hasAllItems && (
-              <div className="pointer-events-none relative grid place-items-center -translate-y-3 md:-translate-y-4 ">
-                {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
-                <img
-                  src={companyLogoSrc}
-                  alt="ThanatosGames"
-                  className="block h-auto w-[min(56vw,220px)] md:w-[220px] object-contain drop-shadow-[0_10px_28px_rgba(0,0,0,.35)]"
-                  draggable={false}
-                />
-              </div>
+              <div className="relative grid place-items-center -translate-y-6 md:-translate-y-4">
+    {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
+    <a
+      href={thgHref}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="ThanatosGames 公式サイトへ"
+      className="relative z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 cursor-pointer"
+    >
+      <img
+        src={companyLogoSrc}
+        alt="ThanatosGames"
+        className="block h-auto w-[min(56vw,220px)] md:w-[220px] object-contain drop-shadow-[0_10px_28px_rgba(0,0,0,.35)]"
+        draggable={false}
+      />
+    </a>
+  </div>
             )}
           </>
         )}

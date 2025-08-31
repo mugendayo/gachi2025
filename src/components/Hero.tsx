@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import SummonCTA from "../components/SummonCTA";
+import Link from "next/link";
+
 
 // Hero.tsx の最上部(モジュールスコープ)に追加
 declare global {
@@ -136,7 +138,7 @@ export default function Hero() {
   }, [popupStep]);
 
   const cardButtons = useMemo(() => ([
-    { label: "わかばガイド",  href: "/link-1", color: "from-amber-400 to-orange-500 text-white" },
+    { label: "わかばガイド",  href: "/guide", color: "from-amber-400 to-orange-500 text-white" },
     { label: "去年の動画",    href: "/link-2", color: "from-sky-400 to-blue-600 text-white" },
     { label: "第1回目の動画", href: "/link-3", color: "from-emerald-400 to-teal-600 text-white" },
   ]), []);
@@ -225,7 +227,7 @@ export default function Hero() {
           </p>
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 place-items-center">
             {cardButtons.map((btn) => (
-              <a
+              <Link
                 key={btn.href}
                 href={btn.href}
                 className={[
@@ -255,7 +257,7 @@ export default function Hero() {
                   <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
                 </span>
                 <span className="relative z-10">{btn.label}</span>
-              </a>
+              </Link>
             ))}
           </div>
 
