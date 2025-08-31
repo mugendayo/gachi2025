@@ -15,7 +15,9 @@ type Person = {
   title: string;
   bio: string;
   thumb: string;
-  gallery: GalleryItem[];
+ gallery: GalleryItem[];
+  /** ★スマホ縦で見せたい2枚だけを指定（なければgallery先頭2枚を自動使用） */
+  story?: GalleryItem[];
 };
 
 const PRINCIPAL: Person = {
@@ -24,10 +26,15 @@ const PRINCIPAL: Person = {
   title: "ガチ文高等学校 校長",
   bio: "“いつでも高校生に戻れる社会をつくる” を合言葉に、生徒一人ひとりに青い春と希望を与える。前職はマザーテレサ。趣味は世界平和。",
   thumb: "/principal/thumb.jpg",
-  gallery: Array.from({ length: 10 }).map((_, i) => ({
+ gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/principal/v/${String(i + 1).padStart(2, "0")}.jpg`,
     caption: `校長ギャラリー ${i + 1}/10`,
   })),
+  /** ★ここを2枚に */
+  story: [
+    { src: "/principal/1.png", caption: "校長 1/2" },
+    { src: "/principal/2.png", caption: "校長 2/2" },
+  ],
 };
 
 const VICE: Person = {
@@ -36,10 +43,15 @@ const VICE: Person = {
   title: "ガチ文高等学校 教頭",
   bio: "現実主義で“仕組みで青春”を推進。高校時代の文化祭そして使われなくなった廃校に命を芽吹くことに命を賭ける。前職は宮代健太。趣味は多拠点生活。",
   thumb: "/vice/thumb.png",
-  gallery: Array.from({ length: 10 }).map((_, i) => ({
+ gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/vice/v/${String(i + 1).padStart(2, "0")}.jpg`,
     caption: `教頭ギャラリー ${i + 1}/10`,
   })),
+  /** ★ここを2枚に */
+  story: [
+    { src: "/vice/1.png", caption: "教頭 1/2" },
+    { src: "/vice/2.", caption: "教頭 2/2" },
+  ],
 };
 
 export default function SchoolIntro() {
@@ -59,10 +71,15 @@ export default function SchoolIntro() {
   ) => {
     if (!open) return;
     const dx = info.offset.x ?? 0;
-    if (dx < -swipeThreshold)
-      setGidx((i) => Math.min(i + 1, open.gallery.length - 1));
-    else if (dx > swipeThreshold) setGidx((i) => Math.max(i - 1, 0));
-  };
+
+  // ★ storyがあれば2枚、なければgallery先頭2枚で固定
+  const len = open.story?.length
+    ? Math.min(open.story.length, 2)
+    : Math.min(open.gallery.length, 2);
+
+  if (dx < -swipeThreshold) setGidx((i) => Math.min(i + 1, len - 1));
+  else if (dx > swipeThreshold) setGidx((i) => Math.max(i - 1, 0));
+};
 
   return (
     <section
@@ -140,6 +157,9 @@ export default function SchoolIntro() {
       alt="ガチ文高等学校の様子 1"
       className="w-full h-auto object-cover aspect-[16/9] block"
       draggable={false}
+      loading="lazy"
+      decoding="async"
+      fetchPriority="low"
     />
   </div>
 
@@ -232,7 +252,7 @@ export default function SchoolIntro() {
 {/* ★★★ スロー文字（フルブリード版｜any不使用） ★★★ */}
 <div className="my-16 md:my-24">
   {/* 中央レイアウトを一時解除して画面幅いっぱいに */}
-  <div className="relative -mx-[calc(50vw-50%)] [--speed:1.6]">
+  <div className="relative -mx-[calc(50vw-50%)] [--speed:1.6] cv-auto">
     <div className="relative w-screen h-[28vh] md:h-[36vh] overflow-hidden pointer-events-none">
       <div className="absolute inset-0">
         <div className="marquee-line top-[0%]  text-[7vw] font-extrabold tracking-widest opacity-[0.35] [--dur:28s]">
@@ -281,110 +301,77 @@ export default function SchoolIntro() {
         <AdmissionCTA />
       </div>
 
-      {/* モーダル */}
-      <AnimatePresence>
-        {open && (
-          <>
+{/* モーダル */}
+<AnimatePresence>
+  {open && (
+    <>
+      {/* 背面オーバーレイ（どこでも閉じる） */}
+      <motion.div
+        className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={closeModal}
+      />
+
+      {/* ★前面グリッド：ここも onClick=closeModal を付与 */}
+      <motion.div
+        className="fixed inset-0 z-[1001] grid place-items-center p-4 md:p-8"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.18 }}
+        aria-modal="true"
+        role="dialog"
+        onClick={closeModal} // ★ここ
+      >
+        {(() => {
+          const slides =
+            (open?.story && open.story.length > 0
+              ? open.story.slice(0, 2)
+              : open?.gallery?.slice(0, 2)) ?? [];
+
+          return (
+            // ★画像ボックスはクリックを止める
             <motion.div
-              className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeModal}
-            />
-            <motion.div
-              className="fixed inset-0 z-[1001] grid place-items-center p-4 md:p-8"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              aria-modal="true"
-              role="dialog"
+              key={(open?.role ?? "p") + gidx}
+              className="relative w-[min(92vw,440px)] aspect-[9/16] overflow-hidden rounded-xl ring-1 ring-white/20 shadow-2xl bg-black"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              onDragEnd={onDragEnd}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()} // ★ここ
             >
-              <div className="relative w-[min(96vw,1100px)] max-h-[90vh] bg-white text-black rounded-2xl overflow-hidden shadow-2xl grid md:grid-cols-[380px_1fr]">
-                {/* 左：プロフィール */}
-                <div className="p-5 md:p-6 border-b md:border-b-0 md:border-r">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={open?.thumb}
-                      alt={open?.name ?? ""}
-                      className="h-16 w-16 rounded-xl object-cover"
-                      draggable={false}
-                    />
-                    <div>
-                      <div className="text-sm text-black/60">{open?.title}</div>
-                      <div className="text-lg font-bold">{open?.name}</div>
-                    </div>
-                  </div>
-                  <p className="mt-4 text-sm leading-relaxed text-black/80">
-                    {open?.bio}
-                  </p>
-                  <button
-                    onClick={closeModal}
-                    className="mt-4 inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border hover:bg-black/5"
-                  >
-                    × 閉じる
-                  </button>
-                  <div className="mt-4 text-xs text-black/50">
-                    ←→ スワイプ／ドラッグで写真を切り替え
-                  </div>
-                </div>
+              <img
+                src={slides[gidx]?.src}
+                alt=""
+                className="absolute inset-0 h-full w-full object-contain"
+                draggable={false}
+                loading="eager"
+                decoding="async"
+              />
+  {/* ❌ クローズ（魔法陣風の色合い） */}
+  <button
+    type="button"
+    onClick={(e) => { e.stopPropagation(); closeModal(); }}
+    aria-label="閉じる"
+    className="xbtn absolute right-2 top-2 md:right-3 md:top-3"
+  >
+    <span aria-hidden>×</span>
+  </button>
 
-                {/* 右：縦長ギャラリー */}
-                <div className="relative bg-black">
-                  <motion.div
-                    key={(open?.role ?? "p") + gidx}
-                    className="h-full grid place-items-center p-3 md:p-6"
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    onDragEnd={onDragEnd}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="relative w-[min(88vw,420px)] aspect-[9/16] overflow-hidden rounded-xl ring-1 ring-white/20 shadow-xl">
-                      <img
-                        src={open?.gallery[gidx]?.src}
-                        alt={open?.gallery[gidx]?.caption ?? ""}
-                        className="absolute inset-0 h-full w-full object-cover"
-                        draggable={false}
-                      />
-                    </div>
-                  </motion.div>
-
-                  <div className="absolute bottom-0 inset-x-0 p-3 md:p-4 bg-gradient-to-t from-black/70 to-transparent">
-                    <div className="flex items-center justify-between text-white text-sm">
-                      <div className="opacity-90">
-                        {open?.gallery[gidx]?.caption}
-                      </div>
-                      <div className="opacity-75">
-                        {gidx + 1} / {open?.gallery.length}
-                      </div>
-                    </div>
-                    <div className="mt-2 flex justify-between gap-2">
-                      <button
-                        onClick={() => setGidx((i) => Math.max(i - 1, 0))}
-                        className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm"
-                      >
-                        前へ
-                      </button>
-                      <button
-                        onClick={() =>
-                          setGidx((i) => Math.min(i + 1, open!.gallery.length - 1))
-                        }
-                        className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm"
-                      >
-                        次へ
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+  {/* 矢印ヒント */}
+  {gidx < (slides.length || 2) - 1 && <div className="swipe-hint-r" aria-hidden>›</div>}
+  {gidx > 0 && <div className="swipe-hint-l" aria-hidden>‹</div>}
+</motion.div>
+          );
+        })()}
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
 
 <style jsx global>{`
   .marquee-line{
@@ -400,6 +387,30 @@ export default function SchoolIntro() {
     0%   { transform: translateX(100vw); }
     100% { transform: translateX(-100%); }
   }
+/* スワイプ矢印の点滅 */
+.swipe-hint-r, .swipe-hint-l{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(24px, 6vw, 40px);
+  line-height: 1;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 8px 20px rgba(0,0,0,.55);
+  pointer-events: none;
+  user-select: none;
+}
+.swipe-hint-r{ right: 10px; animation: nudgeR 1.1s ease-in-out infinite; }
+.swipe-hint-l{ left: 10px;  animation: nudgeL 1.1s ease-in-out infinite; }
+
+@keyframes nudgeR{
+  0%,100%{ opacity:.25; transform: translateY(-50%) translateX(0); }
+  50%    { opacity:1;   transform: translateY(-50%) translateX(6px); }
+}
+@keyframes nudgeL{
+  0%,100%{ opacity:.25; transform: translateY(-50%) translateX(0); }
+  50%    { opacity:1;   transform: translateY(-50%) translateX(-6px); }
+}
+
 `}</style>
 
 

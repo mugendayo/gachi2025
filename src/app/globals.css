@@ -75,3 +75,33 @@ html, body {
     0 0 6px rgba(255,255,255,.3);
 }
 html { scroll-behavior: smooth; }
+
+/* 魔法陣カラーのXボタン */
+.xbtn{
+  width: 44px; height: 44px; border-radius: 9999px;
+  display: grid; place-items: center;
+  color: rgba(255,255,255,.95);
+  background: radial-gradient(120% 120% at 30% 30%, rgba(200,245,255,.35), rgba(90,180,255,.25) 60%, rgba(0,160,255,.15));
+  box-shadow:
+    0 0 18px rgba(120,220,255,.55),
+    inset 0 0 20px rgba(255,255,255,.25);
+  border: 1px solid rgba(255,255,255,.45);
+  backdrop-filter: blur(2px);
+  transition: transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+}
+.xbtn:hover { transform: scale(1.05); box-shadow: 0 0 22px rgba(140,230,255,.7), inset 0 0 22px rgba(255,255,255,.3); }
+.xbtn:active { transform: scale(.97); }
+.xbtn::after{
+  /* 外周のゆるい“魔法陣”オーラ */
+  content:""; position:absolute; inset:-6px; border-radius:9999px;
+  border: 1px solid rgba(160,230,255,.5);
+  filter: blur(1.5px);
+  animation: aura 2.4s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes aura{
+  0%,100%{ opacity:.35; transform: scale(1); }
+  50%    { opacity:.9;  transform: scale(1.05); }
+}
+
+

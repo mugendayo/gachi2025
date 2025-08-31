@@ -137,11 +137,14 @@ export default function Hero() {
     }
   }, [popupStep]);
 
-  const cardButtons = useMemo(() => ([
-    { label: "わかばガイド",  href: "/guide", color: "from-amber-400 to-orange-500 text-white" },
-    { label: "去年の動画",    href: "/link-2", color: "from-sky-400 to-blue-600 text-white" },
-    { label: "第1回目の動画", href: "/link-3", color: "from-emerald-400 to-teal-600 text-white" },
-  ]), []);
+  // —— YouTube（同じタブ遷移）※URLは差し替えてOK
+const YOUTUBE_LAST_YEAR = "https://www.youtube.com/watch?v=pk7cy_tVsjs"; // 去年の動画
+const YOUTUBE_FIRST     = "https://www.youtube.com/watch?v=8yE9pJWsJ-QY"; // 第1回目の動画
+
+// サムネ（任意の画像パスに差し替え可）
+const THUMB_LAST_YEAR = "/thumbs/lastyear.jpg";
+const THUMB_FIRST     = "/thumbs/first.jpg";
+
 
   return (
     <section className="relative min-h-[100svh] md:min-h-screen mb-0">
@@ -214,56 +217,146 @@ export default function Hero() {
       </AnimatePresence>
       
 
-      {/* ===== 前景：STEP2終了後のコンテンツ ===== */}
-      {hasSeenPopup && (
-        <div className="relative z-20 mx-auto max-w-5xl px-6 pt-16 pb-28 text-white">
-          <div className="flex justify-center"></div>
+{/* 前景：STEP2終了後のコンテンツ */}
+{hasSeenPopup && (
+  <div className="relative z-20 mx-auto max-w-5xl px-6 pt-16 pb-28 text-white">
+    <h2 className="mt-10 text-2xl md:text-3xl font-bold">ガチ文化祭2025</h2>
+    <p className="mt-4 opacity-90">2025年11月1日（土）～3日（祝）</p>
 
-          <h2 className="mt-10 text-2xl md:text-3xl font-bold">
-            ガチ文化祭2025
-          </h2>
-          <p className="mt-4 opacity-90">
-            2025年11月1日（土）～3日（祝）
-          </p>
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 place-items-center">
-            {cardButtons.map((btn) => (
-              <Link
-                key={btn.href}
-                href={btn.href}
-                className={[
-                  // サイズ：画像の“半分くらい”想定（上限320px）
-                  "w-[90%] max-w-[320px] sm:w-full",
-                  "h-14 rounded-full px-6",
-                      "flex items-center justify-center",
-                      "bg-gradient-to-b " + btn.color,
-                      "text-base font-semibold tracking-wide text-white",
-                      "shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-black/10",
-                      "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
-                      "relative overflow-hidden",
-                  // 色（カードごとに違う）＋グラデ
-                  "bg-gradient-to-b " + btn.color,
-                  // 文字
-                  "text-center text-base font-semibold tracking-wide",
-                  // 影と動き
-                  "shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-black/10",
-                  "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
-                  "relative overflow-hidden",
-                ].join(" ")}
-              >
-                {/* 上面ハイライト（任意） */}
-                <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
-                {/* 斜めの“キラン”（既存の .btn-glint を流用） */}
-                <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-                  <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
-                </span>
-                <span className="relative z-10">{btn.label}</span>
-              </Link>
-            ))}
-          </div>
+    {/* ▼ ここから縦並びの3ボタン */}
+    <div className="mt-10 w-full max-w-2xl mx-auto space-y-3">
+      {/* ① わかばガイド（若葉ガイド風） */}
+      <Link
+        href="/guide"
+        className={[
+          "group relative flex w-full items-center gap-3",
+          "rounded-2xl px-5 py-4",
+          "bg-white text-[#1a7f2e]",             // 緑文字
+          "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+          "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+          "overflow-hidden",
+        ].join(" ")}
+      >
+        {/* 上面ハイライト＆キラン（既存アニメそのまま） */}
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
+        <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+          <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
+        </span>
 
+        {/* 左：葉っぱアイコン */}
+        <span className="grid place-items-center h-10 w-10 shrink-0 rounded-xl bg-[#e9f8ed] ring-1 ring-[#c7ebd2]">
+          {/* Leaf icon */}
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M3 21c8-1 14-7 15-15 2 3 3 6 3 9-2 4-7 6-11 6-3 0-5-0-7 0z" fill="#2ea44f"/>
+          </svg>
+        </span>
 
+        {/* 中央：テキスト */}
+        <div className="flex-1">
+          <div className="text-[12px] font-extrabold text-[#6a4f1f]">はじめての人へ</div>
+          <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">わかばガイド</div>
         </div>
-      )}
+
+        {/* 右：矢印 */}
+        <span aria-hidden className="ml-2 shrink-0 text-[#2ea44f]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+      </Link>
+
+      {/* ② 去年の動画（左サムネ + 右テキスト） */}
+      <a
+        href={YOUTUBE_LAST_YEAR}
+        className={[
+          "group relative flex w-full items-center gap-4",
+          "rounded-2xl px-4 py-3",
+          "bg-white text-[#14587a]",
+          "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+          "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+          "overflow-hidden",
+        ].join(" ")}
+      >
+        {/* ハイライト＆キラン */}
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
+        <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+          <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
+        </span>
+
+        {/* 左：サムネ（16:9） */}
+        <div className="shrink-0 w-40">
+          <div className="relative w-full overflow-hidden rounded-xl ring-1 ring-black/10" style={{ aspectRatio: "16 / 9" }}>
+            <img
+              src={THUMB_LAST_YEAR}
+              alt="去年の動画"
+              className="absolute inset-0 h-full w-full object-cover bg-gray-100"
+              draggable={false}
+            />
+          </div>
+        </div>
+
+        {/* 右：テキスト */}
+        <div className="flex-1 min-w-0">
+          <div className="text-[18px] md:text-[19px] font-extrabold tracking-wide text-[#1675a3]">去年の動画</div>
+          <div className="mt-0.5 text-[12px] text-gray-500 line-clamp-1">映像で雰囲気をチェック</div>
+        </div>
+
+        {/* 右端：矢印 */}
+        <span aria-hidden className="ml-2 shrink-0 text-[#1675a3]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+      </a>
+
+      {/* ③ 第1回目の動画（左サムネ + 右テキスト） */}
+      <a
+        href={YOUTUBE_FIRST}
+        className={[
+          "group relative flex w-full items-center gap-4",
+          "rounded-2xl px-4 py-3",
+          "bg-white text-[#0f6a5a]",
+          "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+          "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+          "overflow-hidden",
+        ].join(" ")}
+      >
+        {/* ハイライト＆キラン */}
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
+        <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+          <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
+        </span>
+
+        {/* 左：サムネ（16:9） */}
+        <div className="shrink-0 w-40">
+          <div className="relative w-full overflow-hidden rounded-xl ring-1 ring-black/10" style={{ aspectRatio: "16 / 9" }}>
+            <img
+              src={THUMB_FIRST}
+              alt="第1回目の動画"
+              className="absolute inset-0 h-full w-full object-cover bg-gray-100"
+              draggable={false}
+            />
+          </div>
+        </div>
+
+        {/* 右：テキスト（数文字） */}
+        <div className="flex-1 min-w-0">
+          <div className="text-[18px] md:text-[19px] font-extrabold tracking-wide text-[#118a76]">第1回目の動画</div>
+          <div className="mt-0.5 text-[12px] text-gray-500 line-clamp-1">はじまりの記録</div>
+        </div>
+
+        {/* 右端：矢印 */}
+        <span aria-hidden className="ml-2 shrink-0 text-[#118a76]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+      </a>
+    </div>
+    {/* ▲ ここまで縦並び3ボタン */}
+  </div>
+)}
+
 
 {/* ===== 左上：もちもの（常時DOMに存在・表示はフェード） ===== */}
 <div
