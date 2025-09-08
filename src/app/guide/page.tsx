@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function GuidePage() {
-  // ---------------- Data (本文) ----------------
+  // --- 省略: 前半のデータ（beforeItems / day1 / day2 / day3）は前回と同一 ---
   const beforeItems = [
     {
       title: "文化祭実行委員になってみよう",
@@ -92,10 +92,9 @@ export default function GuidePage() {
     },
   ];
 
-  // -------------- Render --------------
+  // --- ここから JSX ---
   return (
     <main className="min-h-screen bg-[#f7fafc]">
-      {/* Hero */}
       <section className="relative">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 md:py-14">
           <div className="rounded-2xl bg-white shadow-[0_14px_40px_rgba(0,0,0,.08)] ring-1 ring-black/5 overflow-hidden">
@@ -124,7 +123,7 @@ export default function GuidePage() {
               </div>
             </div>
 
-            {/* セクション内ナビ（アンカー） */}
+            {/* アンカー */}
             <nav
               className="bg-white px-4 md:px-8 py-4 border-b border-gray-100"
               aria-label="わかばガイド内ナビ"
@@ -155,7 +154,6 @@ export default function GuidePage() {
                 <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">
                   当日まで
                 </h2>
-
                 <ol className="mt-4 space-y-3">
                   {beforeItems.map((item, i) => (
                     <li
@@ -179,7 +177,7 @@ export default function GuidePage() {
                   ))}
                 </ol>
 
-                {/* 必要な持ち物（先に明記） */}
+                {/* 必要な持ち物 */}
                 <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
                   <h3 className="font-bold text-amber-900">先に準備してほしいもの</h3>
                   <ul className="mt-2 list-disc pl-5 text-[15px] text-amber-900/90">
@@ -259,13 +257,14 @@ export default function GuidePage() {
                 </ul>
               </section>
 
-              {/* Q&A（そのまま） */}
+              {/* Q&A（追加分を含む） */}
               <section id="qa" className="scroll-mt-24">
                 <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">
                   Q＆A
                 </h2>
                 <div className="mt-4 space-y-3">
                   {[
+                    // 既存（汎用）
                     {
                       q: "宿泊に関して",
                       a: "宿泊は手配済みの会場を利用します。部屋割りや消灯時間などの詳細は後日ご案内します。",
@@ -293,6 +292,48 @@ export default function GuidePage() {
                     {
                       q: "集団登校に関して",
                       a: "主要駅からの集団登校ルートを用意予定です。集合場所・時間は事前にご案内します。",
+                    },
+                    // ★ここから追加の6項目
+                    {
+                      q: "宿泊はどこでするのですか？",
+                      a: "男女別に、廃校の教室を寝室としてご用意しています。全員分の布団をご用意しておりますので、安心してお休みいただけます。",
+                    },
+                    {
+                      q: "お風呂はどうなっていますか？",
+                      a: "車で5分、徒歩で約35分の場所に温泉があります。バスも運行しているので、クラス単位でバス移動します。車がなくても移動可能です。",
+                    },
+                    {
+                      q: "食事はどうすればいいですか？",
+                      a: "お昼は校内の購買部で購入いただけます。徒歩8分ほどの場所にコンビニもありますので、あわせてご利用ください。",
+                    },
+                    {
+                      q: "何が必要ですか？",
+                      a: "まず準備してほしいものは、制服・体操服・運動できる靴です。その他の宿泊に必要なものは後日ご連絡します。",
+                    },
+                    {
+                      q: "初日の8時半までに間に合わないかもしれません…",
+                      a: "遅刻や初日の欠席も大丈夫です。クラス発表のあと、担任の先生に一言ご連絡をお願いします。",
+                    },
+                    {
+                      q: "会場の下市集学校まではどうやって行けばいいですか？",
+                      a: (
+                        <div className="space-y-2">
+                          <p>
+                            大阪阿部野橋駅から近鉄電車で「下市口駅」までお越しください。そこから「下市集学校」停留所までのバスが出ています。
+                          </p>
+                          <p>大阪阿部野橋駅までの行き方は、</p>
+                          <p>
+                            ・梅田から：JR環状線「大阪駅」→「天王寺駅」下車／または 地下鉄御堂筋線「梅田駅」→なかもず方面「天王寺駅」下車
+                            <br />
+                            ・難波から：JR「JR難波駅」→「天王寺駅」下車／または 地下鉄御堂筋線「なんば駅」→なかもず方面「天王寺駅」下車
+                          </p>
+                          <p>
+                            天王寺駅からは徒歩で阿部野橋駅に移動し、近鉄へお乗り換えください。不安な方は
+                            <strong> 阿倍野HOOP オープンエアプラザ前 </strong>
+                            に集合し、集団登校にご参加いただけます。
+                          </p>
+                        </div>
+                      ),
                     },
                   ].map((item) => (
                     <details
