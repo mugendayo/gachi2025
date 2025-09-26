@@ -2,7 +2,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import CtaButton from "@/components/CtaButton"; // ★ 追加
+import CtaButton from "@/components/CtaButton";
 
 /* ========= Breakpoints ========= */
 type BP = "sm" | "md" | "lg";
@@ -134,10 +134,8 @@ function CrestCenter({
       slot.classList.add("inv-bling");
       setTimeout(() => slot.classList.remove("inv-bling"), 700);
     }
-    // ★ 追加（ここから）
     try { localStorage.setItem("gbf_crest_acquired", "1"); } catch {}
-    window.dispatchEvent(new Event("crest:acquired")); 
-    // ★ 追加（ここまで）
+    window.dispatchEvent(new Event("crest:acquired"));
     onAcquire?.();
   };
 
@@ -288,63 +286,150 @@ function DuoBurstText({
   );
 }
 
+/* =============== ポップアップ：ギャラリー版（一枚シート） =============== */
+type GalleryItem = { src: string; caption: string };
+
+function ShimoichiPopup({
+  onClose, linkHref, items,
+}: { onClose: () => void; linkHref: string; items: GalleryItem[] }) {
+  return (
+    <>
+      {/* 背景（外側クリックで閉じる） */}
+      <motion.button
+        aria-label="閉じる"
+        className="fixed inset-0 z-[1200] bg-black/45"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      {/* オーバーレイ */}
+      <motion.div
+        className="fixed inset-0 z-[1201] grid place-items-center p-5 md:p-6"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.22 }}
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* 本体：縦長スマホサイズ、内部スクロール */}
+        <motion.div
+          className="relative flex flex-col overflow-hidden rounded-2xl ring-1 ring-sky-100 shadow-xl bg-gradient-to-b from-white to-sky-50 w-[min(92vw,460px)]"
+          style={{ aspectRatio: "9 / 16" }}
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 10, opacity: 0 }}
+          transition={{ duration: 0.22 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ヘッダー */}
+          <div className="px-5 pt-5 pb-3">
+            <h3 className="text-[18px] md:text-[20px] font-extrabold text-sky-800">
+              下市集学校って？
+            </h3>
+            <p className="mt-2 text-[13px] md:text-[14px] leading-relaxed text-sky-900/80">
+              奈良県・下市町の廃校を再生した多目的施設。ガチ文化祭の舞台です。緑と木の香りに包まれた“帰ってこられる学校”。
+            </p>
+
+            <a
+              href={linkHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-bold text-white ring-1 ring-black/5 shadow-[0_8px_22px_rgba(0,0,0,.15)] hover:opacity-95"
+              style={{ background: "linear-gradient(180deg,#409CFF 0%, #2B7BFF 100%)" }}
+            >
+              おかえり集学校のサイトへ <span aria-hidden className="ml-1">↗</span>
+            </a>
+          </div>
+
+          {/* コンテンツ：ギャラリー（縦スクロール） */}
+          <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-4">
+            {items.map((it, i) => (
+              <figure
+                key={i}
+                className="rounded-xl ring-1 ring-sky-100 bg-white shadow-sm overflow-hidden"
+              >
+                <div className="bg-sky-50/60">
+                  {/* 画像は全表示（トリミング無し） */}
+                  <img
+                    src={it.src}
+                    alt={it.caption}
+                    className="block w-full h-auto object-contain"
+                    draggable={false}
+                    loading={i < 2 ? "eager" : "lazy"}
+                    decoding="async"
+                  />
+                </div>
+                <figcaption className="px-4 py-2 text-[13px] md:text-[14px] font-semibold text-sky-900/90">
+                  {it.caption}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+
+          {/* 閉じる */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 rounded-full bg-white/90 text-sky-900 text-sm px-3 py-1 ring-1 ring-sky-100 hover:bg-white"
+          >
+            閉じる
+          </button>
+        </motion.div>
+      </motion.div>
+    </>
+  );
+}
+
 /* =============== 本体 =============== */
 export default function StageIntroSection({
   ctaHref = "/shimoichi",
   crestSrc = "/stage/crest.png",
 }: { ctaHref?: string; crestSrc?: string }) {
   const [showDrops, setShowDrops] = useState(false);
-  const [ctaOpen, setCtaOpen] = useState(false); // ポップアップ制御
+  const [ctaOpen, setCtaOpen] = useState(false);
 
-// ★ 下方向へ深くブリードする座標に更新
-const drops: DropItem[] = [
-  {
-    src: "/stage/drop-1.jpg",
-    dx: 0,
-    dy: 460,     // sp
-    dxMd: 0,
-    dyMd: 760,   // md
-    dxLg: 0,
-    dyLg: 900,   // lg
-    delay: 0.00, rotate: -6, z: 12,
-    w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]"
-  },
-  {
-    src: "/stage/drop-2.jpg",
-    dx: -90,
-    dy: 420,
-    dxMd: -170,
-    dyMd: 720,
-    dxLg: -210,
-    dyLg: 860,
-    delay: 0.18, rotate: -4, z: 14,
-    w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]"
-  },
-  {
-    src: "/stage/drop-3.jpg",
-    dx: 120,
-    dy: 520,
-    dxMd: 200,
-    dyMd: 820,
-    dxLg: 260,
-    dyLg: 960,
-    delay: 0.36, rotate: 6, z: 14,
-    w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]"
-  },
-  {
-    src: "/stage/drop-4.jpg",
-    dx: -70,
-    dy: 600,
-    dxMd: -150,
-    dyMd: 900,
-    dxLg: -200,
-    dyLg: 1040,
-    delay: 0.54, rotate: 8, z: 12,
-    w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]"
-  },
-];
+  /* ポップアップ表示中は背景スクロールを固定 & Escで閉じる */
+  useEffect(() => {
+    if (!ctaOpen) return;
+    const body = document.body;
+    const y = window.scrollY || window.pageYOffset;
+    const prev = { position: body.style.position, top: body.style.top, width: body.style.width, overflowY: body.style.overflowY };
+    body.style.position = "fixed";
+    body.style.top = `-${y}px`;
+    body.style.width = "100%";
+    body.style.overflowY = "scroll";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setCtaOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      body.style.position = prev.position;
+      const topVal = body.style.top;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflowY = prev.overflowY;
+      window.scrollTo(0, topVal ? -parseInt(topVal, 10) : y);
+    };
+  }, [ctaOpen]);
 
+  /* 深め落下（既存のまま） */
+  const drops: DropItem[] = [
+    { src: "/stage/drop-1.jpg", dx: 0, dy: 460, dxMd: 0, dyMd: 760, dxLg: 0, dyLg: 900, delay: 0.00, rotate: -6, z: 12, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-2.jpg", dx: -90, dy: 420, dxMd: -170, dyMd: 720, dxLg: -210, dyLg: 860, delay: 0.18, rotate: -4, z: 14, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-3.jpg", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 14, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-4.jpg", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 12, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
+  ];
 
+  /* ギャラリー画像（例：横写真＋キャプション） */
+  const galleryItems: GalleryItem[] = [
+    { src: "/gallery/eri.jpg", caption: "普通教室で「いのうえ学級」" },
+    { src: "/gallery/sports.jpg", caption: "校庭で「準備体操」" },
+    { src: "/gallery/food.jpg", caption: "そと廊下で「購買部」" },
+    { src: "/gallery/bun.jpg", caption: "文化祭当日朝「エジプトカフェ」" },
+    // 追加したい分だけ増やしてください。例の画像なら /gallery/IMG_1034.jpg など。
+  ];
 
   return (
     <section
@@ -361,13 +446,7 @@ const drops: DropItem[] = [
           <motion.img
             src="/stage/nara-1.png"
             alt="奈良の学校イメージ"
-            className="
-              md:justify-self-end rounded-2xl object-cover
-              absolute top-2 right-[-12%] w-[78%] max-w-[520px]
-              sm:top-3 sm:right-[-14%] sm:w-[82%] sm:max-w-[560px]
-              md:static md:w-[125%] md:translate-x-[15%]
-              lg:w-[140%] lg:translate-x-[20%] z-10
-            "
+            className="md:justify-self-end rounded-2xl object-cover absolute top-2 right-[-12%] w-[78%] max-w-[520px] sm:top-3 sm:right-[-14%] sm:w-[82%] sm:max-w-[560px] md:static md:w-[125%] md:translate-x-[15%] lg:w-[140%] lg:translate-x-[20%] z-10"
             initial={{ opacity: 0, x: 120, rotate: 0, scale: 0.96 }}
             whileInView={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
             transition={{ duration: 1.6, delay: 0.1, ease: EASE }}
@@ -382,10 +461,10 @@ const drops: DropItem[] = [
           <DuoBurstText show={showDrops} delaySecond={0.5} />
         </div>
 
-        {/* ===== 共通CTA（オレンジ）→ ポップアップ起動 ＋ 下余白 ===== */}
+        {/* CTA */}
         <div className="mt-10 md:mt-14 mb-24 flex justify-center px-4">
           <CtaButton
-            onClick={() => setCtaOpen(true)}                  // ★ クリックでモーダル
+            onClick={() => setCtaOpen(true)}
             label="もっと知りたい！"
             subLabel="✿ タイムスリップする校舎について ✿"
             variant="orange"
@@ -396,100 +475,16 @@ const drops: DropItem[] = [
         </div>
       </div>
 
-      {/* ===== CTA ポップアップ ===== */}
+      {/* ポップアップ */}
       <AnimatePresence>
         {ctaOpen && (
-          <>
-            {/* 背景/クリックで閉じる */}
-            <motion.button
-              aria-label="閉じる"
-              className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setCtaOpen(false)}
-            />
-            {/* 本体 */}
-            <motion.div
-              className="fixed inset-0 z-[1201] grid place-items-center p-6"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.25 }}
-            >
-              <motion.div
-                className="relative mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-b from-blue-50 to-white w-[min(92vw,520px)]"
-                initial={{ y: 12, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 12, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-6 md:p-7">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900">ガチ文高等学校ってなに？</h3>
-                  <p className="mt-3 text-sm md:text-base text-gray-600 leading-relaxed">
-                    文化祭のための仮想高校「ガチ文高等学校」の概要をご案内します。参加の流れや雰囲気をサクッとチェック！
-                  </p>
-
-                  <div className="mt-5 flex flex-col items-center gap-3">
-                    <a
-                      href={ctaHref}
-                      className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-                      onClick={() => setCtaOpen(false)}
-                      style={{ width: "min(340px, 86%)" }}
-                    >
-                      <img
-                        src="/btn-next.png"
-                        alt=""
-                        className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] rounded-full"
-                        draggable={false}
-                      />
-                      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-                        <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
-                      </span>
-                      <span className="sr-only">詳しく見る</span>
-                    </a>
-
-                    <button
-                      type="button"
-                      onClick={() => setCtaOpen(false)}
-                      className="px-4 py-2 text-sm rounded-full bg-gray-800 text-white/95 hover:bg-gray-900 transition"
-                    >
-                      閉じる
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </>
+          <ShimoichiPopup
+            onClose={() => setCtaOpen(false)}
+            linkHref={ctaHref}
+            items={galleryItems}
+          />
         )}
       </AnimatePresence>
-
-      {/* glint（保険） */}
-      <style jsx global>{`
-        .btn-glint {
-          background: linear-gradient(
-            90deg,
-            rgba(255,255,255,0) 0%,
-            rgba(255,255,255,0) 10%,
-            rgba(255,255,255,0.35) 45%,
-            rgba(255,255,255,0.8) 50%,
-            rgba(255,255,255,0.35) 55%,
-            rgba(255,255,255,0) 90%,
-            rgba(255,255,255,0) 100%
-          );
-          filter: blur(0.5px);
-          height: 140%;
-          animation: btn-glint-move 2.6s ease-in-out 0.9s infinite;
-        }
-        @keyframes btn-glint-move {
-          0% { transform: translateX(-120%) skewX(-12deg); opacity: 0; }
-          15% { opacity: 1; }
-          35% { transform: translateX(180%) skewX(-12deg); opacity: 0.9; }
-          45% { opacity: 0; }
-          100% { transform: translateX(180%) skewX(-12deg); opacity: 0; }
-        }
-      `}</style>
     </section>
   );
 }
