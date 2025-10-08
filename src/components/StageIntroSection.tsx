@@ -48,7 +48,7 @@ function VerticalTitle({
 }: { small: string; big: string; align?: "left" | "right"; bigOffset?: number }) {
   const col = align === "left" ? "grid-cols-[auto_1fr]" : "grid-cols-[1fr_auto] justify-items-end";
   const bigBase = "font-chalk text-white writing-vertical text-[17vw] md:text-[12vw] lg:text-[9vw] leading-[1.02]";
-  const smallBase = "font-chalk text-white writing-vertical text-[7.2vw] md:text-[5.4vw] lg:text-[4.2vw]";
+  const smallBase = "font-chalk text-white writing-vertical text-[9vw] md:text-[5.4vw] lg:text-[4.2vw]";
   return (
     <div className={`relative grid ${col} gap-4 md:gap-8`}>
       <motion.div
@@ -56,7 +56,7 @@ function VerticalTitle({
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.9, ease: EASE }}
         viewport={{ once: true, amount: 0.6 }}
-        className={[smallBase, align === "left" ? "justify-self-start" : "justify-self-end"].join(" ")}
+        className={[smallBase, align === "left" ? "justify-self-start" : "justify-self-end" ,"-mt-5 md:-mt-3 lg:-mt-4", ].join(" ")}
       >
         {small.split("").map((ch, i) => (
           <span
@@ -187,7 +187,7 @@ function FallingFour({
   const startOffsetY = bp === "lg" ? fallDistance.lg : bp === "md" ? fallDistance.md : fallDistance.sm;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30">
+    <div className="pointer-events-none absolute inset-0 z-[60]">
       {items.map((it, i) => {
         const tx = (bp === "lg" ? it.dxLg ?? it.dxMd ?? it.dx : bp === "md" ? it.dxMd ?? it.dx : it.dx) + centerOffset.x;
         const ty = (bp === "lg" ? it.dyLg ?? it.dyMd ?? it.dy : bp === "md" ? it.dyMd ?? it.dy : it.dy) + centerOffset.y;
@@ -227,8 +227,8 @@ function FallingFour({
 function DuoBurstText({
   show,
   delaySecond = 0.5,
-  tr = { text: "高校生に", dx: 180, dy: -120, dxMd: 180, dyMd: -180, dxLg: 220, dyLg: -210 },
-  br = { text: "タイムスリップ", dx: 110, dy: 100, dxMd: 210, dyMd: 160, dxLg: 260, dyLg: 200 },
+  tr = { text: "高校生に", dx: 220, dy: -120, dxMd: 180, dyMd: -180, dxLg: 220, dyLg: -210 },
+  br = { text: "タイムスリップ,", dx: 90, dy: 100, dxMd: 210, dyMd: 160, dxLg: 260, dyLg: 200 },
 }: {
   show: boolean;
   delaySecond?: number;
@@ -403,7 +403,7 @@ export default function StageIntroSection({
     body.style.overflowY = "scroll";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setCtaOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => {
+    return () => {DuoBurstText
       window.removeEventListener("keydown", onKey);
       body.style.position = prev.position;
       const topVal = body.style.top;
@@ -416,10 +416,10 @@ export default function StageIntroSection({
 
   /* 深め落下（既存のまま） */
   const drops: DropItem[] = [
-    { src: "/stage/drop-1.jpg", dx: 0, dy: 460, dxMd: 0, dyMd: 760, dxLg: 0, dyLg: 900, delay: 0.00, rotate: -6, z: 12, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-2.jpg", dx: -90, dy: 420, dxMd: -170, dyMd: 720, dxLg: -210, dyLg: 860, delay: 0.18, rotate: -4, z: 14, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-3.jpg", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 14, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-4.jpg", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 12, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
+    { src: "/stage/drop-1.jpg", dx: 0, dy: 460, dxMd: 0, dyMd: 760, dxLg: 0, dyLg: 900, delay: 0.00, rotate: -6, z: 60, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-2.jpg", dx: -90, dy: 420, dxMd: -170, dyMd: 720, dxLg: -210, dyLg: 860, delay: 0.18, rotate: -4, z: 62, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-3.jpg", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 62, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-4.jpg", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 69, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
   ];
 
   /* ギャラリー画像（例：横写真＋キャプション） */

@@ -57,7 +57,7 @@ const VICE: Person = {
   /** ★ここを2枚に */
   story: [
     { src: "/vice/1.png", caption: "教頭 1/2" },
-    { src: "/vice/2.", caption: "教頭 2/2" },
+    { src: "/vice/2.png", caption: "教頭 2/2" },
   ],
 };
 
@@ -119,7 +119,7 @@ export default function SchoolIntro() {
 
         {/* 2) 学校の説明（“文化祭の前夜”カード） */}
         <motion.div
-          className="relative z-30 rounded-2xl ring-1 ring-white/10 backdrop-blur-sm p-5 md:p-8"
+          className="relative z-30 rounded-2xl ring-0 ring-white/10 backdrop-blur-sm p-5 md:p-8"
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
@@ -210,7 +210,7 @@ export default function SchoolIntro() {
                 {VICE.name}
               </div>
               <div
-                className="text-[10px] sm:text-xs md:text-sm text-white/85 mt-1 sm:mt-2"
+                className="text-sm sm:text-base md:text-lg text-white/90 mt-1 sm:mt-2"
                 style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}
               >
                 プロフィールを見る
@@ -261,7 +261,7 @@ export default function SchoolIntro() {
                 {PRINCIPAL.name}
               </div>
               <div
-                className="text-[10px] sm:text-xs md:text-sm text-white/85 mt-1 sm:mt-2"
+                className="text-sm sm:text-base md:text-lg text-white/90 mt-1 sm:mt-2"
                 style={{ textShadow: "0 1px 3px rgba(0,0,0,.6)" }}
               >
                 プロフィールを見る
