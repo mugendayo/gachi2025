@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* conoutput: "export",
+  output: "export",
   images: { unoptimized: true },
-  trailingSlash: true,fig options here */
+  trailingSlash: true,
+  // assetPrefix/basePath は使わない（独自ドメイン直下なので不要）
 };
 
 export default nextConfig;
