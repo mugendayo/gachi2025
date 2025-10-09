@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
-  images: { unoptimized: true },
-  trailingSlash: true,
-  // assetPrefix/basePath は使わない（独自ドメイン直下なので不要）
+  output: "export",          // 静的HTMLを生成
+  images: { unoptimized: true }, // Image最適化を無効化
+  trailingSlash: true,          // すべてのパスにスラッシュを追加
+  basePath: "",                 // assetPrefixは使わない
 };
 
 export default nextConfig;
