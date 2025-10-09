@@ -18,12 +18,12 @@ type Character = {
 const CHARACTERS: Character[] = [
   {
     id: "a",
-    name: "新山ガノンドロフ先生",
+    name: "横山ガノンドロフ先生",
     title: "主人公界隈",
     image: "/chars/01.png",
     accent: "#22d3ee",
     lines: [
-      { text: "教育実習の新山です。今年もやってきましたね。ガチ文化祭。誰よりも目立ってやりますよ！" },
+      { text: "教育実習の横山です。今年もやってきましたね。ガチ文化祭。誰よりも目立ってやりますよ！" },
     ],
   },
   {
@@ -44,7 +44,7 @@ const CHARACTERS: Character[] = [
     accent: "#ef4444",
     lines: [
       { text: "んーテレビもねえ。ラジオもねえ。上着もズボンも履いてねえ。去年は脱衣でマージャン。今年は脱衣で格付け？！私がウワサの経費王、シナイでございますの。" },
-      { text: "ベルファイヤ、インフルエンザ、いつまで経っても変わらない。そう俺だけ人と違うこと。信念でありエンタメでございますの。" }
+      { text: "ベルファイヤ、インフルエンザ、いつまで経っても変わらない。そう俺だけ人と違うこと。ザッツ信念＆エンタメですの！" }
     ],
   },
   {
@@ -55,7 +55,7 @@ const CHARACTERS: Character[] = [
     accent: "#8b5cf6",
     lines: [
       { text: "『仕事が辛い。転職を考えている。』と相談されることがある。「変えたきゃ変えろよ」と答えると『いや、でも・・・』と別の言葉が出てくる。「だったら続けろよ」と言うと、『好きだったことが嫌いになるのが怖い』という。" },
-      { text: "ボクがやっていることを実践してみてほしい。「どうやって面白さを見出せる自分になるか」を考えながら取り組む。「好き・楽しい」は楽な状態でしか感じられない。「面白い」はしんどい状況でも感じられる。試してみてくれ。" },
+      { text: "ボクがやっていることを実践してみてほしい。「どうやって日常に面白さを見出せる自分になるか」を考えて生きるんだ。いいか。「好きや楽しい」はラク状態でしか感じられない。けれど「面白い」は、身体がキツくても感じられる。" },
       { text: "最後にはなるが、ボクたちが、このガチ文高等学校の神童。GACKT（学徒）だ。よろしく。" }
     ],
   },
@@ -203,6 +203,13 @@ export default function CharacterIntro() {
 
         {/* セリフ（吹き出し）— 小さめに調整 */}
         <div className="relative w-full bg-white/95 rounded-xl ring-2 ring-black/20 shadow-[0_10px_28px_rgba(0,0,0,.25)]">
+        {/* ← これを追加：右上の点滅ラベル */}
+        <span
+          className="pointer-events-none absolute right-2 top-1.5 md:right-3 md:top-2
+                    text-[14px] md:text-xs font-bold text-sky-600/90 select-none animate-blink"
+        >
+          クリックで次へ
+        </span>
           {/* しっぽ */}
           <span
             aria-hidden
@@ -274,3 +281,12 @@ export default function CharacterIntro() {
     </section>
   );
 }
+<style jsx global>{`
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0; }
+  }
+  .animate-blink {
+    animation: blink 1s steps(1, end) infinite;
+  }
+`}</style>

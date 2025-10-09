@@ -8,20 +8,20 @@ type InfoRow = { iconSrc: string; label: string; href?: string };
 export default function FinalProductSection({
   coverSrc = "/icons/cover.png",
   badgeText = "タイムスリップ版",
-  msrp = "31,800円（税込）",
-  infoTitle = "購入する",
+  msrp = "33,450円（税込）",
+  infoTitle = "クレカまたはコンビニで購入する",
   infoBody = "　",
   rows = [
-    { iconSrc: "/icons/ticket-red.png", label: "はじめての人向けページ", href: "/getting-started" },
-    { iconSrc: "/icons/discord.jpg",    label: "高校のDiscordリンク（無料で入れます）", href: "https://discord.gg/BaCmFRfM" },
+    { iconSrc: "/icons/ticket-red.png", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/getting-started" },
+    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/BaCmFRfM" },
   ] as InfoRow[],
   thirdItemSrc = "/icons/arm.png",
   companyLogoSrc = "/icons/thg.png",
   ariaLabelThird = "不思議なアイテムを手に入れる",
   // ▼ 追加
   purchaseHref = "/buy",
-  purchaseSubText = "クレジットカード決済はこちら",
-  thgHref = "https://thanatos-games-jqgx8mo.gamma.site/", // ← 追加（本番は公式URLに変更）
+  purchaseSubText = "当日現金払いも可能",
+  thgHref = "https://t.livepocket.jp/e/gachi2025", // ← 追加（本番は公式URLに変更）
 }: {
   
   ariaLabelThird?: string;
@@ -163,7 +163,7 @@ const [showThgSweep, setShowThgSweep] = useState(false);
               <h3 className="text-[clamp(20px,4.6vw,32px)] font-extrabold tracking-wide drop-shadow-[0_2px_0_rgba(0,0,0,.25)]">
                 ガチ文化祭２０２５
               </h3>
-              <div className="mt-3 text-sm/relaxed opacity-90">発売日：2025年10月5日（仮）</div>
+              <div className="mt-3 text-sm/relaxed opacity-90">発売日：2025年10月10日</div>
               <div className="mt-4">
                 <div className="text-[15px] md:text-[16px] opacity-90">希望小売価格</div>
                 <div className="mt-1 inline-flex items-baseline gap-2 rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/25">

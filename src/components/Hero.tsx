@@ -12,8 +12,7 @@ const LS_SEEN_POPUP = "gbf_seen_popup";
 const LS_CREST_ACQUIRED = "gbf_crest_acquired";
 
 const STEP2_LINES = [
-  "生徒証を手に入れたのね！ガチ文高等学校へようこそ！",
-  "きみは「生徒」としてタイムスリップしてきたのよ！さあ、文化祭の準備をしなくっちゃ！",
+  "生徒証を手に入れたのね！ガチ文高等学校へようこそ！きみは「生徒」としてタイムスリップしてきたのよ！さあ、文化祭の準備をしなくっちゃ！",
 ];
 
 const TYPE_SPEED = 34;
@@ -52,14 +51,68 @@ export default function Hero() {
   const [crestAcquired, setCrestAcquired] = useState(false); // 取得フラグ（将来拡張用）
   const [bgActive, setBgActive] = useState(true);
 
-  // タイプライター
+  // ===== STEP2 専用：文章分割（「きみは」で2つに分けてタイプ） =====
+  const STEP2_FULL = STEP2_LINES[0];
+  const splitIdx = STEP2_FULL.indexOf("きみは");
+  const STEP2_PART_A = splitIdx >= 0 ? STEP2_FULL.slice(0, splitIdx) : STEP2_FULL;
+  const STEP2_PART_B = splitIdx >= 0 ? STEP2_FULL.slice(splitIdx) : "";
+
+  const [typedA, setTypedA] = useState("");
+  const [isTypingA, setIsTypingA] = useState(false);
+  const [typedB, setTypedB] = useState("");
+  const [isTypingB, setIsTypingB] = useState(false);
+  const [showSecond, setShowSecond] = useState(false); // 後半の出現フラグ
+
+  // 後半まで含めて全文表示する（途中タップ時）
+  const revealAllStep2 = () => {
+    if (isTypingA) {
+      setTypedA(STEP2_PART_A);
+      setIsTypingA(false);
+    }
+    setShowSecond(true);
+    if (STEP2_PART_B) {
+      setTypedB(STEP2_PART_B);
+      setIsTypingB(false);
+    }
+  };
+
+  // 前半タイプ開始 → 0.3s後に後半タイプ開始
+  const startTypingA = (text: string) => {
+    setTypedA("");
+    setIsTypingA(true);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setTypedA(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(timer);
+        setIsTypingA(false);
+        setTimeout(() => {
+          setShowSecond(true);
+          if (STEP2_PART_B) startTypingB(STEP2_PART_B);
+        }, 300); // ★ ほんの少し遅延
+      }
+    }, TYPE_SPEED);
+  };
+
+  const startTypingB = (text: string) => {
+    setTypedB("");
+    setIsTypingB(true);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setTypedB(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(timer);
+        setIsTypingB(false);
+      }
+    }, TYPE_SPEED);
+  };
+
+  // 既存タイプライタ（他箇所で使う可能性があるので残すが、STEP2では未使用）
   const [lineIdx, setLineIdx] = useState(0);
   const [typed, setTyped] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-
-  /* -----------------------------
-   * Typewriter helpers
-   * --------------------------- */
   const startTyping = (text: string) => {
     setTyped("");
     setIsTyping(true);
@@ -73,14 +126,12 @@ export default function Hero() {
       }
     }, TYPE_SPEED);
   };
-
   const revealAll = () => {
     if (isTyping) {
       setTyped(STEP2_LINES[lineIdx]);
       setIsTyping(false);
     }
   };
-
   const nextLine = () => {
     if (lineIdx < STEP2_LINES.length - 1) {
       const next = lineIdx + 1;
@@ -146,7 +197,6 @@ export default function Hero() {
 
   /* -----------------------------
    * スクロールロック（初回/ポップアップ時）
-   *  ※ 以前の2本の useEffect を1本に集約（挙動は同じ）
    * --------------------------- */
   useEffect(() => {
     const lock = popupStep !== 0 || !hasSeenPopup;
@@ -169,12 +219,18 @@ export default function Hero() {
   }, [popupStep, hasSeenPopup]);
 
   /* -----------------------------
-   * ポップアップの typing 初期化
+   * ポップアップの typing 初期化（STEP2専用）
    * --------------------------- */
   useEffect(() => {
     if (popupStep === 2) {
-      setLineIdx(0);
-      startTyping(STEP2_LINES[0]);
+      // リセット
+      setTypedA("");
+      setTypedB("");
+      setIsTypingA(false);
+      setIsTypingB(false);
+      setShowSecond(false);
+      // 先に前半をタイプ開始
+      startTypingA(STEP2_PART_A);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [popupStep]);
@@ -321,7 +377,7 @@ export default function Hero() {
                         <source src="/goal.mp4" type="video/mp4" />
                       </video>
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/75 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-5 flex justify-center">
+                      <div className="absolute inset-x-0 bottom-12 flex justify-center">
                         <div className="flex flex-col items-center">
                           <motion.button
                             onClick={goStep2}
@@ -350,7 +406,7 @@ export default function Hero() {
                             onClick={goStep2}
                             role="button"
                             tabIndex={0}
-                            className="rpg-chip cursor-pointer select-none -mt-14"
+                            className="rpg-chip cursor-pointer select-none -mt-18 "
                             initial={{ opacity: 0, y: 0 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.85, duration: 0.35, ease: "easeOut" }}
@@ -384,29 +440,47 @@ export default function Hero() {
                           />
                           <motion.button
                             type="button"
-                            onClick={() => (isTyping ? revealAll() : nextLine())}
+                            onClick={() =>
+                              (isTypingA || isTypingB) ? revealAllStep2() : finishPopup()
+                            } // 途中は全文表示、完了後は閉じる
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.28 }}
-                            className="w-[92%] md:w-[85%] bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-4 md:p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+                            className="relative w-[92%] md:w-[85%] bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-4 md:p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
                             style={{ fontFamily: "DotGothic16, system-ui, sans-serif", minHeight: 120 }}
                           >
                             <p className="text-[17px] md:text-[18px] leading-relaxed text-gray-800 break-words">
-                              {typed}
-                              {isTyping && <span className="tw-caret">▋</span>}
+                              {typedA}
+                              {isTypingA && <span className="tw-caret">▋</span>}
+
+                              {showSecond && (
+                                <>
+                                  <br />
+                                  <span>
+                                    {typedB}
+                                    {isTypingB && <span className="tw-caret">▋</span>}
+                                  </span>
+                                </>
+                              )}
                             </p>
+
                             <div className="mt-2 text-[11px] text-gray-500 select-none">
-                              {isTyping ? "タップで全文表示" : lineIdx < STEP2_LINES.length - 1 ? "タップで次のセリフ" : "下のボタンで閉じる"}
+                              {(isTypingA || isTypingB) ? "タップで全文表示" : "下のボタンで閉じる"}
                             </div>
+
+                            {/* 閉じる（全文表示後のみ） */}
+                            {!isTypingA && !isTypingB && showSecond && (
+                              <motion.button
+                                onClick={finishPopup}
+                                className="absolute bottom-5 right-6 px-4 py-2 text-sm rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
+                              >
+                                閉じる
+                              </motion.button>
+                            )}
                           </motion.button>
-                          <div className="mt-9 flex justify-center w-full">
-                            <button
-                              onClick={finishPopup}
-                              className="px-5 py-2 text-sm rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
-                            >
-                              閉じる
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -454,8 +528,8 @@ export default function Hero() {
                   </span>
 
                   <div className="flex-1">
-                    <div className="text-[12px] font-extrabold text-[#6a4f1f]">はじめての人へ</div>
-                    <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">わかばガイド</div>
+                    <div className="text-[12px] font-extrabold text-[#6a4f1f]">はじめて遊ぶ人へ</div>
+                    <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">ガチ文のきほん</div>
                   </div>
 
                   <span aria-hidden className="ml-2 shrink-0 text-[#2ea44f]">
@@ -466,84 +540,94 @@ export default function Hero() {
                 </Link>
 
                 {/* ② 去年の動画 */}
-                <a
-                  href={YOUTUBE_LAST_YEAR}
-                  className={[
-                    "group relative flex w-full items-center gap-4",
-                    "rounded-2xl px-4 py-3",
-                    "bg-white text-[#14587a]",
-                    "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
-                    "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
-                    "overflow-hidden",
-                  ].join(" ")}
-                >
-                  <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
-                  <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-                    <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
-                  </span>
-
-                  <div className="shrink-0 w-40">
-                    <div className="relative w-full overflow-hidden rounded-xl ring-1 ring-black/10" style={{ aspectRatio: "16 / 9" }}>
+                  <a
+                    href={YOUTUBE_LAST_YEAR}
+                    className={[
+                      "group relative flex w-full items-center gap-3 md:gap-4",
+                      "rounded-2xl px-3.5 md:px-4 py-3",
+                      "bg-white/85 backdrop-blur text-[#14587a]",
+                      "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+                      "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+                      "overflow-hidden",
+                    ].join(" ")}
+                  >
+                    {/* サムネ（サイズを端末でそろえる） */}
+                    <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
                       <img
                         src={THUMB_LAST_YEAR}
                         alt="去年の動画"
                         className="absolute inset-0 h-full w-full object-cover bg-gray-100"
                         draggable={false}
+                        loading="lazy"
                       />
                     </div>
-                  </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[18px] md:text-[19px] font-extrabold tracking-wide text-[#1675a3]">去年の動画</div>
-                    <div className="mt-0.5 text-[12px] text-gray-500 line-clamp-1">映像で雰囲気をチェック</div>
-                  </div>
+                    {/* タイトル（1行でトリム＆レスポンシブ） */}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={[
+                          "font-extrabold tracking-wide text-[#1675a3]",
+                          "whitespace-nowrap overflow-hidden text-ellipsis",
+                          "text-[16px] sm:text-[17px] md:text-[18px]",
+                        ].join(" ")}
+                      >
+                        去年の動画
+                      </div>
+                    </div>
 
-                  <span aria-hidden className="ml-2 shrink-0 text-[#1675a3]">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                </a>
+                    <span aria-hidden className="ml-2 shrink-0 text-[#1675a3]">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </a>
+
+
 
                 {/* ③ 第1回目の動画 */}
-                <a
-                  href={YOUTUBE_FIRST}
-                  className={[
-                    "group relative flex w-full items-center gap-4",
-                    "rounded-2xl px-4 py-3",
-                    "bg-white text-[#0f6a5a]",
-                    "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
-                    "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
-                    "overflow-hidden",
-                  ].join(" ")}
-                >
-                  <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
-                  <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-                    <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
-                  </span>
+              <a
+                href={YOUTUBE_FIRST}
+                className={[
+                  "group relative flex w-full items-center gap-3 md:gap-4",
+                  "rounded-2xl px-3.5 md:px-4 py-3",
+                  "bg-white/85 backdrop-blur text-[#0f6a5a]",
+                  "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+                  "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+                  "overflow-hidden",
+                ].join(" ")}
+              >
+                {/* サムネ（サイズを端末でそろえる） */}
+                <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
+                  <img
+                    src={THUMB_FIRST}
+                    alt="第1回目の動画"
+                    className="absolute inset-0 h-full w-full object-cover bg-gray-100"
+                    draggable={false}
+                    loading="lazy"
+                  />
+                </div>
 
-                  <div className="shrink-0 w-40">
-                    <div className="relative w-full overflow-hidden rounded-xl ring-1 ring-black/10" style={{ aspectRatio: "16 / 9" }}>
-                      <img
-                        src={THUMB_FIRST}
-                        alt="第1回目の動画"
-                        className="absolute inset-0 h-full w-full object-cover bg-gray-100"
-                        draggable={false}
-                      />
-                    </div>
+                {/* タイトル（1行でトリム＆レスポンシブ） */}
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={[
+                      "font-extrabold tracking-wide text-[#118a76]",
+                      "whitespace-nowrap overflow-hidden text-ellipsis",
+                      "text-[16px] sm:text-[17px] md:text-[18px]",
+                    ].join(" ")}
+                  >
+                    第1回目の動画
                   </div>
+                </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[18px] md:text-[19px] font-extrabold tracking-wide text-[#118a76]">第1回目の動画</div>
-                    <div className="mt-0.5 text-[12px] text-gray-500 line-clamp-1">はじまりの記録</div>
-                  </div>
+                <span aria-hidden className="ml-2 shrink-0 text-[#118a76]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </a>
 
-                  <span aria-hidden className="ml-2 shrink-0 text-[#118a76]">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                </a>
+
               </div>
               {/* ▲ ここまで縦並び3ボタン */}
             </div>
@@ -670,7 +754,7 @@ export default function Hero() {
               </div>
 
               <a
-                href="https://gachibun.studio.site/ticket"
+                href="https://t.livepocket.jp/e/gachi2025"
                 aria-label="チケットを購入する"
                 className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                 rel="noopener"
@@ -758,7 +842,7 @@ export default function Hero() {
           align-items: center;
           gap: 8px;
           padding: 8px 14px;
-          font-size: clamp(12px, 2.6vw, 14px);
+          font-size: clamp(28px, 3.8vw, 22px);
           line-height: 1;
           color: #fff;
           background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.75) 100%),

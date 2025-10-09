@@ -246,7 +246,7 @@ function DuoBurstText({
     return (
       <motion.div
         key={key}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30 overflow-visible"
         initial={{ opacity: 0, y: 46 }}
         animate={show ? { opacity: 1, x, y } : { opacity: 0, x, y }}
         transition={{ delay: baseDelay, duration: 1.0, ease: EASE }}
@@ -330,11 +330,11 @@ function ShimoichiPopup({
               下市集学校って？
             </h3>
             <p className="mt-2 text-[13px] md:text-[14px] leading-relaxed text-sky-900/80">
-              奈良県・下市町の廃校を再生した多目的施設。ガチ文化祭の舞台です。緑と木の香りに包まれた“帰ってこられる学校”。
+              奈良県・下市町の使われなくなった学校を再生した多目的施設。ガチ文高等学校の舞台であり、タイムスリップ先になっています。緑と木の香りに包まれた“帰ってこられる学校”として、吉野の空気が凛と佇んでいます。
             </p>
 
             <a
-              href={linkHref}
+              href="https://www.shugakko.or.jp/shugakko/shimoichi"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 inline-flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-bold text-white ring-1 ring-black/5 shadow-[0_8px_22px_rgba(0,0,0,.15)] hover:opacity-95"
@@ -428,6 +428,10 @@ export default function StageIntroSection({
     { src: "/gallery/sports.jpg", caption: "校庭で「準備体操」" },
     { src: "/gallery/food.jpg", caption: "そと廊下で「購買部」" },
     { src: "/gallery/bun.jpg", caption: "文化祭当日朝「エジプトカフェ」" },
+    { src: "/gallery/front.jpg", caption: "文化祭当日 子どもたちの受付" },
+    { src: "/gallery/school.jpg", caption: "廊下から中庭を眺める" },
+    { src: "/gallery/school2.jpg", caption: "中庭から廊下を眺める" },
+    { src: "/gallery/morning.jpg", caption: "文化祭当日 みんなの企画発表！" },
     // 追加したい分だけ増やしてください。例の画像なら /gallery/IMG_1034.jpg など。
   ];
 

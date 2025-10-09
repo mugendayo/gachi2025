@@ -1,7 +1,6 @@
-// components/TimeScheduleSection.tsx
 "use client";
-import { useMemo, useState, type CSSProperties } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* ========= 手書き見出し ========= */
 function ChalkHeading({ text }: { text: string }) {
@@ -29,10 +28,10 @@ function ChalkHeading({ text }: { text: string }) {
   );
 }
 
-/* ========= 手書き本文 ========= */
+/* ========= 手書き本文（サイズUP済み） ========= */
 function ChalkText({ text }: { text: string }) {
   return (
-    <p className="text-white font-chalk leading-relaxed text-left text-[clamp(14px,1.4vw,26px)]">
+    <p className="text-white font-chalk leading-relaxed text-left text-[clamp(18px,2vw,36px)] font-semibold drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
       {text.split("").map((char, i) => {
         const r = (Math.random() - 0.5) * 6;
         const y = (Math.random() - 0.5) * 4;
@@ -54,194 +53,244 @@ function ChalkText({ text }: { text: string }) {
   );
 }
 
-/* ========= 縦書き「次へ」ボタン（発光） ========= */
-function ChalkNextButton({
-  label, onClick, className = "", style,
-}: { label: string; onClick: () => void; className?: string; style?: CSSProperties }) {
+/* ========= スワイプ誘導：チョークで描かれる矢印 ========= */
+function ChalkArrowHint() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className={[
-        "relative inline-block select-none",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/80 rounded-md",
-        className,
-      ].join(" ")}
-      style={style}
+    <div
+      className="pointer-events-none absolute top-1/2 right-2 md:right-6 -translate-y-1/2 z-40"
+      aria-hidden
     >
-      <span className="tg-breath relative inline-block">
-        <span aria-hidden className="tg-aurora absolute -inset-4 rounded-[16px] blur-xl pointer-events-none" />
-        <span
-          className="tg-text relative z-10 text-white font-chalk leading-none block text-[clamp(36px,5.2vw,86px)]"
-          style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-        >
-          {label.split("").map((ch, i) => {
-            const r = (Math.random() - 0.5) * 6;
-            const y = (Math.random() - 0.5) * 4;
-            return (
-              <span
-                key={i}
-                style={{
-                  display: "inline-block",
-                  transform: `rotate(${r}deg) translateY(${y}px)`,
-                  marginBottom: ch === " " ? "0.6em" : "0.06em",
-                }}
-              >
-                {ch}
-              </span>
-            );
-          })}
-        </span>
-      </span>
+      <svg
+        width="clamp(90px,10vw,160px)"
+        height="clamp(110px,20vw,260px)"
+        viewBox="0 0 160 260"
+        fill="none"
+        className="opacity-95"
+      >
+        <path
+          d="M150 20 L40 20 L40 5 L10 30 L40 55 L40 40 L150 40
+             M150 110 L40 110 L40 95 L10 120 L40 145 L40 130 L150 130
+             M150 200 L40 200 L40 185 L10 210 L40 235 L40 220 L150 220"
+          stroke="rgba(255,255,255,0.35)"
+          strokeWidth="12"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ filter: "blur(1px)" }}
+        />
+        <path
+          d="M150 20 L40 20 L40 5 L10 30 L40 55 L40 40 L150 40
+             M150 110 L40 110 L40 95 L10 120 L40 145 L40 130 L150 130
+             M150 200 L40 200 L40 185 L10 210 L40 235 L40 220 L150 220"
+          stroke="white"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="chalk-draw"
+        />
+      </svg>
 
       <style jsx>{`
-        .tg-breath { animation: tg-breath-kf 3.2s ease-in-out 0.4s infinite; }
-        @keyframes tg-breath-kf { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
-        .tg-aurora{
-          background:
-            radial-gradient(60% 60% at 30% 40%, rgba(255,120,180,.45), transparent 70%),
-            radial-gradient(50% 50% at 70% 60%, rgba(120,220,255,.35), transparent 70%);
-          animation: tg-aurora-move 7.5s ease-in-out infinite alternate, tg-aurora-hue 9s linear infinite;
-          opacity:.75;
+        @keyframes chalk-draw {
+          0% { stroke-dashoffset: 1200; opacity: .85; }
+          60% { stroke-dashoffset: 0; opacity: 1; }
+          80% { opacity: 1; }
+          100% { stroke-dashoffset: 0; opacity: .85; }
         }
-        @keyframes tg-aurora-move { 0%{transform:translate(-6%,-4%)} 100%{transform:translate(6%,4%)} }
-        @keyframes tg-aurora-hue { 0%{filter:hue-rotate(0deg) saturate(110%)} 50%{filter:hue-rotate(18deg) saturate(130%)} 100%{filter:hue-rotate(0deg) saturate(110%)} }
-        .tg-text{
-          text-shadow:0 0 6px rgba(255,255,255,.55),0 0 18px rgba(255,120,180,.35),0 2px 10px rgba(0,0,0,.30);
-          animation: tg-text-glow 4.2s ease-in-out infinite;
+        .chalk-draw {
+          stroke-dasharray: 1200;
+          stroke-dashoffset: 1200;
+          animation: chalk-draw 2.8s ease-in-out infinite;
+          filter: drop-shadow(0 0 6px rgba(255,255,255,.35));
         }
-        @keyframes tg-text-glow{
-          0%,100%{color:#fff;text-shadow:0 0 6px rgba(255,255,255,.55),0 0 18px rgba(255,120,180,.35),0 2px 10px rgba(0,0,0,.30)}
-          50%{color:#ffd6ea;text-shadow:0 0 8px rgba(255,170,210,.85),0 0 22px rgba(255,120,180,.55),0 2px 12px rgba(0,0,0,.35)}
+        @media (prefers-reduced-motion: reduce) {
+          .chalk-draw { animation: none; stroke-dashoffset: 0; }
         }
       `}</style>
-    </button>
+    </div>
   );
 }
 
-/* ========= Variants / Data ========= */
+/* ========= ロック演出タイル（左上鍵＋ホバー暗転・クリック不可） ========= */
+function LockedTile({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div
+      role="button"
+      aria-disabled="true"
+      title="近日公開"
+      className={[
+        "relative inline-block rounded-xl overflow-hidden",
+        "ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)]",
+        "cursor-not-allowed select-none group",
+      ].join(" ")}
+      style={{ width: "clamp(120px,34vw,300px)" }}
+    >
+      {/* 画像 */}
+      <img
+        src={src}
+        alt={alt}
+        className="block w-full h-auto transition duration-200 group-hover:grayscale group-hover:brightness-75"
+        draggable={false}
+      />
+
+      {/* ホバー暗転 */}
+      <span className="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-200" />
+
+      {/* 左上：鍵バッジ */}
+      <span
+        className={[
+          "absolute top-1.5 left-1.5 z-10",
+          "inline-flex items-center gap-1 px-2 py-1 rounded-full",
+          "bg-black/60 backdrop-blur-[2px] text-white text-[14px] font-semibold",
+          "ring-1 ring-white/20",
+        ].join(" ")}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" className="opacity-90">
+          <path
+            d="M7 10V8a5 5 0 0110 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2 0h6V8a3 3 0 10-6 0v2z"
+            fill="currentColor"
+          />
+        </svg>
+        11月17日解禁!！
+      </span>
+    </div>
+  );
+}
+/* ========= スケジュールデータ ========= */
 const EASE = [0.16, 1, 0.3, 1] as const;
-const listVariants: Variants = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { staggerChildren: 0.1, duration: 0.35, ease: EASE } } };
-const itemVariants: Variants = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: EASE } } };
 
-type OneDay = {
-  key: "day1" | "day2" | "final";
-  heading: string;
-  sub: string;
-  items: { time: string; label: string }[];
-  youtubeId: string;
-};
-
-const schedules: OneDay[] = [
-  { key: "day1", heading: "1日目 - 集合＆導入", sub: "舞台に入場。はじまりのベル。", items: [
-      { time: "13:00", label: "集合・オープニング／ホームルーム" },
-      { time: "14:00", label: "校内探検ツアー" },
-    ], youtubeId: "Ade3z8gsutw" },
-  { key: "day2", heading: "2日目 - 準備＆体育祭", sub: "汗かいて笑って、文化祭の芯を作る。", items: [
-      { time: "09:00", label: "朝礼・準備開始" },
-      { time: "11:00", label: "体育祭（全体競技・クラス対抗）" },
-    ], youtubeId: "pk7cy_tVsjs" },
-  { key: "final", heading: "ガチ文化祭 当日！", sub: "全部を乗せて、幕が上がる。", items: [
-      { time: "09:30", label: "開会式・来場者入場" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-      { time: "11:00", label: "出し物一斉スタート" },
-
-    ], youtubeId: "adO_ZaShq34" },
-];
-
+const schedules = [
+  {
+    key: "day1",
+    heading: "11月1日(土) 文化祭まであと2日！",
+    sub: "舞台に入場。はじまりのベル。",
+    items: [
+      { time: "08:00", label: "遅刻厳禁！超新星ホームルーム" },
+      { time: "09:00", label: "通常授業" },
+      { time: "10:45", label: "ガチ文高等学校体育祭" },
+      { time: "13:30", label: "激レア！秘密の授業" },
+      { time: "14:30", label: "文化祭準備" },
+    ],
+    youtubeId: "8G67_w_tFB0",
+  },
+  {
+    key: "day2",
+    heading: "11月2日(日) 文化祭まであと1日！",
+    sub: "汗かいて笑って、文化祭の芯を作る。",
+    items: [
+      { time: "08:30", label: "超新星ホームルーム" },
+      { time: "09:00", label: "映像授業" },
+      { time: "09:45", label: "文化祭準備" },
+      { time: "12:20", label: "限界を越えろ！1500m走" },
+    ],
+    youtubeId: "jsczTaACzdU",
+  },
+  {
+    key: "final",
+    heading: "11月3日(祝日)　ガチ文化祭の日！",
+    sub: "全部を乗せて、幕が上がる。",
+    items: [
+      { time: "08:30", label: "超新星ホームルーム！" },
+      { time: "10:30", label: "開会式＆高校生バンド" },
+      { time: "11:00", label: "ガチ文化祭！" },
+      { time: "17:15", label: "閉会式" },
+      { time: "18:00", label: "後夜祭　残響校舎" },
+    ],
+    youtubeId: "n3AKmUFhIuw",
+  },
+]
 /* ========= 本体 ========= */
 export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: string }) {
   const [idx, setIdx] = useState(0);
+  const [direction, setDirection] = useState(0);
+
+  const paginate = (newDir: number) => {
+    setDirection(newDir);
+    setIdx((prev) => (prev + newDir + schedules.length) % schedules.length);
+  };
+
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+    center: { x: 0, opacity: 1, transition: { duration: 0.5, ease: EASE } },
+    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0, transition: { duration: 0.4, ease: EASE } }),
+  };
+
   const day = schedules[idx];
-  const nextLabel = useMemo(() => (idx === 0 ? "次へ ▶︎" : idx === 1 ? "当日へ ▶︎" : "最初に戻る"), [idx]);
-  const handleNext = () => setIdx((p) => (p + 1) % schedules.length);
 
   return (
-    <section id="schedule" className="relative text-white">
+    <section id="schedule" className="relative text-white overflow-hidden">
       {/* 背景は常に cover */}
-      <div className="relative w-screen left-1/2 -translate-x-1/2 bg-cover bg-center" style={{ backgroundImage: `url(${bg})` }}>
+      <div
+        className="relative w-screen left-1/2 -translate-x-1/2 bg-cover bg-center"
+        style={{ backgroundImage: `url(${bg})` }}
+      >
         <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-10 md:py-14">
-          {/* 見出し～時間割 */}
-          <div className="relative">
-            <ChalkHeading text={day.heading} />
-            <div className="mt-1 text-[clamp(12px,1.2vw,22px)] text-white/85">{day.sub}</div>
-            <div className="my-4 md:my-6 h-[2px] w-2/3 bg-white/60 blur-[0.5px]" />
+          <AnimatePresence custom={direction} mode="popLayout">
+            <motion.div
+              key={day.key}
+              className="relative"
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.8}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -100) paginate(1);
+                else if (info.offset.x > 100) paginate(-1);
+              }}
+            >
+              <ChalkHeading text={day.heading} />
+              {/* sub は出さない（必要なら day.sub をここに） */}
+              <div className="my-4 md:my-6 h-[2px] w-2/3 bg-white/60 blur-[0.5px]" />
 
-            <AnimatePresence mode="wait">
+              {/* 🕒 タイムスケジュール一覧 */}
               <motion.ul
-                key={day.key + "-list"}
-                variants={listVariants}
-                initial="hidden"
-                animate="show"
-                exit="hidden"
                 className="space-y-2 md:space-y-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { delay: 0.3 } }}
               >
                 {day.items.map((it, i) => (
-                  <motion.li key={i} variants={itemVariants}>
+                  <li key={i}>
                     <ChalkText text={`${it.time}　${it.label}`} />
-                  </motion.li>
+                  </li>
                 ))}
               </motion.ul>
-            </AnimatePresence>
-        {/* ==== YouTube：この“内側”を relative にして、右上に1つだけ絶対配置 ==== */}
-        <div className="mt-6 md:mt-8">
-        <div className="relative mx-auto w-full max-w-[240px] md:max-w-[300px]">
-            {/* 右上のCTA（transformで外側に寄せる／1個だけ） */}
-            <div
-            className="absolute z-30 top-0 right-0
-                        translate-x-[10%] -translate-y-[60%]
-                        md:translate-x-[12%] md:-translate-y-[64%]
-                        lg:translate-x-[14%] lg:-translate-y-[70%]"
-            >
-            <div className="rotate-[6deg]" style={{ transformOrigin: "50% 50%" }}>
-                <ChalkNextButton
-                label={nextLabel}
-                onClick={handleNext}
-                className="scale-[0.84] sm:scale-[0.92] md:scale-100"
+
+              {/* 🎬 YouTube：中央下（ボタンより上）にスライドイン */}
+              <motion.div
+                key={day.youtubeId}
+                initial={{ opacity: 0, y: 80, scale: 0.9 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  scale: 1,
+                  transition: { delay: 0.3, duration: 0.6, ease: EASE },
+                }}
+                exit={{ opacity: 0, y: 60, scale: 0.9, transition: { duration: 0.4 } }}
+                className="relative mx-auto mt-8 mb-8 w-full max-w-[320px] md:max-w-[480px] rounded-xl overflow-hidden ring-1 ring-white/20 shadow-[0_8px_20px_rgba(0,0,0,.4)] bg-black/30"
+              >
+                <iframe
+                  src={`https://www.youtube.com/embed/${day.youtubeId}?rel=0&modestbranding=1`}
+                  title="YouTube video"
+                  className="w-full aspect-video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
                 />
-            </div>
-            </div>
+              </motion.div>
 
-            {/* 動画本体 */}
-            <div className="relative w-full aspect-video rounded-xl overflow-hidden ring-1 ring-white/20 shadow-[0_12px_28px_rgba(0,0,0,.35)] bg-black/30">
-            <iframe
-                src={`https://www.youtube.com/embed/${day.youtubeId}?rel=0&modestbranding=1&cc_load_policy=0`}
-                title="YouTube video"
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                loading="lazy"
-            />
-            </div>
-        </div>
+              {/* 🔗 下部（ロック中） */}
+              <div className="mt-6 w-full max-w-[720px] mx-auto grid grid-cols-2 place-items-center gap-4 md:gap-6">
+                <LockedTile src="/schedule/btn-seishun.png" alt="青春の延命治療（近日公開）" />
+                <LockedTile src="/schedule/btn-archive.png" alt="過去企画一覧（近日公開）" />
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-        {/* 画像ボタン 2つ（中央・横並び） */}
-        <div className="mt-4 md:mt-5 w-full max-w-[720px] mx-auto grid grid-cols-2 place-items-center gap-4 md:gap-6">
-            <a href="/seishun" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-            <img src="/schedule/btn-seishun.png" alt="青春の延命治療"
-                className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5" />
-            </a>
-            <a href="/archives" className="group inline-block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-            <img src="/schedule/btn-archive.png" alt="過去企画一覧"
-                className="block h-auto w-[clamp(120px,34vw,300px)] max-w-[300px] rounded-xl ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)] transition-transform duration-200 group-hover:-translate-y-0.5" />
-            </a>
-        </div>
-        </div>
-
-          </div>
+          {/* 🎨 チョーク矢印を右側に固定表示 */}
+          <ChalkArrowHint />
         </div>
       </div>
 
