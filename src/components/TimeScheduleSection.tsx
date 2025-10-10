@@ -53,13 +53,32 @@ function ChalkText({ text }: { text: string }) {
   );
 }
 
-/* ========= スワイプ誘導：チョークで描かれる矢印 ========= */
+/* ========= スワイプ誘導：チョークで描かれる矢印＋テキスト ========= */
 function ChalkArrowHint() {
   return (
     <div
       className="pointer-events-none absolute top-1/2 right-2 md:right-6 -translate-y-1/2 z-40"
       aria-hidden
     >
+      {/* ★ 追加：チョーク文字の案内 */}
+      <div className="absolute -top-8 right-[6px] md:right-[10px] translate-y-[-100%] text-right">
+        <div
+          className={[
+            "font-chalk text-white/95 drop-shadow-[0_0_6px_rgba(0,0,0,.35)]",
+            "text-[clamp(14px,2.4vw,22px)] leading-tight tracking-[.04em]",
+            "chalk-write chalk-wiggle inline-block px-2 py-1 rounded-sm",
+          ].join(" ")}
+          style={{
+            textShadow:
+              "0 0 6px rgba(0,0,0,.35), 0 1px 6px rgba(0,0,0,.30), 0 0 18px rgba(255,255,255,.18)",
+          }}
+        >
+          <span className="block">スワイプで</span>
+          <span className="block">次の日</span>
+        </div>
+      </div>
+
+      {/* 既存：チョーク矢印 */}
       <svg
         width="clamp(90px,10vw,160px)"
         height="clamp(110px,20vw,260px)"
@@ -90,6 +109,7 @@ function ChalkArrowHint() {
       </svg>
 
       <style jsx>{`
+        /* 既存：矢印の描画アニメ */
         @keyframes chalk-draw {
           0% { stroke-dashoffset: 1200; opacity: .85; }
           60% { stroke-dashoffset: 0; opacity: 1; }
@@ -102,13 +122,38 @@ function ChalkArrowHint() {
           animation: chalk-draw 2.8s ease-in-out infinite;
           filter: drop-shadow(0 0 6px rgba(255,255,255,.35));
         }
+
+        /* ★追加：チョーク文字が左→右に書かれていく */
+        @keyframes chalk-write-kf {
+          0%   { clip-path: inset(0 100% 0 0); opacity: .8; }
+          65%  { clip-path: inset(0 0% 0 0); opacity: 1; }
+          100% { clip-path: inset(0 0% 0 0); opacity: .95; }
+        }
+        .chalk-write {
+          clip-path: inset(0 100% 0 0);
+          animation: chalk-write-kf 1.8s cubic-bezier(0.16,1,0.3,1) .2s both;
+          background: transparent;
+        }
+
+        /* ★追加：ほんのりプルプル（手書き感） */
+        @keyframes chalk-wiggle-kf {
+          0%   { transform: rotate(-0.4deg) translateY(0px); }
+          50%  { transform: rotate(0.5deg) translateY(-0.6px); }
+          100% { transform: rotate(-0.4deg) translateY(0px); }
+        }
+        .chalk-wiggle {
+          animation: chalk-wiggle-kf 2.6s ease-in-out 2.2s infinite;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .chalk-draw { animation: none; stroke-dashoffset: 0; }
+          .chalk-write, .chalk-wiggle { animation: none; clip-path: none; }
         }
       `}</style>
     </div>
   );
 }
+
 
 /* ========= ロック演出タイル（左上鍵＋ホバー暗転・クリック不可） ========= */
 function LockedTile({ src, alt }: { src: string; alt: string }) {

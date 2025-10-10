@@ -3,24 +3,34 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+/* === helper: href 正規化 & 外部判定（コンポーネント外） === */
+function normalizeHref(h: unknown, fallback = "/buy") {
+  if (typeof h !== "string") return fallback;
+  const s = h.trim();
+  return s.length ? s : fallback;
+}
+function isExternalHref(href: string) {
+  return /^https?:\/\//i.test(href);
+}
+
 type InfoRow = { iconSrc: string; label: string; href?: string };
 
 export default function FinalProductSection({
   coverSrc = "/icons/cover.png",
   badgeText = "タイムスリップ版",
   msrp = "33,450円（税込）",
-  infoTitle = "クレカまたはコンビニで購入する",
+  infoTitle = "購入する",
   infoBody = "　",
   rows = [
     { iconSrc: "/icons/ticket-red.png", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/getting-started" },
-    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/BaCmFRfM" },
+    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/uFvm2wPs" },
   ] as InfoRow[],
   thirdItemSrc = "/icons/arm.png",
   companyLogoSrc = "/icons/thg.png",
   ariaLabelThird = "不思議なアイテムを手に入れる",
   // ▼ 追加
-  purchaseHref = "/buy",
-  purchaseSubText = "当日現金払いも可能",
+  purchaseHref = "https://t.livepocket.jp/e/gachi2025",
+  purchaseSubText = "クレジットカード（事前）または現金払い（当日）可能",
   thgHref = "https://t.livepocket.jp/e/gachi2025", // ← 追加（本番は公式URLに変更）
 }: {
   
@@ -138,6 +148,25 @@ const [showThgSweep, setShowThgSweep] = useState(false);
     const tEnd   = window.setTimeout(() => { setIsTransforming(false); }, 760); // 変身終了
     timersRef.current.push(tGrant, tEnd);
   };
+  // ▼ プルダウン用データ（アイコニック）
+const breakdownItems = [
+  { icon: "⏳", text: "タイムスリップ料金（高校生に戻り、青春を味わうことができる）" },
+  { icon: "🏫", text: "ガチ文高等学校の運営費（音楽機材、広報、諸経費）" },
+  { icon: "📦", text: "文化祭準備資材（段ボール・文房具・ペンキ・ブルーシート・廃材など）※数に限りがあります" },
+  { icon: "🎒", text: "学校関連資材グッズレンタル（要相談）" },
+  { icon: "🔌", text: "電子機器デバイス高速給電環境" },
+  { icon: "🔑", text: "学校施設貸切利用料" },
+  { icon: "🍱", text: "購買部での食事（1日1食のみ無料、以降100円）" },
+  { icon: "🛏️", text: "1人1組布団（敷布団、掛け布団、枕、毛布）4点レンタル" },
+  { icon: "♨️", text: "現代病の劇薬（サウナ後ラーメン／二郎系／テントサウナ 等）※同時利用上限あり" },
+  { icon: "🎇", text: "後夜祭『残響校舎』への参加" },
+  { icon: "🎉", text: "11月4日 打ち上げの参加（非公開）" },
+];
+
+  
+    // …既存のstateやuseEffectのあと、JSXの return の直前あたりに追加
+  const safePurchaseHref = normalizeHref(purchaseHref, "https://t.livepocket.jp/e/gachi2025");
+  const external = isExternalHref(safePurchaseHref);
 
   return (
     <section id="final" className="relative py-14 md:py-20">
@@ -177,12 +206,13 @@ const [showThgSweep, setShowThgSweep] = useState(false);
           <div className="bg-white text-[#1b1b1b] p-5 md:p-7">
             <div className="rounded-2xl border border-[#e6e6e6] shadow-sm bg-white overflow-hidden">
            {/* 購入ボタン（Nintendo風） */}
+
 <div className="px-4 md:px-6 pt-5">
   <a
-    href={purchaseHref}
+    href={safePurchaseHref}
     aria-label={`${infoTitle}`}
-    target={purchaseHref.startsWith("http") ? "_blank" : undefined}
-    rel="noreferrer"
+    target={external ? "_blank" : undefined}
+    rel={external ? "noopener noreferrer" : undefined}
     className="group relative block w-full rounded-[14px] px-5 py-4 md:py-5 text-center text-white bg-gradient-to-b from-[#FF6A9E] to-[#FF4F90] ring-1 ring-black/10 shadow-[0_10px_26px_rgba(0,0,0,.25)] transition-transform duration-200 will-change-transform transform-gpu hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(0,0,0,.32)] active:scale-[0.995]"
   >
     <span className="flex items-center justify-center gap-3">
@@ -211,6 +241,45 @@ const [showThgSweep, setShowThgSweep] = useState(false);
     </p>
   )}
 </div>
+{/* ▼ 商品に入っている内訳（プルダウン） */}
+<div className="mt-4 px-4 md:px-6">
+  <details className="group rounded-2xl border border-pink-200/70 bg-pink-50/70 backdrop-blur-[2px] shadow-sm">
+    <summary className="list-none flex items-center gap-2 p-2.5 md:p-3 cursor-pointer select-none">
+      <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-white text-pink-500 ring-1 ring-pink-200 text-[12px] font-bold">
+        i
+      </span>
+      <span className="text-[13px] md:text-[14px] font-extrabold text-pink-700">
+        商品に入っている内訳
+      </span>
+      <span className="ml-auto chev transition-transform duration-300 opacity-70">
+        {/* chevron */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </span>
+    </summary>
+
+    <div className="px-3 md:px-3.5 pb-3 md:pb-3.5">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 md:gap-3">
+        {breakdownItems.map((it, i) => (
+          <li key={i}
+              className="flex items-start gap-2 rounded-xl border border-pink-100 bg-white/80 p-2.5 md:p-3 shadow-[0_3px_10px_rgba(0,0,0,.04)]">
+            <span className="inline-grid place-items-center shrink-0 w-7 h-7 rounded-full bg-pink-50 ring-1 ring-pink-200 text-[14px]">
+              {it.icon}
+            </span>
+            <span className="text-[12.5px] md:text-[13px] leading-relaxed text-[#374151]">
+              {it.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11px] text-pink-700/70">
+        ※内容は状況により一部変更になる場合があります。
+      </p>
+    </div>
+  </details>
+</div>
+
 
 
               {/* 行カード */}
@@ -417,6 +486,9 @@ const [showThgSweep, setShowThgSweep] = useState(false);
   50%  { transform: translateX(0%); }
   100% { transform: translateX(120%); }
 }
+  /* details が開いたら矢印を回転 */
+details[open] .chev { transform: rotate(180deg); }
+
 
       `}</style>
     </section>

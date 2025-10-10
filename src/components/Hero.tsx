@@ -21,9 +21,11 @@ const TYPE_SPEED = 34;
 const YOUTUBE_LAST_YEAR = "https://www.youtube.com/watch?v=pk7cy_tVsjs";
 const YOUTUBE_FIRST = "https://www.youtube.com/watch?v=8yE9pJWsJ-QY";
 
+const ASSET = process.env.NEXT_PUBLIC_ASSET_PREFIX ?? ""; // 例: "", "/gachi2025" など
+
 // サムネ
-const THUMB_LAST_YEAR = "/thumbs/lastyear.jpg";
-const THUMB_FIRST = "/thumbs/first.jpg";
+const THUMB_LAST_YEAR = `${ASSET}/thumbs/lastyear.jpg`;
+const THUMB_FIRST     = `${ASSET}/thumbs/first.jpg`;
 
 // デバッグ用（校章の取得フラグをリセット）
 declare global {
