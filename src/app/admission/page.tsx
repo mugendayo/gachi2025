@@ -36,7 +36,7 @@ const SLIDES = [
   {
     id: "slide-a",
     title: "教育理念：魂の熱量は数値を超える",
-    img: "/past/A.png",
+    img: "/past/B.png",
     alt: "教育理念",
     body: (
       <>
@@ -47,7 +47,7 @@ const SLIDES = [
   {
     id: "slide-b",
     title: "求める生徒",
-    img: "/past/B.png",
+    img: "/past/A.png",
     alt: "求める生徒",
     body: (
       <>

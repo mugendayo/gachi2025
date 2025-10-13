@@ -192,7 +192,7 @@ const breakdownItems = [
               <h3 className="text-[clamp(20px,4.6vw,32px)] font-extrabold tracking-wide drop-shadow-[0_2px_0_rgba(0,0,0,.25)]">
                 ガチ文化祭２０２５
               </h3>
-              <div className="mt-3 text-sm/relaxed opacity-90">発売日：2025年10月10日</div>
+              <div className="mt-3 text-sm/relaxed opacity-90">発売日：2025年10月15日</div>
               <div className="mt-4">
                 <div className="text-[15px] md:text-[16px] opacity-90">希望小売価格</div>
                 <div className="mt-1 inline-flex items-baseline gap-2 rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/25">
