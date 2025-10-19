@@ -185,7 +185,7 @@ export default function GuidePage() {
       {/* ===================== Hero ===================== */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <Image src="/images/hero.jpeg" alt="" fill priority className="object-cover" />
+          <Image src="/images/hero.jpg" alt="" fill priority className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-white/0" />
         </div>
         <Container>
