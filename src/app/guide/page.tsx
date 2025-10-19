@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { SimpleSlider, type Slide } from "./ClientParts";
 import TeachersSection from "./TeachersSection";
+import type { CSSProperties } from "react";
+
 
 /* =========================
    Metadata
@@ -154,6 +156,17 @@ function Panel({
   );
 }
 
+type FunStyleVars = CSSProperties & {
+  ["--d"]?: string;
+  ["--delay"]?: string;
+  ["--dx"]?: string;
+  ["--dy"]?: string;
+  ["--base-rot"]?: string;
+  ["--rot"]?: string;
+  ["--scale"]?: string | number;
+};
+
+
 /* =========================================================
    FUN CLOUD（丸アイコンを“ふわふわ”動かす・重なりOK・レスポンシブ）
    ※ Server ComponentのままでOK（'use client'不要）
@@ -195,22 +208,23 @@ function FunCloud({ items }: { items: FunItem[] }) {
                 "
               >
 
-                  <Image
-                    src={item.src}
-                    alt={item.label}
-                    fill
-                    sizes="(min-width:1024px) 160px, (min-width:768px) 144px, 112px"
-                    className="object-cover fun-float transition-transform duration-300 ease-out"
+<Image
+  src={item.src}
+  alt={item.label}
+  fill
+  sizes="(min-width:1024px) 160px, (min-width:768px) 144px, 112px"
+  className="object-cover fun-float transition-transform duration-300 ease-out"
   style={{
-    ["--d" as any]: `${5.5 + prand(i) * 4.5}s`,          // 5.5〜10s
-    ["--delay" as any]: `${prand(i + 1) * 1.8}s`,
-    ["--dx" as any]: `${-12 + prand(i + 2) * 24}px`,      // -12〜+12px
-    ["--dy" as any]: `${-12 + prand(i + 3) * 24}px`,      // -12〜+12px
-    ["--base-rot" as any]: `${-1 + prand(i + 4) * 2}deg`, // -1〜+1deg（基準角）
-    ["--rot" as any]: `${1.4 + prand(i + 5) * 1.2}deg`,   // 1.4〜2.6deg（揺れ時加算）
-    ["--scale" as any]: 1.06,                              // 平時の膨らみ（ホバーで上書き）
-  }}
+    "--d": `${5.5 + prand(i) * 4.5}s`,          // 5.5〜10s
+    "--delay": `${prand(i + 1) * 1.8}s`,
+    "--dx": `${-12 + prand(i + 2) * 24}px`,      // -12〜+12px
+    "--dy": `${-12 + prand(i + 3) * 24}px`,      // -12〜+12px
+    "--base-rot": `${-1 + prand(i + 4) * 2}deg`, // -1〜+1deg
+    "--rot": `${1.4 + prand(i + 5) * 1.2}deg`,   // 1.4〜2.6deg
+    "--scale": 1.06,
+  } as FunStyleVars}
 />
+
                 </figure>
                 <div className="mt-1 font-semibold text-green-700 text-sm md:text-[15px]">
                   {item.label}
