@@ -16,92 +16,19 @@ type Teacher = {
 };
 
 const TEACHERS: Teacher[] = [
-  {
-    id: "akatsuki",
-    name: "斬島先生",
-    title: "教務主任/数学科",
-    image: "/images/teachers/akatsuki.jpg",
-    hobby: "検定・資格収集＆勝利",
-    motto: "教育は⬛⬛である。",
-    thumb: "/images/teachers/akatsuki.jpg",
-    subjects: "数学科 代数学専攻",
-  },
-  {
-    id: "shinai",
-    name: "志導シナイ先生",
-    title: "生徒指導部/保健体育科",
-    image: "/images/teachers/shinai.jpg",
-    hobby: "女性鑑賞＆混浴",
-    motto: "おにぎりは丸い",
-    subjects: "保健体育科 ",
-  },
-  {
-    id: "mamoru",
-    name: "志導マモル先生",
-    title: "生徒指導部主任/体育科",
-    image: "/images/teachers/mamoru.jpg",
-    hobby: "犬の散歩＆娘と縄跳び",
-    motto: "百聞は一見に如かず。",
-    subjects: "体育科",
-  },
-  {
-    id: "ganon",
-    name: "横山ガノンドロフ先生",
-    title: "1年1組担任/1学年主任/国語科",
-    image: "/images/teachers/ganon.jpg",
-    hobby: "ガノンドロフする＆下克上",
-    motto: "熱があるうちに打て",
-    subjects: "国語科 現代文専攻",
-  },
-  {
-    id: "monchin",
-    name: "問珍仏破先生",
-    title: "3年2組担任/英語科",
-    image: "/images/teachers/monchin.jpg",
-    hobby: "シュークリームぶっぱバトル＆腕相撲",
-    motto: "三度の飯よりぶっぱ",
-    subjects: "英語科 コミュニケーション担当",
-  },
-  {
-    id: "zenshu",
-    name: "然愁先生",
-    title: "2年1組担任/2学年主任/社会科",
-    image: "/images/teachers/zenshu.jpg",
-    hobby: "禅＆二郎系ラーメン",
-    motto: "情熱と哀愁",
-    subjects: "社会科 倫理専攻",
-  },
-  {
-    id: "mugen",
-    name: "夢幻泰介先生",
-    title: "3年1組担任/3学年主任/家庭科",
-    image: "/images/teachers/mugen.jpg",
-    hobby: "二郎系ラーメン屋巡り＆カードゲーム",
-    motto: "純度100%の自分を表現する",
-    subjects: "家庭科 二郎専攻",
-  },
-  {
-    id: "yuta",
-    name: "ドリーマー宥太先生",
-    title: "1年2組担任/保健体育科",
-    image: "/images/teachers/yuta.jpg",
-    hobby: "短眠",
-    motto: "睡眠は身体に害",
-    subjects: "保健体育科 短眠専攻",
-  },
-  {
-    id: "hanhan",
-    name: "令爆誕飯飯先生",
-    title: "2年2組担任/進路指導部/英語科",
-    image: "/images/teachers/hanhan.jpg",
-    hobby: "学歴アキネーター＆学歴エンジェルフォール",
-    motto: "天上天下唯我独尊",
-    subjects: "英語科 東大英語専攻",
-  },
+  { id: "akatsuki", name: "斬島先生", title: "教務主任/数学科", image: "/images/teachers/akatsuki.jpg", hobby: "検定・資格収集＆勝利", motto: "教育は⬛⬛である。", thumb: "/images/teachers/akatsuki.jpg", subjects: "数学科 代数学専攻" },
+  { id: "shinai",   name: "志導シナイ先生", title: "生徒指導部/保健体育科", image: "/images/teachers/shinai.jpg",  hobby: "女性鑑賞＆混浴", motto: "おにぎりは丸い", subjects: "保健体育科 " },
+  { id: "mamoru",   name: "志導マモル先生", title: "生徒指導部主任/体育科", image: "/images/teachers/mamoru.jpg",  hobby: "犬の散歩＆娘と縄跳び", motto: "百聞は一見に如かず。", subjects: "体育科" },
+  { id: "ganon",    name: "横山ガノンドロフ先生", title: "1年1組担任/1学年主任/国語科", image: "/images/teachers/ganon.jpg", hobby: "ガノンドロフする＆下克上", motto: "熱があるうちに打て", subjects: "国語科 現代文専攻" },
+  { id: "monchin",  name: "問珍仏破先生", title: "3年2組担任/英語科", image: "/images/teachers/monchin.jpg", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
+  { id: "zenshu",   name: "然愁先生", title: "2年1組担任/2学年主任/社会科", image: "/images/teachers/zenshu.jpg", hobby: "禅＆二郎系ラーメン", motto: "情熱と哀愁", subjects: "社会科 倫理専攻" },
+  { id: "mugen",    name: "夢幻泰介先生", title: "3年1組担任/3学年主任/家庭科", image: "/images/teachers/mugen.jpg", hobby: "二郎系ラーメン屋巡り＆カードゲーム", motto: "純度100%の自分を表現する", subjects: "家庭科 二郎専攻" },
+  { id: "yuta",     name: "ドリーマー宥太先生", title: "1年2組担任/保健体育科", image: "/images/teachers/yuta.jpg", hobby: "短眠", motto: "睡眠は身体に害", subjects: "保健体育科 短眠専攻" },
+  { id: "hanhan",   name: "令爆誕飯飯先生", title: "2年2組担任/進路指導部/英語科", image: "/images/teachers/hanhan.jpg", hobby: "学歴アキネーター＆学歴エンジェルフォール", motto: "天上天下唯我独尊", subjects: "英語科 東大英語専攻" },
 ];
 
 // 先生ごとのテーマ色
-const NAME_THEME: Record<
+const THEME: Record<
   string,
   { from: string; to: string; accent: string; ring: string }
 > = {
@@ -116,79 +43,68 @@ const NAME_THEME: Record<
   hanhan:   { from: "#ef4444", to: "#dc2626", accent: "#fff", ring: "#fecaca" },
 };
 
-/** 疾走感＋立体フォント演出（COURSE風） */
-function NameLogo({ id, text }: { id: string; text: string }) {
-  const theme = NAME_THEME[id] || { from: "#60a5fa", to: "#3b82f6", accent: "#fff", ring: "#93c5fd" };
+/*==============================
+=   Nintendo風：リボン部品   =
+==============================*/
 
+/** 六角形っぽい切り欠き・右向きの“矢印リボン” */
+function Ribbon({
+  text,
+  from,
+  to,
+  className = "",
+}: {
+  text: string;
+  from: string;
+  to: string;
+  className?: string;
+}) {
   return (
-    <div className="relative inline-block select-none">
-      {/* 疾走線 */}
-      <div
+    <div
+      className={[
+        "relative inline-flex items-center px-4 md:px-6 py-2 md:py-2.5",
+        "font-extrabold text-white tracking-widest",
+        "drop-shadow-[0_6px_14px_rgba(0,0,0,.25)]",
+        "select-none",
+        className,
+      ].join(" ")}
+      style={{
+        backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+        clipPath:
+          "polygon(12px 0, 100% 0, 100% 70%, calc(100% + 18px) 50%, 100% 30%, 100% 100%, 12px 100%, 0 80%, 0 20%)",
+      }}
+    >
+      {/* 内側の白ハイライト線 */}
+      <span
         aria-hidden
-        className="absolute inset-0 skew-x-12"
+        className="pointer-events-none absolute inset-0 rounded-[14px]"
         style={{
-          background:
-            "repeating-linear-gradient(120deg, rgba(255,255,255,.15) 0 5px, transparent 5px 18px)",
-          WebkitMaskImage: "linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9))",
+          clipPath:
+            "polygon(12px 0, 100% 0, 100% 70%, calc(100% + 18px) 50%, 100% 30%, 100% 100%, 12px 100%, 0 80%, 0 20%)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,.55)",
         }}
       />
-      {/* 3Dレイヤー */}
-      {[...Array(8)].map((_, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className="absolute top-0 left-0"
-          style={{
-            transform: `translate(${i * 1.4}px, ${i * 1.2}px) skewX(-8deg)`,
-            color: "rgba(0,0,0,0.15)",
-            WebkitTextStroke: "1px rgba(0,0,0,0.05)",
-            fontWeight: 900,
-            fontSize: "clamp(28px,7vw,72px)",
-          }}
-        >
-          {text}
-        </span>
-      ))}
-      {/* メイン文字 */}
+      {/* 疾走の斜線 */}
       <span
-        className="relative font-extrabold uppercase leading-none tracking-[.04em]"
+        aria-hidden
+        className="pointer-events-none absolute inset-0 skew-x-12 opacity-30"
         style={{
-          backgroundImage: `linear-gradient(135deg, ${theme.from}, ${theme.to})`,
-          WebkitBackgroundClip: "text",
-          color: "transparent",
-          textShadow: `
-            -2px -2px 3px rgba(255,255,255,.25),
-            4px 4px 6px rgba(0,0,0,.25)
-          `,
-          transform: "skewX(-8deg)",
-          display: "inline-block",
-          fontSize: "clamp(28px,7vw,72px)",
+          background:
+            "repeating-linear-gradient(120deg, rgba(255,255,255,.3) 0 5px, transparent 5px 18px)",
         }}
-      >
-        {text}
-      </span>
+      />
+      <span className="relative z-10">{text}</span>
     </div>
   );
 }
 
-/** 枠付きピル（学年/担当 表示用） */
-function TagPill({
-  label,
-  theme,
-}: {
-  label: string;
-  theme: { from: string; to: string; accent: string; ring: string };
-}) {
+/** 角丸ピル（科目など） */
+function Pill({ text, theme }: { text: string; theme: (typeof THEME)[string] }) {
   return (
     <span
-      className="
-        relative inline-flex items-center rounded-full px-3 py-1
-        text-[11px] md:text-[12px] font-bold
-        shadow-[0_6px_16px_rgba(0,0,0,.22)] ring-2 backdrop-blur-[2px]
-      "
+      className="relative inline-flex items-center rounded-full px-3 md:px-4 py-1 md:py-1.5 text-white text-[12px] md:text-sm font-extrabold ring-2 shadow-[0_6px_14px_rgba(0,0,0,.25)]"
       style={{
         backgroundImage: `linear-gradient(135deg, ${theme.from}, ${theme.to})`,
-        color: theme.accent,
         borderColor: theme.ring,
       }}
     >
@@ -197,10 +113,14 @@ function TagPill({
         className="absolute inset-0 rounded-full pointer-events-none"
         style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.55)" }}
       />
-      {label}
+      {text}
     </span>
   );
 }
+
+/*==============================
+=          コンテンツ          =
+==============================*/
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
@@ -210,42 +130,43 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** ヒーロー（16:9・名前ロゴ＋カラータグ） */
-function Hero({ t }: { t: Teacher }) {
-  const theme = NAME_THEME[t.id] || NAME_THEME.ganon;
+/** “名前リボン + ピル群”を画像の外側（上）に出し、画像に**少しだけ**食い込ませる */
+function NameBand({ t }: { t: Teacher }) {
+  const th = THEME[t.id] || THEME.ganon;
 
-  // タイトルを「/ |」で分割し、subjects も最後に足す
-  const parts = [
+  // タグ列（title を / | で分割＋ subjects を末尾に）
+  const tags = [
     ...(t.title ? t.title.split(/[\/｜|]/).map((s) => s.trim()).filter(Boolean) : []),
     ...(t.subjects ? [t.subjects] : []),
   ];
 
   return (
-    <div className="relative w-full">
-      <div className="absolute left-0 top-0 z-10 p-4 md:p-6">
-        <NameLogo id={t.id} text={t.name} />
-        {parts.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {parts.map((p, i) => (
-              <TagPill key={i} label={p} theme={theme} />
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="relative w-full aspect-[16/9]">
-        <Image
-          src={t.image}
-          alt={t.name}
-          fill
-          sizes="100vw"
-          className="object-cover select-none"
-        />
+    <div className="relative z-10 -mb-3 md:-mb-4">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3">
+        <Ribbon text={t.name} from={th.from} to={th.to} />
+        <div className="flex flex-wrap gap-1.5 md:gap-2">
+          {tags.map((x, i) => (
+            <Pill key={i} text={x} theme={th} />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-/** 先生タイル（スマホでも常時3列） */
+/** 画像：顔が見切れないように、オーバーレイは使わず“上バンド”に分離 */
+function Hero({ t }: { t: Teacher }) {
+  return (
+    <div className="w-full">
+      <NameBand t={t} />
+      <div className="relative w-full aspect-[16/9] rounded-[14px] overflow-hidden ring-1 ring-black/10">
+        <Image src={t.image} alt={t.name} fill sizes="100vw" className="object-cover select-none" />
+      </div>
+    </div>
+  );
+}
+
+/** 先生タイル（スマホでも常に3列） */
 function TeacherTile({
   t,
   active,
@@ -290,16 +211,24 @@ export default function TeachersSection() {
   return (
     <section className="py-10 md:py-14">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <header className="mb-2">
-          <h2 className="text-[clamp(20px,4.2vw,32px)] font-extrabold tracking-tight">教員紹介</h2>
-          <p className="mt-1 text-sm md:text-base text-slate-600">
+        {/* セクション見出しを“FIGHT/戦う”のノリで */}
+        <header className="mb-3 md:mb-4">
+          <div className="relative">
+            <h2 className="text-[clamp(24px,8vw,64px)] font-extrabold tracking-widest text-slate-100/60 select-none">
+              TEACHERS
+            </h2>
+            <div className="absolute left-0 top-1/2 -translate-y-1/2">
+              <Ribbon text="教員紹介" from="#ef4444" to="#f97316" />
+            </div>
+          </div>
+          <p className="mt-2 text-sm md:text-base text-slate-700">
             わからないことがあれば何でも先生に聞いてね！
           </p>
         </header>
 
         <Hero t={t} />
 
-        {/* メタ情報（趣味/座右の銘/担当説明） */}
+        {/* メタ（本文） */}
         <div className="mt-4 md:mt-6 grid gap-2 text-sm">
           {t.hobby && (
             <div className="flex flex-wrap items-center gap-2">
