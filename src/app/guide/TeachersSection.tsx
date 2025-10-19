@@ -16,15 +16,15 @@ type Teacher = {
 };
 
 const TEACHERS: Teacher[] = [
-  { id: "akatsuki", name: "斬島先生", title: "教務主任/数学科", image: "/images/teachers/akatsuki.jpg", hobby: "検定・資格収集＆勝利", motto: "教育は⬛⬛である。", thumb: "/images/teachers/akatsuki.jpg", subjects: "数学科 代数学専攻" },
-  { id: "shinai",   name: "志導シナイ先生", title: "生徒指導部/保健体育科", image: "/images/teachers/shinai.jpg",  hobby: "女性鑑賞＆混浴", motto: "おにぎりは丸い", subjects: "保健体育科 " },
-  { id: "mamoru",   name: "志導マモル先生", title: "生徒指導部主任/体育科", image: "/images/teachers/mamoru.jpg",  hobby: "犬の散歩＆娘と縄跳び", motto: "百聞は一見に如かず。", subjects: "体育科" },
-  { id: "ganon",    name: "横山ガノンドロフ先生", title: "1年1組担任/1学年主任/国語科", image: "/images/teachers/ganon.jpg", hobby: "ガノンドロフする＆下克上", motto: "熱があるうちに打て", subjects: "国語科 現代文専攻" },
-  { id: "monchin",  name: "問珍仏破先生", title: "3年2組担任/英語科", image: "/images/teachers/monchin.jpg", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
-  { id: "zenshu",   name: "然愁先生", title: "2年1組担任/2学年主任/社会科", image: "/images/teachers/zenshu.jpg", hobby: "禅＆二郎系ラーメン", motto: "情熱と哀愁", subjects: "社会科 倫理専攻" },
-  { id: "mugen",    name: "夢幻泰介先生", title: "3年1組担任/3学年主任/家庭科", image: "/images/teachers/mugen.jpg", hobby: "二郎系ラーメン屋巡り＆カードゲーム", motto: "純度100%の自分を表現する", subjects: "家庭科 二郎専攻" },
-  { id: "yuta",     name: "ドリーマー宥太先生", title: "1年2組担任/保健体育科", image: "/images/teachers/yuta.jpg", hobby: "短眠", motto: "睡眠は身体に害", subjects: "保健体育科 短眠専攻" },
-  { id: "hanhan",   name: "令爆誕飯飯先生", title: "2年2組担任/進路指導部/英語科", image: "/images/teachers/hanhan.jpg", hobby: "学歴アキネーター＆学歴エンジェルフォール", motto: "天上天下唯我独尊", subjects: "英語科 東大英語専攻" },
+  { id: "akatsuki", name: "斬島", title: "教務主任/数学科", image: "/images/teachers/1.png", hobby: "検定・資格収集＆勝利", motto: "教育は⬛⬛である。", thumb: "/images/teachers/akatsuki.jpg", subjects: "数学科 代数学専攻" },
+  { id: "shinai",   name: "志導シナイ", title: "生徒指導部/保健体育科", image: "/images/teachers/7.png",  hobby: "女性鑑賞＆混浴", motto: "おにぎりは丸い", subjects: "保健体育科 " },
+  { id: "mamoru",   name: "志導マモル", title: "生徒指導部主任/体育科", image: "/images/teachers/4.png",  hobby: "犬の散歩＆娘と縄跳び", motto: "百聞は一見に如かず。", subjects: "体育科" },
+  { id: "ganon",    name: "横山ガノンドロフ", title: "1年1組担任/1学年主任/国語科", image: "/images/teachers/2.png", hobby: "ガノンドロフする＆下克上", motto: "熱があるうちに打て", subjects: "国語科 現代文専攻" },
+  { id: "monchin",  name: "問珍仏破", title: "3年2組担任/英語科", image: "/images/teachers/5.png", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
+  { id: "zenshu",   name: "然愁", title: "2年1組担任/2学年主任/社会科", image: "/images/teachers/8.png", hobby: "禅＆二郎系ラーメン", motto: "情熱と哀愁", subjects: "社会科 倫理専攻" },
+  { id: "mugen",    name: "夢幻泰介", title: "3年1組担任/3学年主任/家庭科", image: "/images/teachers/6.png", hobby: "二郎系ラーメン屋巡り＆カードゲーム", motto: "純度100%の自分を表現する", subjects: "家庭科 二郎専攻" },
+  { id: "yuta",     name: "ドリーマー宥太", title: "1年2組担任/保健体育科", image: "/images/teachers/9.png", hobby: "短眠", motto: "睡眠は身体に害", subjects: "保健体育科 短眠専攻" },
+  { id: "hanhan",   name: "令爆誕飯飯", title: "2年2組担任/進路指導部/英語科", image: "/images/teachers/3.png", hobby: "学歴アキネーター＆学歴エンジェルフォール", motto: "天上天下唯我独尊", subjects: "英語科 東大英語専攻" },
 ];
 
 // 先生ごとのテーマ色

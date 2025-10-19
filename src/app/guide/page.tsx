@@ -29,30 +29,21 @@ function Tips({
   children,
 }: {
   title?: string;
-  icon?: string; // 例: "/images/tips/run.jpg"
+  icon?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      {/* タイトル帯 */}
       <div className="bg-gradient-to-r from-blue-500 to-sky-400 px-4 py-2 text-white font-bold text-[14px] tracking-wide">
         {title}
       </div>
 
-      {/* 16:9 画像（あれば） */}
       {icon && (
         <div className="relative w-full aspect-video bg-slate-100 border-b border-slate-200">
-          <Image
-            src={icon}
-            alt={title}
-            fill
-            className="object-cover"
-            sizes="(min-width: 768px) 600px, 100vw"
-          />
+          <Image src={icon} alt={title} fill className="object-cover" sizes="(min-width: 768px) 600px, 100vw" />
         </div>
       )}
 
-      {/* テキスト */}
       <div className="px-4 py-3 text-[14px] leading-7 text-slate-800">{children}</div>
     </div>
   );
@@ -135,7 +126,6 @@ function Panel({
 }) {
   return (
     <section id={id} className="relative py-12 md:py-16">
-      {/* 背景（任意） */}
       {bg && (
         <div className="absolute inset-0 -z-10">
           <Image src={bg} alt="" fill className="object-cover opacity-40" />
@@ -143,7 +133,6 @@ function Panel({
       )}
 
       <Container>
-        {/* 見出し（巨大英字＋リボン） */}
         <div className="relative mb-4 md:mb-6">
           <BigEN>{bigEN}</BigEN>
           <div className="absolute left-0 top-1/2 -translate-y-1/2">
@@ -151,7 +140,6 @@ function Panel({
           </div>
         </div>
 
-        {/* 白枠内容 */}
         <div
           className="rounded-[20px] bg-white p-4 md:p-6 shadow-[0_10px_26px_rgba(0,0,0,.12)]"
           style={{
@@ -166,6 +154,78 @@ function Panel({
   );
 }
 
+/* =========================================================
+   FUN CLOUD（丸アイコンを“ふわふわ”動かす・重なりOK・レスポンシブ）
+   ※ Server ComponentのままでOK（'use client'不要）
+   ========================================================= */
+type FunItem = { label: string; src: string };
+
+function prand(i: number) {
+  const s = Math.sin(i * 997 + 0.123) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function FunCloud({ items }: { items: FunItem[] }) {
+  return (
+    <section className="py-8 md:py-12 bg-amber-50/50">
+      <Container>
+        {/* 見出し：背面に英字 FUN、手前に日本語リボン */}
+        <div className="relative mb-4 md:mb-6">
+          <BigEN color="#16a34a">FUN</BigEN>
+          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+            <Ribbon text="ガチ文高等学校には楽しみ方がいっぱい。" from="#22c55e" to="#16a34a" />
+          </div>
+        </div>
+
+        {/* なるべく重ならないコンパクトなグリッド。余白は小さめ */}
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="
+              grid place-items-center
+              grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
+              gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-7
+            ">
+            {items.map((item, i) => (
+              <div key={i} className="flex flex-col items-center text-center">
+              <figure
+                className="
+                  fun-item
+                  relative rounded-full overflow-hidden
+                  h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40
+                  ring-1 ring-black/5 shadow-sm bg-gray-100
+                "
+              >
+
+                  <Image
+                    src={item.src}
+                    alt={item.label}
+                    fill
+                    sizes="(min-width:1024px) 160px, (min-width:768px) 144px, 112px"
+                    className="object-cover fun-float transition-transform duration-300 ease-out"
+  style={{
+    ["--d" as any]: `${5.5 + prand(i) * 4.5}s`,          // 5.5〜10s
+    ["--delay" as any]: `${prand(i + 1) * 1.8}s`,
+    ["--dx" as any]: `${-12 + prand(i + 2) * 24}px`,      // -12〜+12px
+    ["--dy" as any]: `${-12 + prand(i + 3) * 24}px`,      // -12〜+12px
+    ["--base-rot" as any]: `${-1 + prand(i + 4) * 2}deg`, // -1〜+1deg（基準角）
+    ["--rot" as any]: `${1.4 + prand(i + 5) * 1.2}deg`,   // 1.4〜2.6deg（揺れ時加算）
+    ["--scale" as any]: 1.06,                              // 平時の膨らみ（ホバーで上書き）
+  }}
+/>
+                </figure>
+                <div className="mt-1 font-semibold text-green-700 text-sm md:text-[15px]">
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+
+
 /* =========================
    Main Page
    ========================= */
@@ -178,6 +238,20 @@ export default function GuidePage() {
     { src: "/images/2023.jpg", caption: "2023 後夜祭" },
     { src: "/images/2024.jpg", caption: "2024 後夜祭" },
     { src: "/images/yusei.jpeg", caption: "担当：ゆうせい（クリエイティブ学科 首席合格）" },
+  ];
+
+  // 楽しみ方（丸画像）— 画像パスは /public 配下
+  const funItems: FunItem[] = [
+    { label: "制服を着る", src: "/images/uniform.jpg" },
+    { label: "やりたい企画をする", src: "/images/max.jpg" },
+    { label: "学校をサボる", src: "/images/savo.jpg" },
+    { label: "クラスで企画をする", src: "/images/make.jpeg" },
+    { label: "チルアウトする", src: "/images/chill.jpeg" },
+    { label: "情熱を注ぐ", src: "/images/passion.jpg" },
+    { label: "授業を受ける", src: "/images/class.jpg" },
+    { label: "体育祭を楽しむ", src: "/images/sports.jpg" },
+    { label: "キャラを演じる", src: "/images/role.jpeg" },
+    { label: "ライブをする", src: "/images/live.jpeg" },
   ];
 
   return (
@@ -201,13 +275,33 @@ export default function GuidePage() {
                 はじめてでも大丈夫。準備・流れ・よくある不安をここで全部クリアにして、当日をワクワクで迎えよう。
               </p>
 
-              {/* Q&A 直行ボタン（復活） */}
+              {/* Q&A 直行ボタン（強調アニメーション） */}
               <div className="mt-5 flex flex-wrap gap-3 items-center">
                 <Link
                   href="#faq"
-                  className="rounded-2xl px-4 py-2 text-sm font-extrabold tracking-wide ring-2 ring-yellow-300/80 bg-yellow-300 text-black shadow-[0_10px_26px_rgba(0,0,0,.25)] hover:bg-yellow-200 transition"
+                  className="
+                    group relative inline-flex items-center gap-2
+                    rounded-2xl px-4 py-2 text-sm font-extrabold tracking-wide
+                    text-black bg-yellow-300 ring-2 ring-yellow-300/90
+                    shadow-[0_10px_26px_rgba(0,0,0,.25)]
+                    hover:bg-yellow-200 transition
+                    animate-bounce
+                  "
+                  aria-label="不安つぶしQ&Aにジャンプ"
                 >
-                  ❓ 不安つぶしQ&Aへ
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-2xl blur-[2px] opacity-30 pointer-events-none
+                               shadow-[0_0_0_8px_rgba(250,204,21,.45)]"
+                  />
+                  <span className="relative">❓ 不安つぶしQ&Aへ</span>
+                  <span
+                    aria-hidden
+                    className="absolute -inset-y-3 -left-1/3 w-1/2 rotate-12 rounded-2xl
+                               bg-white/40 blur-md opacity-60 pointer-events-none
+                               transition-transform duration-700
+                               group-hover:translate-x-[220%]"
+                  />
                 </Link>
               </div>
             </div>
@@ -215,70 +309,21 @@ export default function GuidePage() {
         </Container>
       </section>
 
-{/* ===================== 楽しみ方タイル（画像入り） ===================== */}
-<section className="py-10 md:py-14 bg-amber-50/50">
-  <Container>
-    <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-      ガチ文高等学校には楽しみ方がいっぱい。
-    </h2>
-
-    {/* ここに表示したい丸＋画像を列挙（/public 配下のパス） */}
-    {/*
-      例では /public/images/guide/fun/ 以下に置いた想定です。
-      任意のパスに変えてOK！
-    */}
-    {(() => {
-      const funItems = [
-        { label: "制服を着る",         src: "/images/uniform.jpg" },
-        { label: "クラスの企画をつくる", src: "/images/make.jpg" },
-        { label: "チルアウトする",     src: "/images/chill.jpg" },
-        { label: "情熱を注ぐ",         src: "/images/passion.jpg" },
-        { label: "授業を受ける",       src: "/images/class.jpg" },
-        { label: "体育祭を楽しむ",     src: "/images/sports.jpg" },
-        { label: "キャラを演じる",     src: "/images/role.jpg" },
-      ];
-
-      return (
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {funItems.map((item, i) => (
-            <div key={i} className="flex flex-col items-center text-center">
-              <div
-                className="
-                  relative h-36 w-36 md:h-44 md:w-44 rounded-full overflow-hidden
-                  ring-2 ring-white shadow-sm bg-gray-100 group
-                "
-              >
-                {/* 画像を丸くトリミングしてフィット */}
-                <Image
-                  src={item.src}
-                  alt={item.label}
-                  fill
-                  sizes="(min-width:1024px) 176px, 144px"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  priority={false}
-                />
-                {/* 斜めのハイライト・薄いグラデ */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "repeating-linear-gradient(120deg, rgba(255,255,255,.25) 0 6px, transparent 6px 22px)",
-                    maskImage:
-                      "linear-gradient(180deg, rgba(0,0,0,.7), rgba(0,0,0,0.1))",
-                    WebkitMaskImage:
-                      "linear-gradient(180deg, rgba(0,0,0,.7), rgba(0,0,0,0.1))",
-                  }}
-                />
-              </div>
-              <div className="mt-3 font-semibold text-green-700">{item.label}</div>
-            </div>
-          ))}
-        </div>
-      );
-    })()}
-  </Container>
-</section>
+      {/* ===================== 楽しみ方（非オーバーラップ版） ===================== */}
+<FunCloud
+  items={[
+    { label: "制服を着る",         src: "/images/uniform.jpg" },
+    { label: "やりたい企画をする", src: "/images/max.jpg" },
+    { label: "学校をサボる",       src: "/images/savo.jpg" },
+    { label: "クラスで企画をする", src: "/images/make.jpeg" },
+    { label: "チルアウトする",     src: "/images/chill.jpeg" },
+    { label: "情熱を注ぐ",         src: "/images/passion.jpg" },
+    { label: "授業を受ける",       src: "/images/class.jpg" },
+    { label: "体育祭を楽しむ",     src: "/images/sports.jpg" },
+    { label: "キャラを演じる",     src: "/images/role.jpeg" },
+    { label: "ライブをする",       src: "/images/live.jpeg" },
+  ]}
+/>
 
 
       {/* ===================== Teachers ===================== */}
@@ -294,13 +339,9 @@ export default function GuidePage() {
         bg="/images/patterns/run.jpg"
         borderColor="#3b82f6"
       >
-        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
-          ① ガチ文高校の生徒になってみよう
-        </h2>
+        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">① ガチ文高校の生徒になってみよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
-          <p>
-            定期テストの提出や制服の投稿などで学籍番号を手に入れられます。学籍番号の付与順に、Discord限定チャンネルへアクセス可能。
-          </p>
+          <p>定期テストの提出や制服の投稿などで学籍番号を手に入れられます。学籍番号の付与順に、Discord限定チャンネルへアクセス可能。</p>
           <Tips title="豆知識" icon="/images/tips/run.jpg">
             学籍番号があるとDiscord内の限定情報・連絡が見やすくなります。
           </Tips>
@@ -319,12 +360,8 @@ export default function GuidePage() {
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">② 企画一覧を事前チェック</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
-          <p>
-            食べ物・体験・展示など、多彩な企画が並びます。チケット購入後に一覧を確認できるので、「絶対行きたい」をいくつかピックしておくと当日動きやすいです。
-          </p>
-          <Tips title="ワンポイント" icon="/images/tips/catalog.png">
-            行きたい企画を3つだけ決めておくと、当日の満足度がグンと上がります。
-          </Tips>
+          <p>食べ物・体験・展示など、多彩な企画が並びます。チケット購入後に一覧を確認できるので、「絶対行きたい」をいくつかピックしておくと当日動きやすいです。</p>
+          <Tips title="ワンポイント" icon="/images/tips/catalog.png">行きたい企画を3つだけ決めておくと、当日の満足度がグンと上がります。</Tips>
         </div>
       </Panel>
 
@@ -338,14 +375,10 @@ export default function GuidePage() {
         bg="/images/patterns/dress.jpg"
         borderColor="#f97316"
       >
-        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
-          ③ 制服を準備して、放課後を満喫しよう
-        </h2>
+        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">③ 制服を準備して、放課後を満喫しよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>「自分にとっての青春」を表すものが制服です。実際の制服、憧れのデザイン、推しのコーデでもOK。</p>
-          <Tips title="写真のコツ" icon="/images/tips/uniform.jpg">
-            背景をシンプルにして逆光を避けるだけで、SNS映えが安定します。
-          </Tips>
+          <Tips title="写真のコツ" icon="/images/tips/uniform.jpg">背景をシンプルにして逆光を避けるだけで、SNS映えが安定します。</Tips>
         </div>
       </Panel>
 
@@ -359,14 +392,10 @@ export default function GuidePage() {
         bg="/images/patterns/talk.jpg"
         borderColor="#a855f7"
       >
-        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
-          ④ オンラインホームルームに参加してみよう
-        </h2>
+        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">④ オンラインホームルームに参加してみよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>DiscordでオンラインHRを開催。先生や友達と事前に話して仲良くなるチャンス。</p>
-          <Tips title="入室の不安" icon="/images/tips/homeroom.jpg">
-            マイクや顔出しは無理しなくてOK。聞くだけ参加から始めましょう。
-          </Tips>
+          <Tips title="入室の不安" icon="/images/tips/homeroom.jpg">マイクや顔出しは無理しなくてOK。聞くだけ参加から始めましょう。</Tips>
         </div>
       </Panel>
 
@@ -388,9 +417,7 @@ export default function GuidePage() {
             <li>運動靴</li>
             <li>お風呂セット</li>
           </ul>
-          <Tips title="忘れ物対策" icon="/images/tips/packing.jpg">
-            チェックリスト化して、前日夜に鞄へ詰めてから寝よう！
-          </Tips>
+          <Tips title="忘れ物対策" icon="/images/tips/packing.jpg">チェックリスト化して、前日夜に鞄へ詰めてから寝よう！</Tips>
         </div>
       </Panel>
 
@@ -404,12 +431,8 @@ export default function GuidePage() {
         bg="/images/patterns/day1.jpg"
         borderColor="#2563eb"
       >
-        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
-          1日目：集団登校・授業・クラス企画の初動
-        </h2>
-        <Tips title="迷子になったら" icon="/images/tips/day1.jpg">
-          集合場所の写真をスマホに保存。時間と改札名もメモに控えておくと安心。
-        </Tips>
+        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">1日目：集団登校・授業・クラス企画の初動</h2>
+        <Tips title="迷子になったら" icon="/images/tips/day1.jpg">集合場所の写真をスマホに保存。時間と改札名もメモに控えておくと安心。</Tips>
       </Panel>
 
       {/* ===================== 2日目（BOOST） ===================== */}
@@ -423,9 +446,7 @@ export default function GuidePage() {
         borderColor="#f59e0b"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">2日目：準備と本気が混ざり合う日</h2>
-        <Tips title="火力の回復" icon="/images/tips/day2.jpg">
-          睡眠・ごはん・水分・同期（誰かと共有）の4点が満タンかを毎回チェック。
-        </Tips>
+        <Tips title="火力の回復" icon="/images/tips/day2.jpg">睡眠・ごはん・水分・同期（誰かと共有）の4点が満タンかを毎回チェック。</Tips>
       </Panel>
 
       {/* ===================== 3日目（FIGHT） ===================== */}
@@ -439,9 +460,7 @@ export default function GuidePage() {
         borderColor="#ef4444"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">3日目：いよいよ本番、文化祭当日</h2>
-        <Tips title="巡り方のコツ" icon="/images/tips/day3.jpg">
-          企画を3つ体験・1つお手伝い・1つ写真に残す。それが“最高の文化祭”黄金比！
-        </Tips>
+        <Tips title="巡り方のコツ" icon="/images/tips/day3.jpg">企画を3つ体験・1つお手伝い・1つ写真に残す。それが“最高の文化祭”黄金比！</Tips>
       </Panel>
 
       {/* ===================== 後夜祭（NIGHT） ===================== */}
@@ -455,13 +474,11 @@ export default function GuidePage() {
         borderColor="#0ea5e9"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">後夜祭</h2>
-        <Tips title="写真スポット" icon="/images/tips/koyasai.jpg">
-          ステージのライト後方が最高の逆光ポイント。友達と記念撮影を忘れずに！
-        </Tips>
+        <Tips title="写真スポット" icon="/images/tips/koyasai.jpg">ステージのライト後方が最高の逆光ポイント。友達と記念撮影を忘れずに！</Tips>
         <SimpleSlider slides={kouyasaiSlides} />
       </Panel>
 
-      {/* ===================== 不安つぶしQ&A（READ） ← ここが戻りました ===================== */}
+      {/* ===================== 不安つぶしQ&A（READ） ===================== */}
       <Panel
         id="faq"
         bigEN="READ"
@@ -473,9 +490,7 @@ export default function GuidePage() {
       >
         <details className="group rounded-xl border bg-white p-4 shadow-sm">
           <summary className="cursor-pointer font-semibold">一人で参加しても楽しめますか？</summary>
-          <div className="pt-2">
-            クラス配属・企画づくり・体育祭で自然と仲良くなれます。ひとり参加の方も毎年多いのでご安心ください。
-          </div>
+          <div className="pt-2">クラス配属・企画づくり・体育祭で自然と仲良くなれます。ひとり参加の方も毎年多いのでご安心ください。</div>
         </details>
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
@@ -485,24 +500,17 @@ export default function GuidePage() {
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
           <summary className="cursor-pointer font-semibold">お風呂はどうなっていますか？</summary>
-          <div className="pt-2">
-            クラス単位で指定バスに乗車し、近隣の温泉施設へ。 入浴料500円、往復バス代540円は各自用意。
-          </div>
+          <div className="pt-2">クラス単位で指定バスに乗車し、近隣の温泉施設へ。 入浴料500円、往復バス代540円は各自用意。</div>
         </details>
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
           <summary className="cursor-pointer font-semibold">食事はどうすればいいですか？</summary>
-          <div className="pt-2">
-            基本は校内の購買部で購入できます。軽食（パン・おにぎり）／温かい麺類／ドリンク各種などを販売予定。
-          </div>
+          <div className="pt-2">基本は校内の購買部で購入できます。軽食（パン・おにぎり）／温かい麺類／ドリンク各種などを販売予定。</div>
         </details>
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
           <summary className="cursor-pointer font-semibold">持ち物は何が必要ですか？</summary>
-          <div className="pt-2">
-            「持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・
-            パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。
-          </div>
+          <div className="pt-2">「持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。</div>
         </details>
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
@@ -517,9 +525,7 @@ export default function GuidePage() {
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
           <summary className="cursor-pointer font-semibold">貴重品はどうやって管理したらいいですか？</summary>
-          <div className="pt-2">
-            寝室は施錠していますが、気になる場合は持ち歩くか職員室に預けてください（常駐の先生がいます）。
-          </div>
+          <div className="pt-2">寝室は施錠していますが、気になる場合は持ち歩くか職員室に預けてください（常駐の先生がいます）。</div>
         </details>
       </Panel>
     </main>

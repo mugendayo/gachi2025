@@ -110,3 +110,28 @@ html { scroll-behavior: smooth; }
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* ==== FunCloud animation ==== */
+@keyframes fun-float {
+  0% {
+    transform: translate(0, 0) rotate(var(--base-rot, 0deg)) scale(1);
+  }
+  50% {
+    transform:
+      translate(var(--dx, 6px), var(--dy, -6px))
+      rotate(calc(var(--base-rot, 0deg) + var(--rot, 1.6deg)))
+      scale(var(--scale, 1.04));
+  }
+  100% {
+    transform: translate(0, 0) rotate(var(--base-rot, 0deg)) scale(1);
+  }
+}
+.fun-float {
+  animation: fun-float var(--d, 9s) ease-in-out var(--delay, 0s) infinite;
+  will-change: transform;
+}
+/* FunCloud の figure に .fun-item を付ける想定 */
+.fun-item:hover img {
+  --scale: 1.10;     /* ふくらみを強める */
+  --rot: 3deg;       /* ホバー時だけ回転幅UP */
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.18));
+}
