@@ -293,7 +293,7 @@ export default function Hero() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h=[100svh] md:min-h-screen mb-0 overflow-x-hidden"
+      className="relative min-h-[100svh] md:min-h-screen mb-0 overflow-x-hidden"
     >
       {/* 背景動画（常に背面に固定） */}
       <div

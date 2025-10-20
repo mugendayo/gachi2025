@@ -315,7 +315,7 @@ export default function GuidePage() {
                     className="absolute inset-0 rounded-2xl blur-[2px] opacity-30 pointer-events-none
                                shadow-[0_0_0_8px_rgba(250,204,21,.45)]"
                   />
-                  <span className="relative">❓ 不安つぶしQ&Aへ</span>
+                  <span className="relative">❓よくある質問へ</span>
                   <span
                     aria-hidden
                     className="absolute -inset-y-3 -left-1/3 w-1/2 rotate-12 rounded-2xl
