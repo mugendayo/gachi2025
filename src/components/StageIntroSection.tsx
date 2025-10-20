@@ -418,7 +418,7 @@ export default function StageIntroSection({
   const drops: DropItem[] = [
     { src: "/stage/drop-1.jpg", dx: 0, dy: 460, dxMd: 0, dyMd: 760, dxLg: 0, dyLg: 900, delay: 0.00, rotate: -6, z: 60, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
     { src: "/stage/drop-2.jpg", dx: -90, dy: 420, dxMd: -170, dyMd: 720, dxLg: -210, dyLg: 860, delay: 0.18, rotate: -4, z: 62, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-3.jpg", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 62, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-3.JPG", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 62, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
     { src: "/stage/drop-4.jpg", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 69, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
   ];
 

@@ -527,59 +527,72 @@ export default function Hero() {
 
               {/* ▼ 縦並びの3ボタン */}
               <div className="mt-10 w-full max-w-2xl mx-auto space-y-3">
-                {/* ① わかばガイド */}
-                <Link
-                  href="/guide"
-                  className={[
-                    "group relative flex w-full items-center gap-3",
-                    "rounded-2xl px-5 py-4",
-                    "bg-white text-[#1a7f2e]",
-                    "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
-                    "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
-                    "overflow-hidden",
-                  ].join(" ")}
-                >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10"
-                  />
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
-                  >
-                    <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
-                  </span>
+{/* ① わかばガイド（透過＋やさしい配色＋常時アニメ） */}
+<div className="relative">
+  {/* 柔らかい発光（常時・クリック無効） */}
+  <span aria-hidden className="gb-cta-glow pointer-events-none absolute inset-0 rounded-2xl" />
 
-                  <span className="grid place-items-center h-10 w-10 shrink-0 rounded-xl bg-[#e9f8ed] ring-1 ring-[#c7ebd2]">
-                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                      <path
-                        d="M3 21c8-1 14-7 15-15 2 3 3 6 3 9-2 4-7 6-11 6-3 0-5-0-7 0z"
-                        fill="#2ea44f"
-                      />
-                    </svg>
-                  </span>
+  <Link
+    href="/guide"
+    className={[
+      "group relative flex w-full items-center gap-3",
+      "rounded-2xl px-5 py-4",
+      "bg-white/70 text-[#196b2b] backdrop-blur-sm",
+      "ring-1 ring-[#cfeedd] hover:ring-[#bee7d1]",
+      "shadow-[0_8px_20px_rgba(0,0,0,.08)] hover:shadow-[0_12px_28px_rgba(0,0,0,.12)]",
+      "transition-all duration-200 hover:-translate-y-0.5",
+      "backdrop-blur-[2px]",
+      "overflow-hidden",
+    ].join(" ")}
+  >
+    {/* 上半分のうっすらハイライト（透過感を強める） */}
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-2xl"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 100%)",
+      }}
+    />
 
-                  <div className="flex-1">
-                    <div className="text-[12px] font-extrabold text-[#6a4f1f]">
-                      はじめて遊ぶ人へ
-                    </div>
-                    <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">
-                      ガチ文のきほん
-                    </div>
-                  </div>
+    {/* 左のアイコン：薄緑ベースに淡黄の縁取り */}
+    <span className="grid place-items-center h-10 w-10 shrink-0 rounded-xl ring-1"
+      style={{
+        background: "linear-gradient(180deg, rgba(233,248,237,.85), rgba(255,253,235,.85))",
+        borderColor: "rgba(190, 231, 209, 0.9)",
+      }}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="M3 21c8-1 14-7 15-15 2 3 3 6 3 9-2 4-7 6-11 6-3 0-5-0-7 0z" fill="#2ea44f" />
+        <path d="M6 18c4-1 8-5 9-9" fill="none" stroke="#ffe26a" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    </span>
 
-                  <span aria-hidden className="ml-2 shrink-0 text-[#2ea44f]">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M9 6l6 6-6 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </Link>
+    {/* テキスト */}
+    <div className="flex-1">
+      <div className="text-[12px] font-extrabold" style={{ color: "#6a5a28" }}>
+        はじめて遊ぶ人へ
+      </div>
+      <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">
+        ガチ文のきほん
+      </div>
+    </div>
+
+    {/* 矢印（色もやさしく） */}
+    <span aria-hidden className="ml-2 shrink-0" style={{ color: "#2ea44f" }}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 6l6 6-6 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  </Link>
+</div>
+
 
                 {/* ② 去年の動画 */}
                 <a
