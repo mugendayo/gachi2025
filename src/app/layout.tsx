@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: site.title,
     description: "一生文化祭前夜。孤独にならない仕組みの本気の文化祭体験。",
-    url: "https://your-vercel-url.vercel.app", // ← デプロイ後に自分のURLへ
+    url: "https://www.gachibunkasai.com/", // ← デプロイ後に自分のURLへ
     siteName: site.title,
     images: [
       {

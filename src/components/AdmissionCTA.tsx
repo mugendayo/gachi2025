@@ -15,7 +15,7 @@ export default function AdmissionCTA() {
       <CtaButton
         href="/admission"                  // ← ここだけ！
         label="詳しく見る"
-        subLabel="✿ アドミッション・ポリシーはこちら ✿"
+        subLabel="✿アドミッションポリシーはこちら✿"
         variant="orange"
         fullWidth
         className="w-[min(92vw,740px)]"

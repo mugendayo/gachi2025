@@ -102,7 +102,7 @@ function VerticalTitle({
   );
 }
 
-/* =============== 校章 =============== */
+/* =============== 校章（常時ゆっくり回転） =============== */
 function CrestCenter({
   crestSrc = "/stage/crest.png",
   invSelector = "#inv-crest-slot",
@@ -141,17 +141,31 @@ function CrestCenter({
 
   return (
     <div ref={ref} className="relative grid place-items-center h-full py-6">
-      <motion.img
-        src={crestSrc}
-        alt="校章"
-        className="relative z-10 w-[140px] md:w-[180px] -translate-y-8 cursor-pointer select-none"
-        initial={{ opacity: 0, scale: 0.8, y: 20, rotate: 0 }}
-        animate={inView ? { opacity: 1, scale: 1, y: 0, rotate: 0 } : {}}
-        transition={{ duration: 1.35, ease: EASE }}
-        whileHover={{ scale: 1.18, rotate: 20, transition: { type: "spring", stiffness: 120, damping: 12 } }}
-        whileTap={{ scale: 0.95 }}
-        onClick={addToInventory}
-      />
+      {/* ゆっくり常時回転（親） */}
+      <motion.div
+        aria-hidden
+        animate={inView ? { rotate: 360 } : {}}
+        transition={{ duration: 28, ease: "linear", repeat: Infinity }}
+        style={{ willChange: "transform" }}
+        className="pointer-events-none"
+      >
+        {/* 回転は親、子は拡大だけ */}
+        <motion.img
+          src={crestSrc}
+          alt="校章（クリックで取得）"
+          className="relative z-10 w-[140px] md:w-[180px] -translate-y-8 cursor-pointer select-none pointer-events-auto"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={inView ? { opacity: 1, scale: 1, y: 0 } : {}}
+          transition={{ duration: 1.35, ease: [0.16, 1, 0.3, 1] }}
+          whileHover={{ scale: 1.12 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={addToInventory}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && addToInventory()}
+          aria-label="校章を取得する"
+        />
+      </motion.div>
 
       <style jsx global>{`
         @keyframes crest-pop-in {
@@ -165,6 +179,11 @@ function CrestCenter({
           100% { box-shadow: 0 0 0 rgba(255,215,0,0); transform: scale(1); }
         }
         .inv-bling { animation: inv-bling-kf 680ms cubic-bezier(0.16,1,0.3,1); outline: 2px solid rgba(255,215,0,0.6); outline-offset: 2px; border-radius: 8px; }
+
+        /* 動きを控える設定時は回転を止める */
+        @media (prefers-reduced-motion: reduce) {
+          [aria-hidden] { animation: none !important; }
+        }
       `}</style>
     </div>
   );
@@ -391,6 +410,20 @@ export default function StageIntroSection({
   const [showDrops, setShowDrops] = useState(false);
   const [ctaOpen, setCtaOpen] = useState(false);
 
+  // 二段階フラッシュ：0=なし, 1=エメラルド, 2=白
+  const [flashPhase, setFlashPhase] = useState<0 | 1 | 2>(0);
+
+  // FallingFour の時間と最大 delay を一元管理
+  const DROP_DURATION = 2.0;      // FallingFour の duration と一致させる
+  const dropsMaxDelay = 0.54;     // 最後の要素の delay（drops を変えたら更新）
+
+  // 校章クリック → ドロップ開始 → 完了タイミングでフラッシュ開始
+  const handleCrestAcquire = () => {
+    setShowDrops(true);
+    const totalMs = (dropsMaxDelay + DROP_DURATION) * 1000 + 80; // 少し余裕
+    window.setTimeout(() => setFlashPhase(1), totalMs); // ①エメラルド発火
+  };
+
   /* ポップアップ表示中は背景スクロールを固定 & Escで閉じる */
   useEffect(() => {
     if (!ctaOpen) return;
@@ -403,7 +436,7 @@ export default function StageIntroSection({
     body.style.overflowY = "scroll";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setCtaOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => {DuoBurstText
+    return () => {
       window.removeEventListener("keydown", onKey);
       body.style.position = prev.position;
       const topVal = body.style.top;
@@ -422,7 +455,7 @@ export default function StageIntroSection({
     { src: "/stage/drop-4.jpg", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 69, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
   ];
 
-  /* ギャラリー画像（例：横写真＋キャプション） */
+  /* ギャラリー画像 */
   const galleryItems: GalleryItem[] = [
     { src: "/gallery/eri.jpg", caption: "普通教室で「いのうえ学級」" },
     { src: "/gallery/sports.jpg", caption: "校庭で「準備体操」" },
@@ -432,7 +465,6 @@ export default function StageIntroSection({
     { src: "/gallery/school.jpg", caption: "廊下から中庭を眺める" },
     { src: "/gallery/school2.jpg", caption: "中庭から廊下を眺める" },
     { src: "/gallery/morning.jpg", caption: "文化祭当日 みんなの企画発表！" },
-    // 追加したい分だけ増やしてください。例の画像なら /gallery/IMG_1034.jpg など。
   ];
 
   return (
@@ -459,9 +491,9 @@ export default function StageIntroSection({
         </div>
 
         {/* 校章＋落下＋コピー */}
-        <div className="relative h-[340px] sm:h-[360px] md:h-[520px] lg:h-[600px]">
-          <CrestCenter crestSrc={crestSrc} onAcquire={() => setShowDrops(true)} />
-          <FallingFour show={showDrops} items={drops} />
+        <div className="relative h=[340px] sm:h-[360px] md:h-[520px] lg:h-[600px]">
+          <CrestCenter crestSrc={crestSrc} onAcquire={handleCrestAcquire} />
+          <FallingFour show={showDrops} items={drops} duration={DROP_DURATION} />
           <DuoBurstText show={showDrops} delaySecond={0.5} />
         </div>
 
@@ -489,6 +521,55 @@ export default function StageIntroSection({
           />
         )}
       </AnimatePresence>
+
+      {/* ===== 二段階フラッシュ（①エメラルド → ②白） ===== */}
+      <AnimatePresence>
+        {flashPhase === 1 && (
+          <motion.div
+            key="flash-emerald"
+            className="fixed inset-0 z-[2000] pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 0.18, times: [0, 0.35, 1], ease: "easeOut" }}
+            onAnimationComplete={() => setFlashPhase(2)}
+            style={{
+              background:
+                "radial-gradient(130% 130% at 50% 50%, rgba(0, 255, 200, 0.85) 0%, rgba(0, 255, 200, 0.65) 36%, rgba(0,0,0,0) 100%)",
+              mixBlendMode: "screen",
+            }}
+            aria-hidden
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {flashPhase === 2 && (
+          <motion.div
+            key="flash-white"
+            className="fixed inset-0 z-[2001] pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 0.22, times: [0, 0.35, 1], ease: "easeOut" }}
+            onAnimationComplete={() => setFlashPhase(0)}
+            style={{
+              background:
+                "radial-gradient(120% 120% at 50% 50%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.92) 45%, rgba(255,255,255,0.0) 100%)",
+            }}
+            aria-hidden
+          />
+        )}
+      </AnimatePresence>
+
+      <style jsx global>{`
+        @media (prefers-reduced-motion: reduce) {
+          [key="flash-emerald"],
+          [key="flash-white"] {
+            transition: opacity 0.18s ease-out !important;
+            animation: none !important;
+            opacity: 0.6 !important; /* 刺激を抑える */
+          }
+        }
+      `}</style>
     </section>
   );
 }
