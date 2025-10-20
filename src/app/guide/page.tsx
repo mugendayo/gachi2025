@@ -276,7 +276,7 @@ export default function GuidePage() {
   ];
 
   return (
-    <main className="relative">
+    <main className="relative　text-slate-900">
       {/* ===================== Hero ===================== */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
@@ -477,7 +477,7 @@ export default function GuidePage() {
         jpRibbon="本番 → 文化祭"
         ribbonFrom="#ef4444"
         ribbonTo="#f97316"
-        bg="/images/patterns/day3.jpg"
+        bg="/images/patterns/day3.JPG"
         borderColor="#ef4444"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">3日目：いよいよ本番、文化祭当日</h2>
