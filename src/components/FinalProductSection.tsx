@@ -360,7 +360,7 @@ const breakdownItems = [
               <div className="relative grid place-items-center -translate-y-6 md:-translate-y-4">
     {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
     <a
-      href={thgHref}
+      href="https://thanatos-games-jqgx8mo.gamma.site/"
       target="_blank"
       rel="noreferrer"
       aria-label="ThanatosGames 公式サイトへ"
