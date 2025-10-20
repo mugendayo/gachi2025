@@ -399,7 +399,7 @@ export default function GuidePage() {
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">③ 制服を準備して、放課後を満喫しよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>「自分にとっての青春」を表すものが制服です。実際の制服、憧れのデザイン、推しのコーデでもOK。</p>
-          <Tips title="写真のコツ" icon="/images/tips/uniform.jpg">背景をシンプルにして逆光を避けるだけで、SNS映えが安定します。</Tips>
+          <Tips title="写真のコツ" icon="/images/tips/uniform.JPG">背景をシンプルにして逆光を避けるだけで、SNS映えが安定します。</Tips>
         </div>
       </Panel>
 

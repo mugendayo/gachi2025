@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${site.title}｜奈良・下市集学校`,
-  description: "一生文化祭前夜。孤独にならない仕組みの本気の文化祭体験。",
+  title: `${site.title}｜魂の熱量は数値を超える`,
+  description: "魂の熱量は数値を超える",
   openGraph: {
     title: site.title,
-    description: "一生文化祭前夜。孤独にならない仕組みの本気の文化祭体験。",
+    description: "魂の熱量は数値を超える",
     url: "https://www.gachibunkasai.com/", // ← デプロイ後に自分のURLへ
     siteName: site.title,
     images: [
