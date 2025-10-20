@@ -25,7 +25,7 @@ const ASSET = process.env.NEXT_PUBLIC_ASSET_PREFIX ?? ""; // 例: "", "/gachi202
 
 // サムネ
 const THUMB_LAST_YEAR = `${ASSET}/thumbs/lastyear.jpg`;
-const THUMB_FIRST     = `${ASSET}/thumbs/1.jpg`;
+const THUMB_FIRST = `${ASSET}/thumbs/1.jpg`;
 
 // デバッグ用（校章の取得フラグをリセット）
 declare global {
@@ -92,7 +92,7 @@ export default function Hero() {
         setTimeout(() => {
           setShowSecond(true);
           if (STEP2_PART_B) startTypingB(STEP2_PART_B);
-        }, 300); // ★ ほんの少し遅延
+        }, 300);
       }
     }, TYPE_SPEED);
   };
@@ -147,7 +147,9 @@ export default function Hero() {
    * --------------------------- */
   useEffect(() => {
     try {
-      const seen = typeof window !== "undefined" && localStorage.getItem(LS_SEEN_POPUP) === "1";
+      const seen =
+        typeof window !== "undefined" &&
+        localStorage.getItem(LS_SEEN_POPUP) === "1";
       setHasSeenPopup(seen);
       setPopupStep(0);
       setShowCTA(!seen);
@@ -258,9 +260,12 @@ export default function Hero() {
    * --------------------------- */
   useEffect(() => {
     if (!heroRef.current) return;
-    const io = new IntersectionObserver(([entry]) => setBgActive(entry.isIntersecting), {
-      threshold: 0.01,
-    });
+    const io = new IntersectionObserver(
+      ([entry]) => setBgActive(entry.isIntersecting),
+      {
+        threshold: 0.01,
+      }
+    );
     io.observe(heroRef.current);
     return () => io.disconnect();
   }, []);
@@ -286,9 +291,15 @@ export default function Hero() {
    * Render
    * ========================================================================= */
   return (
-    <section ref={heroRef} className="relative min-h-[100svh] md:min-h-screen mb-0 overflow-x-hidden">
+    <section
+      ref={heroRef}
+      className="relative min-h=[100svh] md:min-h-screen mb-0 overflow-x-hidden"
+    >
       {/* 背景動画（常に背面に固定） */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none transform-gpu" aria-hidden={true}>
+      <div
+        className="fixed inset-0 z-0 overflow-hidden pointer-events-none transform-gpu"
+        aria-hidden={true}
+      >
         <video
           className="h-full w-full object-cover will-change-transform"
           autoPlay
@@ -310,7 +321,9 @@ export default function Hero() {
           {showCTA && popupStep === 0 && (
             <div
               className={
-                hasSeenPopup ? "relative z-20 mt-14 flex justify-center" : "fixed inset-0 z-[1200] grid place-items-center"
+                hasSeenPopup
+                  ? "relative z-20 mt-14 flex justify-center"
+                  : "fixed inset-0 z-[1200] grid place-items-center"
               }
             >
               <div className={hasSeenPopup ? "" : "pointer-events-auto"}>
@@ -398,7 +411,10 @@ export default function Hero() {
                               className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] transition will-change-transform"
                               draggable={false}
                             />
-                            <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+                            <span
+                              aria-hidden
+                              className="pointer-events-none absolute inset-0 overflow-hidden rounded-full"
+                            >
                               <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
                             </span>
                             <span className="sr-only">次へ</span>
@@ -443,13 +459,16 @@ export default function Hero() {
                           <motion.button
                             type="button"
                             onClick={() =>
-                              (isTypingA || isTypingB) ? revealAllStep2() : finishPopup()
-                            } // 途中は全文表示、完了後は閉じる
+                              isTypingA || isTypingB ? revealAllStep2() : finishPopup()
+                            }
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.28 }}
                             className="relative w-[92%] md:w-[85%] bg-white/95 border-2 border-gray-300 rounded-xl shadow-lg p-4 md:p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
-                            style={{ fontFamily: "DotGothic16, system-ui, sans-serif", minHeight: 120 }}
+                            style={{
+                              fontFamily: "DotGothic16, system-ui, sans-serif",
+                              minHeight: 120,
+                            }}
                           >
                             <p className="text-[17px] md:text-[18px] leading-relaxed text-gray-800 break-words">
                               {typedA}
@@ -467,7 +486,9 @@ export default function Hero() {
                             </p>
 
                             <div className="mt-2 text-[11px] text-gray-500 select-none">
-                              {(isTypingA || isTypingB) ? "タップで全文表示" : "下のボタンで閉じる"}
+                              {isTypingA || isTypingB
+                                ? "タップで全文表示"
+                                : "下のボタンで閉じる"}
                             </div>
 
                             {/* 閉じる（全文表示後のみ） */}
@@ -496,7 +517,7 @@ export default function Hero() {
         {/* 前景：STEP2終了後のコンテンツ（動画の上に流れる） */}
         {hasSeenPopup && (
           <div className="relative z-10">
-            {/* 出現タイミング調整のスペーサー（必要に応じて値を変えてOK） */}
+            {/* 出現タイミング調整のスペーサー */}
             <div className="h-[92svh] md:h-[92vh]" aria-hidden />
 
             {/* ボタン群本体 */}
@@ -518,118 +539,145 @@ export default function Hero() {
                     "overflow-hidden",
                   ].join(" ")}
                 >
-                  <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10" />
-                  <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/10"
+                  />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
+                  >
                     <span className="btn-glint block absolute -inset-y-2 -left-1/3 w-1/2 rotate-12" />
                   </span>
 
                   <span className="grid place-items-center h-10 w-10 shrink-0 rounded-xl bg-[#e9f8ed] ring-1 ring-[#c7ebd2]">
                     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                      <path d="M3 21c8-1 14-7 15-15 2 3 3 6 3 9-2 4-7 6-11 6-3 0-5-0-7 0z" fill="#2ea44f" />
+                      <path
+                        d="M3 21c8-1 14-7 15-15 2 3 3 6 3 9-2 4-7 6-11 6-3 0-5-0-7 0z"
+                        fill="#2ea44f"
+                      />
                     </svg>
                   </span>
 
                   <div className="flex-1">
-                    <div className="text-[12px] font-extrabold text-[#6a4f1f]">はじめて遊ぶ人へ</div>
-                    <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">ガチ文のきほん</div>
+                    <div className="text-[12px] font-extrabold text-[#6a4f1f]">
+                      はじめて遊ぶ人へ
+                    </div>
+                    <div className="mt-0.5 text-[20px] md:text-[22px] font-extrabold tracking-wide">
+                      ガチ文のきほん
+                    </div>
                   </div>
 
                   <span aria-hidden className="ml-2 shrink-0 text-[#2ea44f]">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 </Link>
 
                 {/* ② 去年の動画 */}
-                  <a
-                    href={YOUTUBE_LAST_YEAR}
-                    className={[
-                      "group relative flex w-full items-center gap-3 md:gap-4",
-                      "rounded-2xl px-3.5 md:px-4 py-3",
-                      "bg-white/85 backdrop-blur text-[#14587a]",
-                      "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
-                      "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
-                      "overflow-hidden",
-                    ].join(" ")}
-                  >
-                    {/* サムネ（サイズを端末でそろえる） */}
-                    <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
-                      <img
-                        src={THUMB_LAST_YEAR}
-                        alt="去年の動画"
-                        className="absolute inset-0 h-full w-full object-cover bg-gray-100"
-                        draggable={false}
-                        loading="lazy"
+                <a
+                  href={YOUTUBE_LAST_YEAR}
+                  className={[
+                    "group relative flex w-full items-center gap-3 md:gap-4",
+                    "rounded-2xl px-3.5 md:px-4 py-3",
+                    "bg-white/85 backdrop-blur text-[#14587a]",
+                    "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+                    "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+                    "overflow-hidden",
+                  ].join(" ")}
+                >
+                  {/* サムネ */}
+                  <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
+                    <img
+                      src={THUMB_LAST_YEAR}
+                      alt="去年の動画"
+                      className="absolute inset-0 h-full w-full object-cover bg-gray-100"
+                      draggable={false}
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* タイトル */}
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={[
+                        "font-extrabold tracking-wide text-[#1675a3]",
+                        "whitespace-nowrap overflow-hidden text-ellipsis",
+                        "text-[16px] sm:text-[17px] md:text-[18px]",
+                      ].join(" ")}
+                    >
+                      去年の動画
+                    </div>
+                  </div>
+
+                  <span aria-hidden className="ml-2 shrink-0 text-[#1675a3]">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
-                    </div>
-
-                    {/* タイトル（1行でトリム＆レスポンシブ） */}
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className={[
-                          "font-extrabold tracking-wide text-[#1675a3]",
-                          "whitespace-nowrap overflow-hidden text-ellipsis",
-                          "text-[16px] sm:text-[17px] md:text-[18px]",
-                        ].join(" ")}
-                      >
-                        去年の動画
-                      </div>
-                    </div>
-
-                    <span aria-hidden className="ml-2 shrink-0 text-[#1675a3]">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  </a>
-
-
+                    </svg>
+                  </span>
+                </a>
 
                 {/* ③ 第1回目の動画 */}
-              <a
-                href={YOUTUBE_FIRST}
-                className={[
-                  "group relative flex w-full items-center gap-3 md:gap-4",
-                  "rounded-2xl px-3.5 md:px-4 py-3",
-                  "bg-white/85 backdrop-blur text-[#0f6a5a]",
-                  "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
-                  "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
-                  "overflow-hidden",
-                ].join(" ")}
-              >
-                {/* サムネ（サイズを端末でそろえる） */}
-                <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
-                  <img
-                    src={THUMB_FIRST}
-                    alt="第1回目の動画"
-                    className="absolute inset-0 h-full w-full object-cover bg-gray-100"
-                    draggable={false}
-                    loading="lazy"
-                  />
-                </div>
-
-                {/* タイトル（1行でトリム＆レスポンシブ） */}
-                <div className="flex-1 min-w-0">
-                  <div
-                    className={[
-                      "font-extrabold tracking-wide text-[#118a76]",
-                      "whitespace-nowrap overflow-hidden text-ellipsis",
-                      "text-[16px] sm:text-[17px] md:text-[18px]",
-                    ].join(" ")}
-                  >
-                    第1回目の動画
+                <a
+                  href={YOUTUBE_FIRST}
+                  className={[
+                    "group relative flex w-full items-center gap-3 md:gap-4",
+                    "rounded-2xl px-3.5 md:px-4 py-3",
+                    "bg-white/85 backdrop-blur text-[#0f6a5a]",
+                    "ring-1 ring-black/10 shadow-[0_8px_20px_rgba(0,0,0,.12)]",
+                    "transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,.18)]",
+                    "overflow-hidden",
+                  ].join(" ")}
+                >
+                  {/* サムネ */}
+                  <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
+                    <img
+                      src={THUMB_FIRST}
+                      alt="第1回目の動画"
+                      className="absolute inset-0 h-full w-full object-cover bg-gray-100"
+                      draggable={false}
+                      loading="lazy"
+                    />
                   </div>
-                </div>
 
-                <span aria-hidden className="ml-2 shrink-0 text-[#118a76]">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              </a>
+                  {/* タイトル */}
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={[
+                        "font-extrabold tracking-wide text-[#118a76]",
+                        "whitespace-nowrap overflow-hidden text-ellipsis",
+                        "text-[16px] sm:text-[17px] md:text-[18px]",
+                      ].join(" ")}
+                    >
+                      第1回目の動画
+                    </div>
+                  </div>
 
-
+                  <span aria-hidden className="ml-2 shrink-0 text-[#118a76]">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </a>
               </div>
               {/* ▲ ここまで縦並び3ボタン */}
             </div>
@@ -651,8 +699,12 @@ export default function Hero() {
           </button>
           <div className="tg-inv-grid">
             {/* 生徒証 */}
-            <button type="button" className="tg-inv-slot tg-inv-hasitem" onClick={() => setPopupStep(2)}>
-              <img src="/btn-next.png" alt="" className="tg-inv-item tg-glow-img" />
+            <button
+              type="button"
+              className="tg-inv-slot tg-inv-hasitem"
+              onClick={() => setPopupStep(2)}
+            >
+              <img src="/btn-next.png" alt="" className="tg-inv-item" />
             </button>
 
             {/* 校章の着地点（空でも常時存在） */}
@@ -678,6 +730,7 @@ export default function Hero() {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             >
+              {/* 魔法陣（既存そのまま） */}
               <div className="translate-y-2 md:translate-y-3">
                 <motion.button
                   onClick={() => setPopupStep(1)}
@@ -691,7 +744,6 @@ export default function Hero() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {/* 魔法陣SVG（既存） */}
                   <svg viewBox="0 0 200 200" className="block w-full h-full" role="img" aria-hidden="true">
                     <defs>
                       <radialGradient id="mg-core" cx="50%" cy="50%" r="50%">
@@ -755,31 +807,59 @@ export default function Hero() {
                 </motion.button>
               </div>
 
-              <a
-                href="https://t.livepocket.jp/e/gachi2025"
-                aria-label="チケットを購入する"
-                className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-                rel="noopener"
-              >
-                <div className="rounded-full p-1 tg-glow-wrap">
-                  <img
-                    src="/ticket-btn.png"
-                    alt="ガチ文高等学校の生徒になる"
-                    className="block select-none pointer-events-none rounded-full tg-glow-img"
+              {/* 🎫 チケット（クリックは画像部のみ）＋小さなオーラ */}
+              <div className="relative">
+                {/* オーラ：ラッパー直下（Linkの外）でクリック無効 */}
+                <div
+                  className="absolute inset-0 -z-[1] pointer-events-none flex items-center justify-center"
+                  style={{
+                    transform: "scale(0.92)", // ほぼ同心・少しだけ小さく
+                    filter: "blur(1.2px)",
+                  }}
+                >
+                  <div
+                    className="rounded-full"
+                    style={{
+                      width: "90%", // チケットより僅かに大きい
+                      height: "90%",
+                      boxShadow:
+                        "0 0 6px rgba(255,255,255,0.22), 0 0 12px rgba(0,200,255,0.20)",
+                      animation: "gb-ticket-pulse 3.6s ease-in-out infinite alternate",
+                    }}
+                  />
+                </div>
+
+                {/* クリック可能なのはこの Link（= チケット本体）の範囲だけ */}
+                <a
+                  href="https://t.livepocket.jp/e/gachi2025"
+                  aria-label="チケットを購入する"
+                  className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 relative z-10"
+                  rel="noopener"
+                >
+                  <div
+                    className="rounded-full overflow-hidden"
                     style={{
                       width: "clamp(110px, 20vw, 160px)",
                       height: "clamp(110px, 20vw, 160px)",
+                      padding: 4,
+                      background: "transparent",
                     }}
-                    draggable={false}
-                  />
-                </div>
-              </a>
+                  >
+                    <img
+                      src="/ticket-btn.png"
+                      alt="ガチ文高等学校の生徒になる"
+                      className="block select-none pointer-events-auto rounded-full"
+                      draggable={false}
+                    />
+                  </div>
+                </a>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* ===== Global Styles（整理 & 体裁だけ調整、内容はそのまま） ===== */}
+      {/* ===== Global Styles（既存はそのまま／新規は接頭辞 gb- で衝突回避） ===== */}
       <style jsx global>{`
         html,
         body {
@@ -805,20 +885,9 @@ export default function Hero() {
             transform: scale(1.008);
           }
         }
-        .tg-glow-wrap {
-          animation: tg-fade-in 0.8s ease-out 0.4s both;
-          border-radius: 9999px;
-        }
-        .tg-glow-img {
-          animation: tg-glow-scale 3.2s ease-in-out 1.2s infinite alternate;
-          box-shadow: 0 0 14px rgba(255, 255, 255, 0.45), 0 0 20px rgba(0, 180, 255, 0.35);
-          will-change: transform;
-        }
+
         @media (prefers-reduced-motion: reduce) {
-          .tg-glow-wrap,
-          .tg-glow-img {
-            animation: none !important;
-          }
+          /* 既存アニメ無効化のみ */
         }
 
         /* タイプライターの点滅カーソル */
@@ -838,7 +907,7 @@ export default function Hero() {
           }
         }
 
-        /* RPG風チップ */
+        /* RPG風チップ（既存） */
         .rpg-chip {
           display: inline-flex;
           align-items: center;
@@ -890,7 +959,7 @@ export default function Hero() {
           }
         }
 
-        /* もちもの */
+        /* もちもの（既存） */
         .tg-inventory {
           display: flex;
           flex-direction: column;
@@ -956,7 +1025,7 @@ export default function Hero() {
           user-select: none;
         }
 
-        /* Nextボタンのキラン */
+        /* Nextボタンのキラン（既存） */
         .btn-glint {
           background: linear-gradient(
             90deg,
@@ -990,6 +1059,20 @@ export default function Hero() {
           100% {
             transform: translateX(180%) skewX(-12deg);
             opacity: 0;
+          }
+        }
+
+        /* 新規：チケット用の控えめパルス（接頭辞 gb- で衝突回避） */
+        @keyframes gb-ticket-pulse {
+          0% {
+            transform: scale(0.90);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.18),
+              0 0 12px rgba(0, 200, 255, 0.14);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.28),
+              0 0 16px rgba(0, 200, 255, 0.22);
           }
         }
       `}</style>
