@@ -9,3 +9,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+module.exports = {
+  images: { unoptimized: true },
+  // basePath / assetPrefix を使っているなら、それに合わせて <Image src> も見直し
+}

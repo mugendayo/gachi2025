@@ -79,7 +79,7 @@ function Ribbon({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 skew-x-12 opacity-30"
+        className="pointer-events-none absolute inset-0 skew-x-12 opacity-30 ribbon-diagonal-simplify"
         style={{
           background:
             "repeating-linear-gradient(120deg, rgba(255,255,255,.35) 0 6px, transparent 6px 20px)",

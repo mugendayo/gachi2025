@@ -135,3 +135,11 @@ html { scroll-behavior: smooth; }
   --rot: 3deg;       /* ホバー時だけ回転幅UP */
   filter: drop-shadow(0 6px 14px rgba(0,0,0,.18));
 }
+/* globals.css の末尾あたりに追加 */
+@media (max-width: 768px) {
+  .ribbon-diagonal-simplify {
+    background: linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,.1));
+    opacity: .35;
+    transform: none !important;
+  }
+}
