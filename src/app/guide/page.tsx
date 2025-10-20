@@ -514,37 +514,37 @@ export default function GuidePage() {
           <div className="pt-2">クラス配属・企画づくり・体育祭で自然と仲良くなれます。ひとり参加の方も毎年多いのでご安心ください。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">宿泊はどこでするのですか？</summary>
           <div className="pt-2">男女別に廃校の教室を寝室としてご用意。全員分の布団を準備しています。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">お風呂はどうなっていますか？</summary>
           <div className="pt-2">クラス単位で指定バスに乗車し、近隣の温泉施設へ。 入浴料500円、往復バス代540円は各自用意。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">食事はどうすればいいですか？</summary>
           <div className="pt-2">基本は校内の購買部で購入できます。軽食（パン・おにぎり）／温かい麺類／ドリンク各種などを販売予定。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">持ち物は何が必要ですか？</summary>
           <div className="pt-2">Discordサーバー内の「📣|必読2025」チャンネル内の「登校時間と持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">初日の8時までに間に合わないかもしれません…</summary>
           <div className="pt-2">遅刻・初日欠席も対応します。職員室まで来て中の先生へお声がけください。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">会場まではどうやって行けばいいですか？</summary>
           <div className="pt-2">大阪・阿倍野HOOP前 集合の「集団登校」を実施しています。</div>
         </details>
 
-        <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">貴重品はどうやって管理したらいいですか？</summary>
           <div className="pt-2">寝室は施錠していますが、気になる場合は持ち歩くか職員室に預けてください（常駐の先生がいます）。</div>
         </details>
