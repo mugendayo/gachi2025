@@ -509,7 +509,7 @@ export default function GuidePage() {
         bg="/images/patterns/faq.jpg"
         borderColor="#6366f1"
       >
-        <details className="group rounded-xl border bg-white p-4 shadow-sm">
+        <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">一人で参加しても楽しめますか？</summary>
           <div className="pt-2">クラス配属・企画づくり・体育祭で自然と仲良くなれます。ひとり参加の方も毎年多いのでご安心ください。</div>
         </details>
@@ -531,7 +531,7 @@ export default function GuidePage() {
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
           <summary className="cursor-pointer font-semibold">持ち物は何が必要ですか？</summary>
-          <div className="pt-2">「持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。</div>
+          <div className="pt-2">Discordサーバー内の「📣|必読2025」チャンネル内の「登校時間と持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。</div>
         </details>
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm mt-3">
