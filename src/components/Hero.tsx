@@ -25,7 +25,7 @@ const ASSET = process.env.NEXT_PUBLIC_ASSET_PREFIX ?? ""; // 例: "", "/gachi202
 
 // サムネ
 const THUMB_LAST_YEAR = `${ASSET}/thumbs/lastyear.jpg`;
-const THUMB_FIRST     = `${ASSET}/thumbs/first.jpg`;
+const THUMB_FIRST     = `${ASSET}/thumbs/1.jpg`;
 
 // デバッグ用（校章の取得フラグをリセット）
 declare global {
