@@ -54,6 +54,7 @@ function Tips({
 /* =========================
    Nintendo風パネル（巨大英字＋矢印リボン＋白枠）
    ========================= */
+// page.tsx 内の Ribbon をこれに置換（オーバーレイ削除版）
 function Ribbon({
   text,
   from = "#ef4444",
@@ -68,10 +69,13 @@ function Ribbon({
   return (
     <div
       className={[
-        "relative inline-flex items-center px-4 md:px-6 py-2 md:py-2.5 font-extrabold text-white tracking-widest drop-shadow-[0_6px_14px_rgba(0,0,0,.25)] select-none",
+        "relative inline-flex items-center px-4 md:px-6 py-2 md:py-2.5 font-extrabold text-white tracking-widest",
+        "drop-shadow-[0_6px_14px_rgba(0,0,0,.25)] select-none",
         className,
       ].join(" ")}
       style={{
+        backfaceVisibility: "hidden",
+        transform: "translateZ(0)",
         backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
         clipPath:
           "polygon(14px 0, 100% 0, 100% 70%, calc(100% + 22px) 50%, 100% 30%, 100% 100%, 14px 100%, 0 80%, 0 20%)",
@@ -79,16 +83,19 @@ function Ribbon({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 skew-x-12 opacity-30 ribbon-diagonal-simplify"
+        className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "repeating-linear-gradient(120deg, rgba(255,255,255,.35) 0 6px, transparent 6px 20px)",
+          clipPath:
+            "polygon(14px 0, 100% 0, 100% 70%, calc(100% + 22px) 50%, 100% 30%, 100% 100%, 14px 100%, 0 80%, 0 20%)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,.55)",
+          borderRadius: 14,
         }}
       />
       <span className="relative z-10">{text}</span>
     </div>
   );
 }
+
 
 function BigEN({ children, color = "#3b82f6" }: { children: ReactNode; color?: string }) {
   return (
@@ -328,12 +335,12 @@ export default function GuidePage() {
   items={[
     { label: "制服を着る",         src: "/images/uniform.jpg" },
     { label: "やりたい企画をする", src: "/images/max.jpg" },
-    { label: "学校をサボる",       src: "/images/savo.jpg" },
+    { label: "学校をサボる",       src: "/images/savo.JPG" },
     { label: "クラスで企画をする", src: "/images/make.jpeg" },
     { label: "チルアウトする",     src: "/images/chill.jpeg" },
     { label: "情熱を注ぐ",         src: "/images/passion.jpg" },
     { label: "授業を受ける",       src: "/images/class.jpg" },
-    { label: "体育祭を楽しむ",     src: "/images/sports.jpg" },
+    { label: "体育祭を楽しむ",     src: "/images/sports.JPG" },
     { label: "キャラを演じる",     src: "/images/role.jpeg" },
     { label: "ライブをする",       src: "/images/live.jpeg" },
   ]}

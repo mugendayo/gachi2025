@@ -51,7 +51,7 @@ const TEACHERS: Teacher[] = [
    UI パーツ
    ========================= */
 
-/** 矢印リボン（Nintendo風） */
+/** 矢印リボン（オーバーレイ削除版＝軽量＆安定） */
 function Ribbon({
   text,
   from,
@@ -79,6 +79,7 @@ function Ribbon({
           "polygon(12px 0, 100% 0, 100% 70%, calc(100% + 18px) 50%, 100% 30%, 100% 100%, 12px 100%, 0 80%, 0 20%)",
       }}
     >
+      {/* 内側の白ハイライト線のみ残す */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-[14px]"
@@ -88,20 +89,12 @@ function Ribbon({
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.55)",
         }}
       />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 skew-x-12 opacity-30 ribbon-diagonal-simplify"
-        style={{
-          background:
-            "repeating-linear-gradient(120deg, rgba(255,255,255,.3) 0 5px, transparent 5px 18px)",
-        }}
-      />
       <span className="relative z-10">{text}</span>
     </div>
   );
 }
 
-/** ピル：サイズ可変にして NameBand で小さめを使う */
+/** ピル（先生名を目立たせたいので小さめデフォルト） */
 function Pill({
   text,
   theme,
@@ -133,7 +126,6 @@ function Pill({
   );
 }
 
-/** 小さなラベル */
 function Badge({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-full bg-black/70 text-white px-2 py-1 text-[11px] tracking-wide">
@@ -142,28 +134,24 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** “名前リボン + ピル群”（左カラム） */
+/** 名前リボン + ピル群（重複タグは排除） */
 function NameBand({ t }: { t: Teacher }) {
   const th = THEME[t.id] || THEME.ganon;
-  const tags = [
+  const raw = [
     ...(t.title ? t.title.split(/[\/｜|]/).map((s) => s.trim()).filter(Boolean) : []),
     ...(t.subjects ? [t.subjects] : []),
   ];
+  const tags = Array.from(new Set(raw)).slice(0, 8);
 
   return (
     <div className="relative z-10 mb-3 md:mb-4">
       <div className="flex flex-wrap items-center gap-2 md:gap-3">
         {/* 先生名は相対的に大きく */}
-        <Ribbon
-          text={t.name}
-          from={th.from}
-          to={th.to}
-          className="text-base md:text-2xl"
-        />
+        <Ribbon text={t.name} from={th.from} to={th.to} className="text-base md:text-2xl" />
         {/* 科目ピルは小さく */}
         <div className="flex flex-wrap gap-1.5 md:gap-2">
-          {tags.map((x) => (
-            <Pill key={x} text={x} theme={th} size="sm" />
+          {tags.map((x, i) => (
+            <Pill key={`${x}-${i}`} text={x} theme={th} size="sm" />
           ))}
         </div>
       </div>
@@ -171,7 +159,7 @@ function NameBand({ t }: { t: Teacher }) {
   );
 }
 
-/** セレクター（下の先生ボタン群） */
+/** 先生ボタン（視認性アップ版） */
 function TeacherTile({
   t,
   active,
@@ -194,7 +182,7 @@ function TeacherTile({
         active ? "outline outline-2 outline-sky-400/80 bg-sky-50" : "",
       ].join(" ")}
     >
-      <div className="relative h-10 w-10 md:h-11 md:w-11 overflow-hidden rounded-xl ring-1 ring-white/60">
+      <div className="relative h-10 w-10 md:h-10 md:w-10 overflow-hidden rounded-xl ring-1 ring-white/60">
         <Image src={t.thumb || t.image} alt={t.name} fill sizes="44px" className="object-cover" />
       </div>
       <div className="mt-1.5 w-full text-center">
@@ -222,7 +210,7 @@ function TeacherSelector({
 }) {
   return (
     <div className={className}>
-      <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+      <div className="grid grid-cols-3 md:grid-cols-4 gap-2.5 md:gap-2">
         {teachers.map((x) => (
           <TeacherTile
             key={x.id}
@@ -236,7 +224,7 @@ function TeacherSelector({
   );
 }
 
-/** ヒーロー：右に縦長画像／左に情報＋（PCのみ）ボタン群を下詰め配置 */
+/** 右に縦長画像／左に情報＋（PCは）左下へボタンを絶対配置 */
 function Hero({
   t,
   active,
@@ -248,8 +236,8 @@ function Hero({
 }) {
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-stretch">
-      {/* 左：情報＋ボタン（PCのみこの列に収める） */}
-      <div className="order-2 md:order-1 md:col-span-5 flex flex-col">
+      {/* 左列 */}
+      <div className="order-2 md:order-1 md:col-span-5 relative min-h-full flex flex-col">
         <NameBand t={t} />
 
         <div className="grid gap-2 text-sm">
@@ -276,21 +264,22 @@ function Hero({
           </p>
         </div>
 
-        {/* 空白を吸収して下端にボタンを配置（PCのみ表示） */}
-        <div className="hidden md:block flex-1" />
-        <TeacherSelector
-          teachers={TEACHERS}
-          active={active}
-          setActive={setActive}
-          className="hidden md:block mt-4"
-        />
+        {/* PCは左カラムの底に固定 */}
+        <div className="hidden md:block absolute left-0 right-0 bottom-0">
+          <TeacherSelector
+            teachers={TEACHERS}
+            active={active}
+            setActive={setActive}
+            className="pt-3"
+          />
+        </div>
       </div>
 
-      {/* 右：縦長画像（smでは先頭に） */}
+      {/* 右列：縦長画像 */}
       <div className="order-1 md:order-2 md:col-span-7">
         <div
           className="relative w-full rounded-[14px] overflow-hidden ring-1 ring-black/10 bg-slate-100"
-          style={{ aspectRatio: "3/4" }} // 縦長固定
+          style={{ aspectRatio: "3/4" }}
         >
           <Image
             src={t.image}
@@ -303,7 +292,7 @@ function Hero({
         </div>
       </div>
 
-      {/* モバイル：従来どおり下にボタン群（PCでは非表示） */}
+      {/* モバイルは従来どおり下にボタン */}
       <TeacherSelector
         teachers={TEACHERS}
         active={active}
@@ -324,7 +313,6 @@ export default function TeachersSection() {
   return (
     <section className="py-10 md:py-14">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        {/* 見出し */}
         <header className="mb-3 md:mb-4">
           <div className="relative">
             <h2 className="text-[clamp(24px,8vw,64px)] font-extrabold tracking-widest text-slate-100/60 select-none">
@@ -339,7 +327,6 @@ export default function TeachersSection() {
           </p>
         </header>
 
-        {/* 上段：ヒーロー（PCは左下にボタンを収める） */}
         <Hero t={t} active={active} setActive={setActive} />
       </div>
     </section>
