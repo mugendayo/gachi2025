@@ -150,7 +150,7 @@ function Panel({
         </div>
 
         <div
-          className="rounded-[20px] bg-white p-4 md:p-6 shadow-[0_10px_26px_rgba(0,0,0,.12)]"
+          className="rounded-[20px] bg-white p-4 md:p-6 shadow-[0_10px_26px_rgba(0,0,0,.12)] text-slate-900"
           style={{
             border: `6px solid ${borderColor}`,
             boxShadow: `inset 0 0 0 3px #fff`,
