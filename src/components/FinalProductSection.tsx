@@ -23,7 +23,7 @@ export default function FinalProductSection({
   infoBody = "　",
   rows = [
     { iconSrc: "/icons/ticket-red.png", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/guide" },
-    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/uFvm2wPs" },
+    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/MXCb23rm2s" },
   ] as InfoRow[],
   thirdItemSrc = "/icons/arm.png",
   companyLogoSrc = "/icons/thg.png",
