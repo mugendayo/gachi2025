@@ -195,7 +195,7 @@ function LockedTile({ src, alt }: { src: string; alt: string }) {
             fill="currentColor"
           />
         </svg>
-        10月21日解禁!！
+        10月23日解禁!！
       </span>
     </div>
   );
