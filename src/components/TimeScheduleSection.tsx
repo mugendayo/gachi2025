@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { site } from "@/data/site";
 
 /* ========= 手書き見出し ========= */
 function ChalkHeading({ text }: { text: string }) {
@@ -195,7 +196,7 @@ function LockedTile({ src, alt }: { src: string; alt: string }) {
             fill="currentColor"
           />
         </svg>
-        10月23日解禁!！
+        {site.unlockLabel}
       </span>
     </div>
   );
@@ -206,7 +207,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const schedules = [
   {
     key: "day1",
-    heading: "11月1日(土) 文化祭まであと2日！",
+    heading: `${site.dayLabels[0]} 文化祭まであと2日！`,
     sub: "舞台に入場。はじまりのベル。",
     items: [
       { time: "08:00", label: "遅刻厳禁！超新星ホームルーム" },
@@ -219,7 +220,7 @@ const schedules = [
   },
   {
     key: "day2",
-    heading: "11月2日(日) 文化祭まであと1日！",
+    heading: `${site.dayLabels[1]} 文化祭まであと1日！`,
     sub: "汗かいて笑って、文化祭の芯を作る。",
     items: [
       { time: "08:30", label: "超新星ホームルーム" },
@@ -231,7 +232,7 @@ const schedules = [
   },
   {
     key: "final",
-    heading: "11月3日(祝日)　ガチ文化祭の日！",
+    heading: `${site.dayLabels[2]}　ガチ文化祭の日！`,
     sub: "全部を乗せて、幕が上がる。",
     items: [
       { time: "08:30", label: "超新星ホームルーム！" },

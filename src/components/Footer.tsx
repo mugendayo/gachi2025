@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { site } from "@/data/site";
 
 export default function Footer() {
   return (
@@ -9,7 +10,7 @@ export default function Footer() {
         {/* 上段：著作権 + 各リンク */}
         <div className="flex flex-col md:flex-row items-center justify-between w-full gap-2 md:gap-4">
           <div className="text-xs text-white/60">
-            © 2025 ThanatosGames All Rights Reserved.
+            © {site.year} ThanatosGames All Rights Reserved.
           </div>
 
           {/* 1行目のリンク群 */}

@@ -2,6 +2,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { site, toFullWidthDigits } from "@/data/site";
 
 /* === helper: href 正規化 & 外部判定（コンポーネント外） === */
 function normalizeHref(h: unknown, fallback = "/buy") {
@@ -18,7 +19,7 @@ type InfoRow = { iconSrc: string; label: string; href?: string };
 export default function FinalProductSection({
   coverSrc = "/icons/cover.png",
   badgeText = "タイムスリップ版",
-  msrp = "33,450円（税込）",
+  msrp = site.price,
   infoTitle = "購入する",
   infoBody = "　",
   rows = [
@@ -29,9 +30,9 @@ export default function FinalProductSection({
   companyLogoSrc = "/icons/thg.png",
   ariaLabelThird = "不思議なアイテムを手に入れる",
   // ▼ 追加
-  purchaseHref = "https://t.livepocket.jp/e/gachi2025",
+  purchaseHref = site.ticketUrl,
   purchaseSubText = "クレジットカード（事前）または現金払い（当日）可能",
-  thgHref = "https://t.livepocket.jp/e/gachi2025", // ← 追加（本番は公式URLに変更）
+  thgHref = site.ticketUrl,
 }: {
   
   ariaLabelThird?: string;
@@ -160,12 +161,12 @@ const breakdownItems = [
   { icon: "🛏️", text: "1人1組布団（敷布団、掛け布団、枕、毛布）4点レンタル" },
   { icon: "♨️", text: "現代病の劇薬（サウナ後ラーメン／二郎系／テントサウナ 等）※同時利用上限あり" },
   { icon: "🎇", text: "後夜祭『残響校舎』への参加・出演" },
-  { icon: "🎉", text: "11月4日 打ち上げの参加（非公開）" },
+  { icon: "🎉", text: `${site.afterPartyLabel} 打ち上げの参加（非公開）` },
 ];
 
   
     // …既存のstateやuseEffectのあと、JSXの return の直前あたりに追加
-  const safePurchaseHref = normalizeHref(purchaseHref, "https://t.livepocket.jp/e/gachi2025");
+  const safePurchaseHref = normalizeHref(purchaseHref, site.ticketUrl);
   const external = isExternalHref(safePurchaseHref);
 
   return (
@@ -190,9 +191,9 @@ const breakdownItems = [
             {/* タイトル/価格エリア */}
             <div className="flex flex-col justify-center">
               <h3 className="text-[clamp(20px,4.6vw,32px)] font-extrabold tracking-wide drop-shadow-[0_2px_0_rgba(0,0,0,.25)]">
-                ガチ文化祭２０２５
+                {toFullWidthDigits(site.title)}
               </h3>
-              <div className="mt-3 text-sm/relaxed opacity-90">発売日：2025年10月15日</div>
+              <div className="mt-3 text-sm/relaxed opacity-90">発売日：{site.releaseDateLabel}</div>
               <div className="mt-4">
                 <div className="text-[15px] md:text-[16px] opacity-90">希望小売価格</div>
                 <div className="mt-1 inline-flex items-baseline gap-2 rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/25">

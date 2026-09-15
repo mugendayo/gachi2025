@@ -15,12 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(site.siteUrl),
   title: `${site.title}｜魂の熱量は数値を超える`,
   description: "魂の熱量は数値を超える",
   openGraph: {
     title: site.title,
     description: "魂の熱量は数値を超える",
-    url: "https://www.gachibunkasai.com/", // ← デプロイ後に自分のURLへ
+    url: `${site.siteUrl}/`,
     siteName: site.title,
     images: [
       {

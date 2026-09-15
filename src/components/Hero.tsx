@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SummonCTA from "../components/SummonCTA";
 import Link from "next/link";
+import { site } from "@/data/site";
 
 /* =========================================================================
  * Constants
@@ -522,8 +523,8 @@ export default function Hero() {
 
             {/* ボタン群本体 */}
             <div className="mx-auto max-w-5xl px-6 pb-28 text-white">
-              <h2 className="text-2xl md:text-3xl font-bold">ガチ文化祭2025</h2>
-              <p className="mt-4 opacity-90">2025年11月1日（土）～3日（祝）</p>
+              <h2 className="text-2xl md:text-3xl font-bold">{site.title}</h2>
+              <p className="mt-4 opacity-90">{site.dateLabel}</p>
 
               {/* ▼ 縦並びの3ボタン */}
               <div className="mt-10 w-full max-w-2xl mx-auto space-y-3">
@@ -844,7 +845,7 @@ export default function Hero() {
 
                 {/* クリック可能なのはこの Link（= チケット本体）の範囲だけ */}
                 <a
-                  href="https://t.livepocket.jp/e/gachi2025"
+                  href={site.ticketUrl}
                   aria-label="チケットを購入する"
                   className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 relative z-10"
                   rel="noopener"

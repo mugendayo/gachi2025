@@ -3,6 +3,7 @@
 
 import { Kosugi_Maru } from "next/font/google";
 import Link from "next/link";
+import { site } from "@/data/site";
 
 const kosugi = Kosugi_Maru({
   weight: "400",
@@ -59,12 +60,12 @@ export default function TokushohoPage() {
             <h2 className="font-bold text-lg mb-2">販売URL</h2>
             <p>
               <a
-                href="https://www.gachibunkasai.com"
+                href={site.siteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 underline"
               >
-                https://www.gachibunkasai.com
+                {site.siteUrl}
               </a>
             </p>
           </section>
@@ -99,7 +100,7 @@ export default function TokushohoPage() {
           <section>
             <h2 className="font-bold text-lg mb-2">商品引渡し時期</h2>
             <p>購入完了後、即時メールまたはチケットページにてご案内いたします。</p>
-            <p>11月1日(土)9時前後または遅刻の場合、会場到着時に入場確認を行います。</p>
+            <p>{site.dayLabels[0]}9時前後または遅刻の場合、会場到着時に入場確認を行います。</p>
           </section>
 
           <section>

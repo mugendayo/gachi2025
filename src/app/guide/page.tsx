@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { SimpleSlider, type Slide } from "./ClientParts";
 import TeachersSection from "./TeachersSection";
+import { site } from "@/data/site";
 import type { CSSProperties } from "react";
 
 
@@ -531,7 +532,7 @@ export default function GuidePage() {
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
           <summary className="cursor-pointer font-semibold">持ち物は何が必要ですか？</summary>
-          <div className="pt-2">Discordサーバー内の「📣|必読2025」チャンネル内の「登校時間と持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。</div>
+          <div className="pt-2">Discordサーバー内の「📣|必読{site.year}」チャンネル内の「登校時間と持ち物」セクションをご確認ください（体操服・筆記用具・運動靴・お風呂セット・ノート・パジャマ・雨具・モバイルバッテリー・証明写真orプリクラ・企画準備物）。</div>
         </details>
 
         <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">
