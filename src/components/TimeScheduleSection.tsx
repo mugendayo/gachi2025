@@ -216,7 +216,7 @@ const schedules = [
       { time: "13:30", label: "激レア！秘密の授業" },
       { time: "14:30", label: "文化祭準備" },
     ],
-    youtubeId: "8G67_w_tFB0",
+    youtubeId: site.dayYoutubeIds[0],
   },
   {
     key: "day2",
@@ -228,7 +228,7 @@ const schedules = [
       { time: "09:45", label: "文化祭準備" },
       { time: "12:20", label: "限界を越えろ！1500m走" },
     ],
-    youtubeId: "jsczTaACzdU",
+    youtubeId: site.dayYoutubeIds[1],
   },
   {
     key: "final",
@@ -241,7 +241,7 @@ const schedules = [
       { time: "17:15", label: "閉会式" },
       { time: "18:00", label: "後夜祭　残響校舎" },
     ],
-    youtubeId: "n3AKmUFhIuw",
+    youtubeId: site.dayYoutubeIds[2],
   },
 ]
 /* ========= 本体 ========= */

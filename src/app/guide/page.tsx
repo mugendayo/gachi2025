@@ -332,20 +332,7 @@ export default function GuidePage() {
       </section>
 
       {/* ===================== 楽しみ方（非オーバーラップ版） ===================== */}
-<FunCloud
-  items={[
-    { label: "制服を着る",         src: "/images/uniform.jpg" },
-    { label: "やりたい企画をする", src: "/images/max.jpg" },
-    { label: "学校をサボる",       src: "/images/savo.JPG" },
-    { label: "クラスで企画をする", src: "/images/make.jpeg" },
-    { label: "チルアウトする",     src: "/images/chill.jpeg" },
-    { label: "情熱を注ぐ",         src: "/images/passion.jpg" },
-    { label: "授業を受ける",       src: "/images/class.jpg" },
-    { label: "体育祭を楽しむ",     src: "/images/sports.JPG" },
-    { label: "キャラを演じる",     src: "/images/role.jpeg" },
-    { label: "ライブをする",       src: "/images/live.jpeg" },
-  ]}
-/>
+<FunCloud items={funItems} />
 
 
       {/* ===================== Teachers ===================== */}
