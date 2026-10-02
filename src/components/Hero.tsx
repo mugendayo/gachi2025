@@ -6,6 +6,7 @@ import SummonCTA from "../components/SummonCTA";
 import Link from "next/link";
 import { site } from "@/data/site";
 import { useItems, ITEM_EVENT } from "@/lib/items";
+import UnlockTeaser, { UnlockCountdownBadge, isLockedNow, msUntilUnlock } from "./UnlockTeaser";
 
 /* =========================================================================
  * Constants
@@ -53,6 +54,9 @@ export default function Hero() {
   const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0);
   const [hasSeenPopup, setHasSeenPopup] = useState(false);
   const owned = useItems();
+  // 解禁前のお預け：true のあいだは導入に進めず、既視でも魔法陣から始まる
+  const [locked, setLocked] = useState(false);
+  const [showTeaser, setShowTeaser] = useState(false);
   const [glowId, setGlowId] = useState<string | null>(null);
   const [bgActive, setBgActive] = useState(true);
 
@@ -150,7 +154,10 @@ export default function Hero() {
    * --------------------------- */
   useEffect(() => {
     try {
+      const lockedNow = isLockedNow();
+      setLocked(lockedNow);
       const seen =
+        !lockedNow &&
         typeof window !== "undefined" &&
         localStorage.getItem(LS_SEEN_POPUP) === "1";
       setHasSeenPopup(seen);
@@ -163,6 +170,17 @@ export default function Hero() {
       setShowCTA(true);
     }
   }, []);
+
+  /* -----------------------------
+   * 解禁時刻になったらお預けを自動で外す（開いたまま待っていた人もそのまま進める）
+   * --------------------------- */
+  useEffect(() => {
+    if (!locked) return;
+    const ms = msUntilUnlock();
+    if (ms > 2_000_000_000) return; // setTimeout の上限（約24日）を超える先は再読み込みに任せる
+    const t = window.setTimeout(() => { setLocked(false); setShowTeaser(false); }, Math.max(0, ms) + 500);
+    return () => window.clearTimeout(t);
+  }, [locked]);
 
   /* -----------------------------
    * もちもの：拾った瞬間にその枠を光らせる
@@ -264,7 +282,13 @@ export default function Hero() {
   /* -----------------------------
    * Handlers
    * --------------------------- */
-  const openStep1 = () => setPopupStep(1);
+  const openStep1 = () => {
+    if (locked && isLockedNow()) {
+      setShowTeaser(true);
+      return;
+    }
+    setPopupStep(1);
+  };
   const goStep2 = () => setPopupStep(2);
 
   const finishPopup = () => {
@@ -319,10 +343,14 @@ export default function Hero() {
             >
               <div className={hasSeenPopup ? "" : "pointer-events-auto"}>
                 <SummonCTA label="Click" onClick={openStep1} autoShowAfterMs={0} />
+                {locked && <UnlockCountdownBadge />}
               </div>
             </div>
           )}
         </AnimatePresence>
+
+        {/* 解禁前のお預け */}
+        <AnimatePresence>{showTeaser && <UnlockTeaser onClose={() => setShowTeaser(false)} />}</AnimatePresence>
 
         {/* ポップアップ */}
         <AnimatePresence>
