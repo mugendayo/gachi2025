@@ -248,7 +248,7 @@ export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: s
               >
                 {day.items.map((it, i) => (
                   <li key={i}>
-                    {it.smudged ? <SmudgedLine time={it.time} /> : <ChalkText text={`${it.time}　${it.label}`} />}
+                    {it.smudged ? <SmudgedLine time={it.time} /> : <ChalkText text={it.time ? `${it.time}　${it.label}` : it.label} />}
                   </li>
                 ))}
               </motion.ul>
