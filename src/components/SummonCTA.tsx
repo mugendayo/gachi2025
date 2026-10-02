@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { site } from "@/data/site";
 
 /**
  * 豪華版 SummonCTA
@@ -181,7 +182,7 @@ function Sigil({ reduced }: { reduced: boolean }) {
         <path id="runePath" d="M50,50 m-39,0 a39,39 0 1,1 78,0 a39,39 0 1,1 -78,0" fill="none" />
         <text fontSize="4.2" letterSpacing="2.4" fill="#eaffff">
           <textPath href="#runePath">
-            GACHI·CULTURE·FES·2025·TIMESLIP·THANATOSGAMES·無限·
+            {`GACHI·CULTURE·FES·${site.year}·TIMESLIP·THANATOSGAMES·無限·`}
           </textPath>
         </text>
       </g>

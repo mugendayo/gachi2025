@@ -1,15 +1,19 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { site } from "@/data/site";
+
+/* 描画ごとに変わらない揺らぎ（SSR とクライアントで一致させる） */
+const rnd = (i: number, k: number) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
 
 /* ========= 手書き見出し ========= */
 function ChalkHeading({ text }: { text: string }) {
   return (
     <h3 className="font-chalk leading-relaxed mb-2 text-left text-[clamp(28px,5.2vw,100px)]">
       {text.split("").map((char, i) => {
-        const r = (Math.random() - 0.5) * 8;
-        const x = (Math.random() - 0.5) * 6;
-        const y = (Math.random() - 0.5) * 6;
+        const r = (rnd(i + text.length * 7, 1) - 0.5) * 8;
+        const x = (rnd(i + text.length * 7, 2) - 0.5) * 6;
+        const y = (rnd(i + text.length * 7, 3) - 0.5) * 6;
         return (
           <span
             key={i}
@@ -33,8 +37,8 @@ function ChalkText({ text }: { text: string }) {
   return (
     <p className="text-white font-chalk leading-relaxed text-left text-[clamp(18px,2vw,36px)] font-semibold drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
       {text.split("").map((char, i) => {
-        const r = (Math.random() - 0.5) * 6;
-        const y = (Math.random() - 0.5) * 4;
+        const r = (rnd(i + text.length * 7, 4) - 0.5) * 6;
+        const y = (rnd(i + text.length * 7, 5) - 0.5) * 4;
         return (
           <span
             key={i}
@@ -156,93 +160,39 @@ function ChalkArrowHint() {
 
 
 /* ========= ロック演出タイル（左上鍵＋ホバー暗転・クリック不可） ========= */
-function LockedTile({ src, alt }: { src: string; alt: string }) {
-  return (
-    <div
-      role="button"
-      aria-disabled="true"
-      title="近日公開"
-      className={[
-        "relative inline-block rounded-xl overflow-hidden",
-        "ring-1 ring-white/10 shadow-[0_8px_16px_rgba(0,0,0,.28)]",
-        "cursor-not-allowed select-none group",
-      ].join(" ")}
-      style={{ width: "clamp(120px,34vw,300px)" }}
-    >
-      {/* 画像 */}
-      <img
-        src={src}
-        alt={alt}
-        className="block w-full h-auto transition duration-200 group-hover:grayscale group-hover:brightness-75"
-        draggable={false}
-      />
-
-      {/* ホバー暗転 */}
-      <span className="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-200" />
-
-      {/* 左上：鍵バッジ */}
-      <span
-        className={[
-          "absolute top-1.5 left-1.5 z-10",
-          "inline-flex items-center gap-1 px-2 py-1 rounded-full",
-          "bg-black/60 backdrop-blur-[2px] text-white text-[14px] font-semibold",
-          "ring-1 ring-white/20",
-        ].join(" ")}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" className="opacity-90">
-          <path
-            d="M7 10V8a5 5 0 0110 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2 0h6V8a3 3 0 10-6 0v2z"
-            fill="currentColor"
-          />
-        </svg>
-        10月23日解禁!！
-      </span>
-    </div>
-  );
-}
 /* ========= スケジュールデータ ========= */
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-const schedules = [
-  {
-    key: "day1",
-    heading: "11月1日(土) 文化祭まであと2日！",
-    sub: "舞台に入場。はじまりのベル。",
-    items: [
-      { time: "08:00", label: "遅刻厳禁！超新星ホームルーム" },
-      { time: "09:00", label: "通常授業" },
-      { time: "10:45", label: "ガチ文高等学校体育祭" },
-      { time: "13:30", label: "激レア！秘密の授業" },
-      { time: "14:30", label: "文化祭準備" },
-    ],
-    youtubeId: "8G67_w_tFB0",
-  },
-  {
-    key: "day2",
-    heading: "11月2日(日) 文化祭まであと1日！",
-    sub: "汗かいて笑って、文化祭の芯を作る。",
-    items: [
-      { time: "08:30", label: "超新星ホームルーム" },
-      { time: "09:00", label: "映像授業" },
-      { time: "09:45", label: "文化祭準備" },
-      { time: "12:20", label: "限界を越えろ！1500m走" },
-    ],
-    youtubeId: "jsczTaACzdU",
-  },
-  {
-    key: "final",
-    heading: "11月3日(祝日)　ガチ文化祭の日！",
-    sub: "全部を乗せて、幕が上がる。",
-    items: [
-      { time: "08:30", label: "超新星ホームルーム！" },
-      { time: "10:30", label: "開会式＆高校生バンド" },
-      { time: "11:00", label: "ガチ文化祭！" },
-      { time: "17:15", label: "閉会式" },
-      { time: "18:00", label: "後夜祭　残響校舎" },
-    ],
-    youtubeId: "n3AKmUFhIuw",
-  },
-]
+const schedules = site.days.map((d) => ({
+  key: d.key,
+  heading: `${d.date} ${d.countdown}`,
+  items: d.items as readonly { time: string; label: string; smudged?: boolean }[],
+  youtubeId: d.youtubeId,
+  anomaly: "anomaly" in d && d.anomaly,
+}));
+/* ========= 異変：かすれて読めない予定・青い手形 ========= */
+function SmudgedLine({ time }: { time: string }) {
+  return (
+    <p className="font-chalk text-left text-[clamp(18px,2vw,36px)] font-semibold text-white/90">
+      {time}　<span className="inline-block align-middle h-[0.9em] w-[7em] rounded-sm bg-white/25 blur-[3px]" aria-label="（かすれて読めない）" />
+    </p>
+  );
+}
+function BlueHand() {
+  return (
+    <svg aria-hidden viewBox="0 0 100 120" className="pointer-events-none absolute right-[6%] top-[38%] w-[90px] md:w-[130px] rotate-[14deg] opacity-80" fill="#1d3fbf">
+      <ellipse cx="50" cy="72" rx="26" ry="28" />
+      <rect x="22" y="22" width="11" height="44" rx="5.5" transform="rotate(-12 27 44)" />
+      <rect x="36" y="10" width="11" height="52" rx="5.5" transform="rotate(-4 41 36)" />
+      <rect x="51" y="8" width="11" height="54" rx="5.5" transform="rotate(4 56 35)" />
+      <rect x="65" y="16" width="11" height="48" rx="5.5" transform="rotate(12 70 40)" />
+      <rect x="74" y="58" width="11" height="34" rx="5.5" transform="rotate(48 79 75)" />
+      <rect x="44" y="96" width="5" height="22" rx="2.5" />
+      <rect x="58" y="94" width="4" height="16" rx="2" />
+    </svg>
+  );
+}
+
 /* ========= 本体 ========= */
 export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: string }) {
   const [idx, setIdx] = useState(0);
@@ -298,7 +248,7 @@ export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: s
               >
                 {day.items.map((it, i) => (
                   <li key={i}>
-                    <ChalkText text={`${it.time}　${it.label}`} />
+                    {it.smudged ? <SmudgedLine time={it.time} /> : <ChalkText text={it.time ? `${it.time}　${it.label}` : it.label} />}
                   </li>
                 ))}
               </motion.ul>
@@ -325,12 +275,7 @@ export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: s
                   loading="lazy"
                 />
               </motion.div>
-
-              {/* 🔗 下部（ロック中） */}
-              <div className="mt-6 w-full max-w-[720px] mx-auto grid grid-cols-2 place-items-center gap-4 md:gap-6">
-                <LockedTile src="/schedule/btn-seishun.png" alt="青春の延命治療（近日公開）" />
-                <LockedTile src="/schedule/btn-archive.png" alt="過去企画一覧（近日公開）" />
-              </div>
+              {day.anomaly && <BlueHand />}
             </motion.div>
           </AnimatePresence>
 

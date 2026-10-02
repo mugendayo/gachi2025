@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SummonCTA from "../components/SummonCTA";
 import Link from "next/link";
+import { site } from "@/data/site";
+import { useItems, ITEM_EVENT } from "@/lib/items";
+import UnlockTeaser, { UnlockCountdownBadge, isLockedNow, msUntilUnlock } from "./UnlockTeaser";
 
 /* =========================================================================
  * Constants
  * ========================================================================= */
-const LS_SEEN_POPUP = "gbf_seen_popup";
-const LS_CREST_ACQUIRED = "gbf_crest_acquired";
+// 既視判定は年度ごと（2025に来た人にも2026の導入が出る）
+const LS_SEEN_POPUP = `gbf_${site.year}_seen_popup`;
 
 const STEP2_LINES = [
   "生徒証を手に入れたのね！ガチ文高等学校へようこそ！きみは「生徒」としてタイムスリップしてきたのよ！さあ、文化祭の準備をしなくっちゃ！",
@@ -50,7 +53,20 @@ export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
   const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0);
   const [hasSeenPopup, setHasSeenPopup] = useState(false);
-  const [crestAcquired, setCrestAcquired] = useState(false); // 取得フラグ（将来拡張用）
+  const owned = useItems();
+  // 解禁前のお預け：true のあいだは導入に進めず、既視でも魔法陣から始まる
+  // 背景動画：縦長の画面＝縦の動画（スマホ）、横長の画面＝横の動画（PC）。素材＝ガチ文化祭2025
+  const [wideBg, setWideBg] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-aspect-ratio: 1/1)");
+    const sync = () => setWideBg(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const [locked, setLocked] = useState(false);
+  const [showTeaser, setShowTeaser] = useState(false);
+  const [glowId, setGlowId] = useState<string | null>(null);
   const [bgActive, setBgActive] = useState(true);
 
   // ===== STEP2 専用：文章分割（「きみは」で2つに分けてタイプ） =====
@@ -147,17 +163,16 @@ export default function Hero() {
    * --------------------------- */
   useEffect(() => {
     try {
+      const lockedNow = isLockedNow();
+      setLocked(lockedNow);
       const seen =
+        !lockedNow &&
         typeof window !== "undefined" &&
         localStorage.getItem(LS_SEEN_POPUP) === "1";
       setHasSeenPopup(seen);
       setPopupStep(0);
       setShowCTA(!seen);
 
-      setCrestAcquired(localStorage.getItem(LS_CREST_ACQUIRED) === "1");
-
-      // デバッグ：校章フラグを消す
-      window.__resetCrest = () => localStorage.removeItem(LS_CREST_ACQUIRED);
     } catch {
       setHasSeenPopup(false);
       setPopupStep(0);
@@ -166,25 +181,28 @@ export default function Hero() {
   }, []);
 
   /* -----------------------------
-   * Crest 同期（同一タブ & 別タブ）
+   * 解禁時刻になったらお預けを自動で外す（開いたまま待っていた人もそのまま進める）
    * --------------------------- */
   useEffect(() => {
-    const onAcq = () => {
-      setCrestAcquired(true);
-      try {
-        localStorage.setItem(LS_CREST_ACQUIRED, "1");
-      } catch {}
-    };
-    window.addEventListener("crest:acquired", onAcq);
-    return () => window.removeEventListener("crest:acquired", onAcq);
-  }, []);
+    if (!locked) return;
+    const ms = msUntilUnlock();
+    if (ms > 2_000_000_000) return; // setTimeout の上限（約24日）を超える先は再読み込みに任せる
+    const t = window.setTimeout(() => { setLocked(false); setShowTeaser(false); }, Math.max(0, ms) + 500);
+    return () => window.clearTimeout(t);
+  }, [locked]);
 
+  /* -----------------------------
+   * もちもの：拾った瞬間にその枠を光らせる
+   * --------------------------- */
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === LS_CREST_ACQUIRED) setCrestAcquired(e.newValue === "1");
+    const onItem = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id as string | undefined;
+      if (!id) return;
+      setGlowId(id);
+      window.setTimeout(() => setGlowId(null), 900);
     };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(ITEM_EVENT, onItem);
+    return () => window.removeEventListener(ITEM_EVENT, onItem);
   }, []);
 
   /* -----------------------------
@@ -273,7 +291,13 @@ export default function Hero() {
   /* -----------------------------
    * Handlers
    * --------------------------- */
-  const openStep1 = () => setPopupStep(1);
+  const openStep1 = () => {
+    if (locked && isLockedNow()) {
+      setShowTeaser(true);
+      return;
+    }
+    setPopupStep(1);
+  };
   const goStep2 = () => setPopupStep(2);
 
   const finishPopup = () => {
@@ -307,10 +331,11 @@ export default function Hero() {
           playsInline
           loop
           preload="metadata"
-          poster="/og.jpg"
+          key={wideBg ? "wide" : "tall"}
+          poster={wideBg ? "/hero-wide-poster.jpg" : "/hero-poster.jpg"}
           style={{ opacity: bgActive ? 1 : 0, transition: "opacity .35s ease" }}
         >
-          <source src="/hero.mp4" type="video/mp4" />
+          <source src={wideBg ? "/hero-wide.mp4" : "/hero.mp4"} type="video/mp4" />
         </video>
       </div>
 
@@ -328,10 +353,14 @@ export default function Hero() {
             >
               <div className={hasSeenPopup ? "" : "pointer-events-auto"}>
                 <SummonCTA label="Click" onClick={openStep1} autoShowAfterMs={0} />
+                {locked && <UnlockCountdownBadge />}
               </div>
             </div>
           )}
         </AnimatePresence>
+
+        {/* 解禁前のお預け */}
+        <AnimatePresence>{showTeaser && <UnlockTeaser onClose={() => setShowTeaser(false)} />}</AnimatePresence>
 
         {/* ポップアップ */}
         <AnimatePresence>
@@ -522,8 +551,8 @@ export default function Hero() {
 
             {/* ボタン群本体 */}
             <div className="mx-auto max-w-5xl px-6 pb-28 text-white">
-              <h2 className="text-2xl md:text-3xl font-bold">ガチ文化祭2025</h2>
-              <p className="mt-4 opacity-90">2025年11月1日（土）～3日（祝）</p>
+              <h2 className="text-2xl md:text-3xl font-bold">{site.title}</h2>
+              <p className="mt-4 opacity-90">{site.dateLabel}</p>
 
               {/* ▼ 縦並びの3ボタン */}
               <div className="mt-10 w-full max-w-2xl mx-auto space-y-3">
@@ -594,9 +623,9 @@ export default function Hero() {
 </div>
 
 
-                {/* ② 去年の動画 */}
+                {/* ② 去年のソフト（2025） */}
                 <a
-                  href={YOUTUBE_LAST_YEAR}
+                  href="https://2025.gachibunkasai.com/"
                   className={[
                     "group relative flex w-full items-center gap-3 md:gap-4",
                     "rounded-2xl px-3.5 md:px-4 py-3",
@@ -610,7 +639,7 @@ export default function Hero() {
                   <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
                     <img
                       src={THUMB_LAST_YEAR}
-                      alt="去年の動画"
+                      alt="去年のソフト（2025）"
                       className="absolute inset-0 h-full w-full object-cover bg-gray-100"
                       draggable={false}
                       loading="lazy"
@@ -626,7 +655,7 @@ export default function Hero() {
                         "text-[16px] sm:text-[17px] md:text-[18px]",
                       ].join(" ")}
                     >
-                      去年の動画
+                      去年のソフト（2025）
                     </div>
                   </div>
 
@@ -643,9 +672,9 @@ export default function Hero() {
                   </span>
                 </a>
 
-                {/* ③ 第1回目の動画 */}
+                {/* ③ ライブラリ（2018〜） */}
                 <a
-                  href={YOUTUBE_FIRST}
+                  href="#library"
                   className={[
                     "group relative flex w-full items-center gap-3 md:gap-4",
                     "rounded-2xl px-3.5 md:px-4 py-3",
@@ -659,7 +688,7 @@ export default function Hero() {
                   <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
                     <img
                       src={THUMB_FIRST}
-                      alt="第1回目の動画"
+                      alt="ライブラリ（2018〜）"
                       className="absolute inset-0 h-full w-full object-cover bg-gray-100"
                       draggable={false}
                       loading="lazy"
@@ -675,7 +704,7 @@ export default function Hero() {
                         "text-[16px] sm:text-[17px] md:text-[18px]",
                       ].join(" ")}
                     >
-                      第1回目の動画
+                      ライブラリ（2018〜）
                     </div>
                   </div>
 
@@ -702,7 +731,7 @@ export default function Hero() {
           className="fixed z-[61] tg-inventory"
           style={{
             left: "calc(16px + env(safe-area-inset-left))",
-            top: "calc(16px + env(safe-area-inset-top))",
+            top: "calc(100px + env(safe-area-inset-top))", // 公式バー（84px）の下
             opacity: hasSeenPopup && popupStep === 0 ? 1 : 0,
             pointerEvents: hasSeenPopup && popupStep === 0 ? "auto" : "none",
           }}
@@ -711,20 +740,15 @@ export default function Hero() {
             もちもの
           </button>
           <div className="tg-inv-grid">
-            {/* 生徒証 */}
-            <button
-              type="button"
-              className="tg-inv-slot tg-inv-hasitem"
-              onClick={() => setPopupStep(2)}
-            >
-              <img src="/btn-next.png" alt="" className="tg-inv-item" />
-            </button>
-
-            {/* 校章の着地点（空でも常時存在） */}
-            <div id="inv-crest-slot" className="tg-inv-slot tg-inv-empty" aria-hidden />
-
-            {/* 予備スロット */}
-            <div className="tg-inv-slot tg-inv-empty" aria-hidden />
+            {site.items.map((it) => (
+              <div
+                key={it.id}
+                className={`tg-inv-slot ${owned.includes(it.id) ? "tg-inv-hasitem" : "tg-inv-empty"} ${glowId === it.id ? "inv-bling" : ""}`}
+                title={owned.includes(it.id) ? it.name : "？？？"}
+              >
+                {owned.includes(it.id) && <img src={it.img} alt={it.name} className="tg-inv-item" />}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -818,54 +842,6 @@ export default function Hero() {
                     <circle cx="100" cy="100" r="20" fill="#ffffff" opacity="0.95" filter="url(#mg-strong)" />
                   </svg>
                 </motion.button>
-              </div>
-
-              {/* 🎫 チケット（クリックは画像部のみ）＋小さなオーラ */}
-              <div className="relative">
-                {/* オーラ：ラッパー直下（Linkの外）でクリック無効 */}
-                <div
-                  className="absolute inset-0 -z-[1] pointer-events-none flex items-center justify-center"
-                  style={{
-                    transform: "scale(0.92)", // ほぼ同心・少しだけ小さく
-                    filter: "blur(1.2px)",
-                  }}
-                >
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: "90%", // チケットより僅かに大きい
-                      height: "90%",
-                      boxShadow:
-                        "0 0 6px rgba(255,255,255,0.22), 0 0 12px rgba(0,200,255,0.20)",
-                      animation: "gb-ticket-pulse 3.6s ease-in-out infinite alternate",
-                    }}
-                  />
-                </div>
-
-                {/* クリック可能なのはこの Link（= チケット本体）の範囲だけ */}
-                <a
-                  href="https://t.livepocket.jp/e/gachi2025"
-                  aria-label="チケットを購入する"
-                  className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 relative z-10"
-                  rel="noopener"
-                >
-                  <div
-                    className="rounded-full overflow-hidden"
-                    style={{
-                      width: "clamp(110px, 20vw, 160px)",
-                      height: "clamp(110px, 20vw, 160px)",
-                      padding: 4,
-                      background: "transparent",
-                    }}
-                  >
-                    <img
-                      src="/ticket-btn.png"
-                      alt="ガチ文高等学校の生徒になる"
-                      className="block select-none pointer-events-auto rounded-full"
-                      draggable={false}
-                    />
-                  </div>
-                </a>
               </div>
             </motion.div>
           )}

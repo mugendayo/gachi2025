@@ -3,49 +3,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { teachers as TEACHERS, themeOf, imageOf, thumbOf, type Teacher, type TeacherTheme } from "@/data/teachers";
 
-/* =========================
-   データ型＆テーマ
-   ========================= */
-const THEME = {
-  akatsuki: { from: "#ff7a18", to: "#ff3d77", accent: "#fff", ring: "#ffb199" },
-  shinai:   { from: "#06b6d4", to: "#3b82f6", accent: "#fff", ring: "#93c5fd" },
-  mamoru:   { from: "#22c55e", to: "#16a34a", accent: "#0b3b1f", ring: "#86efac" },
-  ganon:    { from: "#a855f7", to: "#ec4899", accent: "#fff", ring: "#f0abfc" },
-  monchin:  { from: "#fb923c", to: "#f97316", accent: "#3b1d00", ring: "#fed7aa" },
-  zenshu:   { from: "#60a5fa", to: "#2563eb", accent: "#061634", ring: "#93c5fd" },
-  mugen:    { from: "#f59e0b", to: "#ef4444", accent: "#2b0a02", ring: "#fde68a" },
-  yuta:     { from: "#10b981", to: "#14b8a6", accent: "#06231c", ring: "#99f6e4" },
-  hanhan:   { from: "#ef4444", to: "#dc2626", accent: "#fff", ring: "#fecaca" },
-} as const;
-
-type ThemeKey = keyof typeof THEME;
-
-type Teacher = {
-  id: ThemeKey;
-  name: string;
-  title?: string;
-  image: string;   // 縦長画像（3:4 推奨）
-  hobby?: string;
-  motto?: string;
-  subjects?: string;
-  thumb?: string;  // サムネ（なければ image を流用）
-};
-
-/* =========================
-   マスターデータ
-   ========================= */
-const TEACHERS: Teacher[] = [
-  { id: "akatsuki", name: "斬島", title: "教務主任/数学科", image: "/images/teachers/1.png", hobby: "検定・資格収集＆勝利", motto: "教育は⬛⬛である。", thumb: "/images/teachers/akatsuki.jpg", subjects: "数学科 代数学専攻" },
-  { id: "shinai",   name: "志導シナイ", title: "生徒指導部/保健体育科", image: "/images/teachers/7.png",  hobby: "女性鑑賞＆混浴", motto: "おにぎりは丸い", subjects: "保健体育科 " },
-  { id: "mamoru",   name: "志導マモル", title: "生徒指導部主任/体育科", image: "/images/teachers/4.png",  hobby: "犬の散歩＆娘と縄跳び", motto: "百聞は一見に如かず。", subjects: "体育科" },
-  { id: "ganon",    name: "横山ガノンドロフ", title: "1年1組担任/1学年主任/国語科", image: "/images/teachers/2.png", hobby: "ガノンドロフする＆下克上", motto: "熱があるうちに打て", subjects: "国語科 現代文専攻" },
-  { id: "monchin",  name: "問珍仏破", title: "3年2組担任/英語科", image: "/images/teachers/5.png", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
-  { id: "zenshu",   name: "然愁", title: "2年1組担任/2学年主任/社会科", image: "/images/teachers/8.png", hobby: "禅＆二郎系ラーメン", motto: "情熱と哀愁", subjects: "社会科 倫理専攻" },
-  { id: "mugen",    name: "夢幻泰介", title: "3年1組担任/3学年主任/家庭科", image: "/images/teachers/6.png", hobby: "二郎系ラーメン屋巡り＆カードゲーム", motto: "純度100%の自分を表現する", subjects: "家庭科 二郎専攻" },
-  { id: "yuta",     name: "ドリーマー宥太", title: "1年2組担任/保健体育科", image: "/images/teachers/9.png", hobby: "短眠", motto: "睡眠は身体に害", subjects: "保健体育科 短眠専攻" },
-  { id: "hanhan",   name: "令爆誕飯飯", title: "2年2組担任/進路指導部/英語科", image: "/images/teachers/3.png", hobby: "学歴アキネーター＆学歴エンジェルフォール", motto: "天上天下唯我独尊", subjects: "英語科 東大英語専攻" },
-];
+// 先生のデータは src/data/teachers.ts（書き込むだけで反映）
+type ThemeKey = string;
 
 /* =========================
    UI パーツ
@@ -101,7 +62,7 @@ function Pill({
   size = "sm",
 }: {
   text: string;
-  theme: (typeof THEME)[ThemeKey];
+  theme: TeacherTheme;
   size?: "sm" | "md";
 }) {
   const sizeCls =
@@ -136,7 +97,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 
 /** 名前リボン + ピル群（重複タグは排除） */
 function NameBand({ t }: { t: Teacher }) {
-  const th = THEME[t.id] || THEME.ganon;
+  const th = themeOf(t);
   const raw = [
     ...(t.title ? t.title.split(/[\/｜|]/).map((s) => s.trim()).filter(Boolean) : []),
     ...(t.subjects ? [t.subjects] : []),
@@ -148,6 +109,7 @@ function NameBand({ t }: { t: Teacher }) {
       <div className="flex flex-wrap items-center gap-2 md:gap-3">
         {/* 先生名は相対的に大きく */}
         <Ribbon text={t.name} from={th.from} to={th.to} className="text-base md:text-2xl" />
+        {t.reading && <span className="text-xs md:text-sm text-slate-500">{t.reading}</span>}
         {/* 科目ピルは小さく */}
         <div className="flex flex-wrap gap-1.5 md:gap-2">
           {tags.map((x, i) => (
@@ -183,7 +145,7 @@ function TeacherTile({
       ].join(" ")}
     >
       <div className="relative h-10 w-10 md:h-10 md:w-10 overflow-hidden rounded-xl ring-1 ring-white/60">
-        <Image src={t.thumb || t.image} alt={t.name} fill sizes="44px" className="object-cover" />
+        <Image src={thumbOf(t)} alt={t.name} fill sizes="44px" className="object-cover" />
       </div>
       <div className="mt-1.5 w-full text-center">
         <div className="text-[11px] md:text-[12px] font-bold leading-tight line-clamp-2 text-slate-800">
@@ -282,7 +244,7 @@ function Hero({
           style={{ aspectRatio: "3/4" }}
         >
           <Image
-            src={t.image}
+            src={imageOf(t)}
             alt={t.name}
             fill
             sizes="(min-width:1024px) 620px, (min-width:768px) 560px, 92vw"

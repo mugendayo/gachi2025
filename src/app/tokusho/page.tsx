@@ -3,6 +3,7 @@
 
 import { Kosugi_Maru } from "next/font/google";
 import Link from "next/link";
+import { site } from "@/data/site";
 
 const kosugi = Kosugi_Maru({
   weight: "400",
@@ -59,12 +60,12 @@ export default function TokushohoPage() {
             <h2 className="font-bold text-lg mb-2">販売URL</h2>
             <p>
               <a
-                href="https://www.gachibunkasai.com"
+                href={site.siteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 underline"
               >
-                https://www.gachibunkasai.com
+                {site.siteUrl}
               </a>
             </p>
           </section>
@@ -81,25 +82,20 @@ export default function TokushohoPage() {
 
           <section>
             <h2 className="font-bold text-lg mb-2">お支払い方法</h2>
-            <ul className="list-disc list-inside">
-              <li>クレジットカード（VISA / MasterCard / AMEX など）</li>
-              <li>コンビニ支払い</li>
-              <li>PayPay・電子マネー（対象イベントのみ）</li>
-              <li>当日現金払い可</li>
-            </ul>
+            <p>{site.paymentLabel}</p>
           </section>
 
           <section>
             <h2 className="font-bold text-lg mb-2">お支払い時期</h2>
             <p>
-              ご注文確定時にお支払いが発生します。コンビニ決済の場合は指定期限内にお支払いください。
+              当日、会場にてお支払いください。事前に払う場合は、Discord内の案内に従ってください。
             </p>
           </section>
 
           <section>
             <h2 className="font-bold text-lg mb-2">商品引渡し時期</h2>
             <p>購入完了後、即時メールまたはチケットページにてご案内いたします。</p>
-            <p>11月1日(土)9時前後または遅刻の場合、会場到着時に入場確認を行います。</p>
+            <p>{site.days[0].date}9時前後または遅刻の場合、会場到着時に入場確認を行います。</p>
           </section>
 
           <section>

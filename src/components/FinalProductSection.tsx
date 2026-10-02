@@ -2,6 +2,9 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { site, toFullWidthDigits } from "@/data/site";
+import { acquire, useItems } from "@/lib/items";
+import { openJoinGate } from "./JoinGate";
 
 /* === helper: href 正規化 & 外部判定（コンポーネント外） === */
 function normalizeHref(h: unknown, fallback = "/buy") {
@@ -18,20 +21,20 @@ type InfoRow = { iconSrc: string; label: string; href?: string };
 export default function FinalProductSection({
   coverSrc = "/icons/cover.png",
   badgeText = "タイムスリップ版",
-  msrp = "33,450円（税込）",
-  infoTitle = "購入する",
+  msrp = site.price,
+  infoTitle = "参加する",
   infoBody = "　",
   rows = [
     { iconSrc: "/icons/ticket-red.png", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/guide" },
-    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/MXCb23rm2s" },
+    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "#join" },
   ] as InfoRow[],
   thirdItemSrc = "/icons/arm.png",
   companyLogoSrc = "/icons/thg.png",
   ariaLabelThird = "不思議なアイテムを手に入れる",
   // ▼ 追加
-  purchaseHref = "https://t.livepocket.jp/e/gachi2025",
-  purchaseSubText = "クレジットカード（事前）または現金払い（当日）可能",
-  thgHref = "https://t.livepocket.jp/e/gachi2025", // ← 追加（本番は公式URLに変更）
+  purchaseHref = site.discordUrl,
+  purchaseSubText = site.paymentLabel,
+  thgHref = site.discordUrl,
 }: {
   
   ariaLabelThird?: string;
@@ -49,12 +52,13 @@ export default function FinalProductSection({
   companyLogoSrc?: string;
 }) {
   /* ---------------- セッション内の所持状況（永続化しない） ---------------- */
-  const [crestAcquired, setCrestAcquired] = useState(false); // 2つ目（校章）
-  const [thirdAcquired, setThirdAcquired] = useState(false); // 3つ目（このセクション）
+  const owned = useItems();
+  const thirdAcquired = false; // 2025の第3アイテムは廃止
   // 追加
 const [showThgSweep, setShowThgSweep] = useState(false);
 
-  const hasAllItems = useMemo(() => crestAcquired && thirdAcquired, [crestAcquired, thirdAcquired]);
+  // 3つ揃った演出とリンクは最下部（BottomZone）へ移した
+  const hasAllItems = false;
 
   // 変身演出
   const [isTransforming, setIsTransforming] = useState(false);
@@ -63,44 +67,7 @@ const [showThgSweep, setShowThgSweep] = useState(false);
   const mountedRef = useRef(false);
   const prevHasAllRef = useRef(false);
 
-  // 初期化：リロード時は常に未所持（1個目のみ想定）/ セッション内のイベントで同期
-  useEffect(() => {
-    setCrestAcquired(false);
-    setThirdAcquired(false);
 
-    const onCrest = () => setCrestAcquired(true);           // 他セクションからの取得イベント
-    const onThird = () => setThirdAcquired(true);            // 念のため（同一タブ内で使う）
-    window.addEventListener("crest:acquired", onCrest);
-    window.addEventListener("artifact3:acquired", onThird);
-    return () => {
-      window.removeEventListener("crest:acquired", onCrest);
-      window.removeEventListener("artifact3:acquired", onThird);
-    };
-  }, []);
-
-  // “揃った瞬間”だけフラッシュ（初回マウントでは発火しない）
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      prevHasAllRef.current = crestAcquired && thirdAcquired;
-      return;
-    }
-    const prev = prevHasAllRef.current;
-    const now = crestAcquired && thirdAcquired;
-    if (!prev && now) {
-    setJustCompleted(true);
-    const t1 = window.setTimeout(() => setJustCompleted(false), 800);
-
-    // ▼ 追加：裏モード演出（1秒）
-    setShowThgSweep(true);
-    const t2 = window.setTimeout(() => setShowThgSweep(false), 1000);
-
-    timersRef.current.push(t1, t2);
-    try { window.dispatchEvent(new Event("items:all-collected")); } catch {}
-    }
-
-    prevHasAllRef.current = now;
-  }, [crestAcquired, thirdAcquired]);
 
   useEffect(() => {
     return () => {
@@ -111,37 +78,12 @@ const [showThgSweep, setShowThgSweep] = useState(false);
 
   // 3つ目をインベントリに挿入（DOM差し込み）— 永続化しない
   const giveThirdItem = () => {
-    try {
-      const slots = document.querySelectorAll<HTMLElement>(".tg-inv-grid .tg-inv-slot");
-      const slot = slots[2]; // 0: 生徒証, 1: 校章, 2: 3つ目
-      if (slot) {
-        let img = slot.querySelector("[data-auto='artifact3']") as HTMLImageElement | null;
-        if (!img) {
-          img = document.createElement("img");
-          img.src = thirdItemSrc;
-          img.alt = "3つ目のアイテム";
-          img.setAttribute("data-auto", "artifact3");
-          Object.assign(img.style, {
-            width: "86%", height: "86%", objectFit: "contain",
-            transform: "scale(0.6)", opacity: "0",
-            animation: "artifact-pop-in 460ms cubic-bezier(0.16,1,0.3,1) forwards",
-          } as CSSStyleDeclaration);
-          slot.classList.remove("tg-inv-empty");
-          slot.appendChild(img);
-        } else {
-          img.style.animation = "none"; void img.offsetWidth;
-          img.style.animation = "artifact-pop-in 460ms cubic-bezier(0.16,1,0.3,1) forwards";
-        }
-      }
-    } catch {}
-    setThirdAcquired(true);
-    try { window.dispatchEvent(new Event("artifact3:acquired")); } catch {}
+    // 2025の第3アイテムは廃止（2026は全自動腕洗い＝タイムマシン）
   };
 
   // クリック：2つ目を持ってない間は取れない（ガード）。取れる時は変身→付与→ロゴへ
   const onClickThird = () => {
     if (thirdAcquired || isTransforming) return;
-    if (!crestAcquired) return; // ★ ガード：校章未所持なら何もしない
 
     setIsTransforming(true);
     const tGrant = window.setTimeout(() => { giveThirdItem(); }, 400); // 中盤で取得
@@ -160,12 +102,12 @@ const breakdownItems = [
   { icon: "🛏️", text: "1人1組布団（敷布団、掛け布団、枕、毛布）4点レンタル" },
   { icon: "♨️", text: "現代病の劇薬（サウナ後ラーメン／二郎系／テントサウナ 等）※同時利用上限あり" },
   { icon: "🎇", text: "後夜祭『残響校舎』への参加・出演" },
-  { icon: "🎉", text: "11月4日 打ち上げの参加（非公開）" },
+  { icon: "🎉", text: `${site.afterPartyLabel} 打ち上げの参加（非公開）` },
 ];
 
   
     // …既存のstateやuseEffectのあと、JSXの return の直前あたりに追加
-  const safePurchaseHref = normalizeHref(purchaseHref, "https://t.livepocket.jp/e/gachi2025");
+  const safePurchaseHref = normalizeHref(purchaseHref, site.discordUrl);
   const external = isExternalHref(safePurchaseHref);
 
   return (
@@ -190,9 +132,9 @@ const breakdownItems = [
             {/* タイトル/価格エリア */}
             <div className="flex flex-col justify-center">
               <h3 className="text-[clamp(20px,4.6vw,32px)] font-extrabold tracking-wide drop-shadow-[0_2px_0_rgba(0,0,0,.25)]">
-                ガチ文化祭２０２５
+                {toFullWidthDigits(site.title)}
               </h3>
-              <div className="mt-3 text-sm/relaxed opacity-90">発売日：2025年10月15日</div>
+              <div className="mt-3 text-sm/relaxed opacity-90">発売日：{site.releaseDateLabel}</div>
               <div className="mt-4">
                 <div className="text-[15px] md:text-[16px] opacity-90">希望小売価格</div>
                 <div className="mt-1 inline-flex items-baseline gap-2 rounded-lg bg-white/10 px-3 py-2 ring-1 ring-white/25">
@@ -208,11 +150,9 @@ const breakdownItems = [
            {/* 購入ボタン（Nintendo風） */}
 
 <div className="px-4 md:px-6 pt-5">
-  <a
-    href={safePurchaseHref}
-    aria-label={`${infoTitle}`}
-    target={external ? "_blank" : undefined}
-    rel={external ? "noopener noreferrer" : undefined}
+  <button
+    type="button"
+    onClick={openJoinGate}
     className="group relative block w-full rounded-[14px] px-5 py-4 md:py-5 text-center text-white bg-gradient-to-b from-[#FF6A9E] to-[#FF4F90] ring-1 ring-black/10 shadow-[0_10px_26px_rgba(0,0,0,.25)] transition-transform duration-200 will-change-transform transform-gpu hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(0,0,0,.32)] active:scale-[0.995]"
   >
     <span className="flex items-center justify-center gap-3">
@@ -232,7 +172,7 @@ const breakdownItems = [
 
     {/* 上面ハイライト */}
     <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-[14px] bg-white/10" />
-  </a>
+  </button>
 
   {/* ボタン直下の補足テキスト（細字） */}
   {infoBody && (
@@ -293,7 +233,11 @@ const breakdownItems = [
                       <div className="text-[15px] md:text-[16px] font-semibold text-[#1f2937]">{r.label}</div>
                     </div>
                   );
-                  return r.href ? (
+                  return r.href === "#join" ? (
+                    <button key={i} type="button" onClick={openJoinGate} className="block w-full text-left">
+                      {content}
+                    </button>
+                  ) : r.href ? (
                     <a key={i} href={r.href} className="block" target={r.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
                       {content}
                     </a>
@@ -310,75 +254,7 @@ const breakdownItems = [
         <div className="h-16 md:h-20" />
       </div>
 
-      {/* ===== 下中央：第3アイテム／変身／ロゴ ===== */}
-      <div className="absolute z-[70] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-3" style={{ bottom: "clamp(12px,3.2vw,20px)" }} >
-        {isTransforming ? (
-          // 変身ステージ
-          <div className="pointer-events-none relative grid place-items-center">
-            <span className="morph-aura absolute inset-0" aria-hidden />
-            <img
-              src={thirdItemSrc}
-              alt=""
-              className="morph-item block select-none pointer-events-none"
-              style={{ width: "clamp(72px,12vw,112px)", height: "clamp(72px,12vw,112px)" }}
-              draggable={false}
-            />
-          </div>
-        ) : (
-          <>
-            {/* 取得前（押せる）— 2つ目が無いと何もしない */}
-            {!hasAllItems && !thirdAcquired && (
-              <button
-                type="button"
-                onClick={onClickThird}
-                aria-label={ariaLabelThird}
-                className="pointer-events-auto group relative grid place-items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-                style={{ width: "clamp(72px,12vw,112px)", height: "clamp(72px,12vw,112px)" }}
-              >
-                <span aria-hidden className="absolute inset-0 rounded-full glow-ring" />
-                <img
-                  src={thirdItemSrc}
-                  alt=""
-                  className="relative z-10 block h-[70%] w-[70%] object-contain drop-shadow-[0_6px_18px_rgba(0,0,0,.35)]"
-                  draggable={false}
-                />
-              </button>
-            )}
-
-            {/* 3つ未満だが3つ目は取得済み → 小さめ表示 */}
-            {!hasAllItems && thirdAcquired && (
-              <div
-                className="pointer-events-none relative grid place-items-center rounded-full opacity-85"
-                style={{ width: "clamp(64px,10vw,96px)", height: "clamp(64px,10vw,96px)" }}
-              >
-                <img src={thirdItemSrc} alt="" className="relative z-10 block h-[64%] w-[64%] object-contain" />
-              </div>
-            )}
-
-            {/* 揃ったらロゴ（直後だけピカーン） */}
-            {hasAllItems && (
-              <div className="relative grid place-items-center -translate-y-6 md:-translate-y-4">
-    {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
-    <a
-      href="https://thanatos-games-jqgx8mo.gamma.site/"
-      target="_blank"
-      rel="noreferrer"
-      aria-label="ThanatosGames 公式サイトへ"
-      className="relative z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 cursor-pointer"
-    >
-      <img
-        src={companyLogoSrc}
-        alt="ThanatosGames"
-        className="block h-auto w-[min(56vw,220px)] md:w-[220px] object-contain drop-shadow-[0_10px_28px_rgba(0,0,0,.35)]"
-        draggable={false}
-      />
-    </a>
-  </div>
-            )}
-          </>
-        )}
-      </div>
-
+      {/* 2025年版の第3アイテム（腕）は廃止。2026のもちものは 超新星バッジ（舞台）・全自動腕洗い（タイムマシン）・地下室の鍵（最下部） */}
       {showThgSweep && (
   <div className="fixed inset-0 z-[1002] pointer-events-none">
     {/* フェード暗転 */}
