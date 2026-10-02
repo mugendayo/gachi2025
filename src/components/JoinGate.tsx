@@ -54,7 +54,7 @@ export default function JoinGate() {
         </p>
         <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-[#ddd] px-3 py-2.5 text-sm leading-relaxed">
           <input ref={boxRef} type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} className="mt-1 h-4 w-4 accent-[#ff6a1a]" />
-          <span>誰かに誘われたからではなく、自分で決めて入ります。<span className="text-[#999]">〔仮〕</span></span>
+          <span>誰かに誘われたからではなく、自分で決めて入ります。</span>{/* 文言は仮（本人確定待ち） */}
         </label>
         <div className="mt-3.5 flex justify-end gap-2">
           <button type="button" onClick={() => setOpen(false)} className="rounded border border-[#ccc] px-3.5 py-2 text-sm font-bold text-[#555]">やめる</button>
