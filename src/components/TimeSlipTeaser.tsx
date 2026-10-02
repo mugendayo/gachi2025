@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { acquire, useItems } from "@/lib/items";
 
 type Props = {
   imageSrc?: string;
@@ -17,6 +18,8 @@ export default function TimeSlipTeaser({
   stagger = 0.35,
   baseDelay = 0.45,
 }: Props) {
+  const owned = useItems();
+  const hasArmwash = owned.includes("armwash");
   // 見出し：読点の後で自動改行（明示 \n があればそれを優先）
   const phrase = "もしも、過去に戻れたら";
   const normalized = phrase.replace(/\r\n?/g, "\n");
@@ -99,11 +102,15 @@ export default function TimeSlipTeaser({
 
       {/* 画像＋粒子：画像を基準に絶対配置 */}
       <div className="relative mx-auto w-[58vw] max-w-[520px] min-w-[240px]">
-        {/* タイムマシン */}
+        {/* タイムマシン＝もちもの「全自動腕洗い」。タップ/クリックで拾う（拾ったあとも絵は残る） */}
         <motion.img
           src={imageSrc}
-          alt=""
-          className="block w-full h-auto select-none drop-shadow-[0_12px_40px_rgba(0,200,255,.45)]"
+          alt={hasArmwash ? "" : "全自動腕洗い（タップで拾う）"}
+          role={hasArmwash ? undefined : "button"}
+          tabIndex={hasArmwash ? -1 : 0}
+          onClick={() => !hasArmwash && acquire("armwash")}
+          onKeyDown={(e) => { if (!hasArmwash && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); acquire("armwash"); } }}
+          className={`block w-full h-auto select-none drop-shadow-[0_12px_40px_rgba(0,200,255,.45)] ${hasArmwash ? "" : "cursor-pointer"}`}
           loading="lazy"
           draggable={false}
           initial={{ opacity: 0, y: 20, scale: 0.98, filter: "blur(2px)" }}

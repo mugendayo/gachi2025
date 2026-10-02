@@ -53,7 +53,7 @@ export default function FinalProductSection({
 }) {
   /* ---------------- セッション内の所持状況（永続化しない） ---------------- */
   const owned = useItems();
-  const thirdAcquired = owned.includes("sword");
+  const thirdAcquired = false; // 2025の第3アイテムは廃止
   // 追加
 const [showThgSweep, setShowThgSweep] = useState(false);
 
@@ -78,7 +78,7 @@ const [showThgSweep, setShowThgSweep] = useState(false);
 
   // 3つ目をインベントリに挿入（DOM差し込み）— 永続化しない
   const giveThirdItem = () => {
-    acquire("sword"); // もちもの（バスターソード）。持ち物欄の演出は Hero 側
+    // 2025の第3アイテムは廃止（2026は全自動腕洗い＝タイムマシン）
   };
 
   // クリック：2つ目を持ってない間は取れない（ガード）。取れる時は変身→付与→ロゴへ
@@ -254,75 +254,7 @@ const breakdownItems = [
         <div className="h-16 md:h-20" />
       </div>
 
-      {/* ===== 下中央：第3アイテム／変身／ロゴ ===== */}
-      <div className="absolute z-[70] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-3" style={{ bottom: "clamp(12px,3.2vw,20px)" }} >
-        {isTransforming ? (
-          // 変身ステージ
-          <div className="pointer-events-none relative grid place-items-center">
-            <span className="morph-aura absolute inset-0" aria-hidden />
-            <img
-              src={thirdItemSrc}
-              alt=""
-              className="morph-item block select-none pointer-events-none"
-              style={{ width: "clamp(72px,12vw,112px)", height: "clamp(72px,12vw,112px)" }}
-              draggable={false}
-            />
-          </div>
-        ) : (
-          <>
-            {/* 取得前（押せる）— 2つ目が無いと何もしない */}
-            {!hasAllItems && !thirdAcquired && (
-              <button
-                type="button"
-                onClick={onClickThird}
-                aria-label={ariaLabelThird}
-                className="pointer-events-auto group relative grid place-items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-                style={{ width: "clamp(72px,12vw,112px)", height: "clamp(72px,12vw,112px)" }}
-              >
-                <span aria-hidden className="absolute inset-0 rounded-full glow-ring" />
-                <img
-                  src={thirdItemSrc}
-                  alt=""
-                  className="relative z-10 block h-[70%] w-[70%] object-contain drop-shadow-[0_6px_18px_rgba(0,0,0,.35)]"
-                  draggable={false}
-                />
-              </button>
-            )}
-
-            {/* 3つ未満だが3つ目は取得済み → 小さめ表示 */}
-            {!hasAllItems && thirdAcquired && (
-              <div
-                className="pointer-events-none relative grid place-items-center rounded-full opacity-85"
-                style={{ width: "clamp(64px,10vw,96px)", height: "clamp(64px,10vw,96px)" }}
-              >
-                <img src={thirdItemSrc} alt="" className="relative z-10 block h-[64%] w-[64%] object-contain" />
-              </div>
-            )}
-
-            {/* 揃ったらロゴ（直後だけピカーン） */}
-            {hasAllItems && (
-              <div className="relative grid place-items-center -translate-y-6 md:-translate-y-4">
-    {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
-    <a
-      href={site.rewardUrl}
-      target="_blank"
-      rel="noreferrer"
-      aria-label="ThanatosGames 公式サイトへ"
-      className="relative z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 cursor-pointer"
-    >
-      <img
-        src={companyLogoSrc}
-        alt="ThanatosGames"
-        className="block h-auto w-[min(56vw,220px)] md:w-[220px] object-contain drop-shadow-[0_10px_28px_rgba(0,0,0,.35)]"
-        draggable={false}
-      />
-    </a>
-  </div>
-            )}
-          </>
-        )}
-      </div>
-
+      {/* 2025年版の第3アイテム（腕）は廃止。2026のもちものは 超新星バッジ（舞台）・全自動腕洗い（タイムマシン）・地下室の鍵（最下部） */}
       {showThgSweep && (
   <div className="fixed inset-0 z-[1002] pointer-events-none">
     {/* フェード暗転 */}
