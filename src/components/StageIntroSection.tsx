@@ -2,6 +2,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import { acquire } from "@/lib/items";
 import CtaButton from "@/components/CtaButton";
 
 /* ========= Breakpoints ========= */
@@ -112,30 +113,7 @@ function CrestCenter({
   const inView = useInView(ref, { margin: "0px 0px -35% 0px", once: true });
 
   const addToInventory = () => {
-    const slot = document.querySelector(invSelector) as HTMLElement | null;
-    if (slot) {
-      let img = slot.querySelector("[data-auto='crest']") as HTMLImageElement | null;
-      if (!img) {
-        img = document.createElement("img");
-        img.src = crestSrc;
-        img.alt = "校章";
-        img.setAttribute("data-auto", "crest");
-        Object.assign(img.style, {
-          width: "100%", height: "100%", objectFit: "contain",
-          transform: "scale(0.6)", opacity: "0",
-          animation: "crest-pop-in 420ms cubic-bezier(0.16,1,0.3,1) forwards",
-        } as CSSStyleDeclaration);
-        slot.appendChild(img);
-      } else {
-        img.style.animation = "none"; void img.offsetWidth;
-        img.style.animation = "crest-pop-in 420ms cubic-bezier(0.16,1,0.3,1) forwards";
-      }
-      slot.classList.remove("inv-bling"); void slot.offsetWidth;
-      slot.classList.add("inv-bling");
-      setTimeout(() => slot.classList.remove("inv-bling"), 700);
-    }
-    try { localStorage.setItem("gbf_crest_acquired", "1"); } catch {}
-    window.dispatchEvent(new Event("crest:acquired"));
+    acquire("badge"); // もちもの1つ目（超新星バッジ）。持ち物欄の演出は Hero 側
     onAcquire?.();
   };
 
@@ -152,7 +130,7 @@ function CrestCenter({
         {/* 回転は親、子は拡大だけ */}
         <motion.img
           src={crestSrc}
-          alt="校章（クリックで取得）"
+          alt="超新星バッジ（クリックで拾う）"
           className="relative z-10 w-[140px] md:w-[180px] -translate-y-8 cursor-pointer select-none pointer-events-auto"
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
           animate={inView ? { opacity: 1, scale: 1, y: 0 } : {}}

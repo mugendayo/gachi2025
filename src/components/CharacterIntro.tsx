@@ -28,7 +28,7 @@ const CHARACTERS: Character[] = [
   },
   {
     id: "b",
-    name: "志道マモル",
+    name: "志導マモル",
     title: "指導教諭",
     image: "/chars/02.png",
     accent: "#f59e0b",
@@ -38,7 +38,7 @@ const CHARACTERS: Character[] = [
   },
   {
     id: "c",
-    name: "志道シナイ",
+    name: "志導シナイ",
     title: "マージャン部の顧問",
     image: "/chars/03.png",
     accent: "#ef4444",

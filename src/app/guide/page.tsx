@@ -13,7 +13,7 @@ import type { CSSProperties } from "react";
    Metadata
    ========================= */
 export const metadata: Metadata = {
-  title: "ガチ文のきほん | ガチ文化祭",
+  title: "ガチ文のきほん",
   description:
     "はじめての方向け。準備・流れ・不安つぶしQ&A・アクセスまで、これ1ページで完了。",
 };
@@ -345,7 +345,6 @@ export default function GuidePage() {
         jpRibbon="走る → 高校生へ"
         ribbonFrom="#3b82f6"
         ribbonTo="#60a5fa"
-        bg="/images/patterns/run.jpg"
         borderColor="#3b82f6"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">① ガチ文高校の生徒になってみよう</h2>
@@ -364,7 +363,6 @@ export default function GuidePage() {
         jpRibbon="見る → 企画を探す"
         ribbonFrom="#14b8a6"
         ribbonTo="#22c55e"
-        bg="/images/patterns/look.jpg"
         borderColor="#10b981"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">② 企画一覧を事前チェック</h2>
@@ -381,7 +379,6 @@ export default function GuidePage() {
         jpRibbon="装う → 制服を準備"
         ribbonFrom="#f97316"
         ribbonTo="#ef4444"
-        bg="/images/patterns/dress.jpg"
         borderColor="#f97316"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">③ 制服を準備して、放課後を満喫しよう</h2>
@@ -398,7 +395,6 @@ export default function GuidePage() {
         jpRibbon="話す → オンラインHR"
         ribbonFrom="#8b5cf6"
         ribbonTo="#ec4899"
-        bg="/images/patterns/talk.jpg"
         borderColor="#a855f7"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">④ オンラインホームルームに参加してみよう</h2>
@@ -415,7 +411,6 @@ export default function GuidePage() {
         jpRibbon="準備 → 持ち物"
         ribbonFrom="#06b6d4"
         ribbonTo="#3b82f6"
-        bg="/images/patterns/pack.jpg"
         borderColor="#06b6d4"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">持ち物</h2>
@@ -437,7 +432,6 @@ export default function GuidePage() {
         jpRibbon="登校 → 授業・キックオフ"
         ribbonFrom="#2563eb"
         ribbonTo="#60a5fa"
-        bg="/images/patterns/day1.jpg"
         borderColor="#2563eb"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">1日目：集団登校・授業・クラス企画の初動</h2>
@@ -451,7 +445,6 @@ export default function GuidePage() {
         jpRibbon="仕上げる → 前夜"
         ribbonFrom="#f59e0b"
         ribbonTo="#ef4444"
-        bg="/images/patterns/day2.jpg"
         borderColor="#f59e0b"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">2日目：準備と本気が混ざり合う日</h2>
@@ -465,7 +458,6 @@ export default function GuidePage() {
         jpRibbon="本番 → 文化祭"
         ribbonFrom="#ef4444"
         ribbonTo="#f97316"
-        bg="/images/patterns/day3.JPG"
         borderColor="#ef4444"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">3日目：いよいよ本番、文化祭当日</h2>
@@ -479,7 +471,6 @@ export default function GuidePage() {
         jpRibbon="フィナーレ → 後夜祭"
         ribbonFrom="#38bdf8"
         ribbonTo="#0ea5e9"
-        bg="/images/patterns/night.jpg"
         borderColor="#0ea5e9"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">後夜祭</h2>
@@ -494,7 +485,6 @@ export default function GuidePage() {
         jpRibbon="不安つぶし Q&A"
         ribbonFrom="#0ea5e9"
         ribbonTo="#6366f1"
-        bg="/images/patterns/faq.jpg"
         borderColor="#6366f1"
       >
         <details className="group rounded-xl border bg-white p-4 shadow-sm text-black">

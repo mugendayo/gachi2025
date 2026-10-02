@@ -4,6 +4,7 @@ import StageIntroSection from "@/components/StageIntroSection";
 import SchoolIntro from "@/components/SchoolIntro"; // or 相対パス ../components/SchoolIntro
 import TimeScheduleSection from "@/components/TimeScheduleSection";
 import FinalProductSection from "@/components/FinalProductSection";
+import BottomZone from "@/components/BottomZone";
 
 
 export default function Page() {
@@ -15,6 +16,7 @@ export default function Page() {
       <CharacterIntro />
       <TimeScheduleSection />
       <FinalProductSection/>
+      <BottomZone />
     </main>
   );
 }

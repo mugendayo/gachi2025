@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import SummonCTA from "../components/SummonCTA";
 import Link from "next/link";
 import { site } from "@/data/site";
+import { useItems, ITEM_EVENT } from "@/lib/items";
 
 /* =========================================================================
  * Constants
  * ========================================================================= */
-const LS_SEEN_POPUP = "gbf_seen_popup";
-const LS_CREST_ACQUIRED = "gbf_crest_acquired";
+// 既視判定は年度ごと（2025に来た人にも2026の導入が出る）
+const LS_SEEN_POPUP = `gbf_${site.year}_seen_popup`;
 
 const STEP2_LINES = [
   "生徒証を手に入れたのね！ガチ文高等学校へようこそ！きみは「生徒」としてタイムスリップしてきたのよ！さあ、文化祭の準備をしなくっちゃ！",
@@ -51,7 +52,8 @@ export default function Hero() {
   const [showCTA, setShowCTA] = useState(false);
   const [popupStep, setPopupStep] = useState<0 | 1 | 2>(0);
   const [hasSeenPopup, setHasSeenPopup] = useState(false);
-  const [crestAcquired, setCrestAcquired] = useState(false); // 取得フラグ（将来拡張用）
+  const owned = useItems();
+  const [glowId, setGlowId] = useState<string | null>(null);
   const [bgActive, setBgActive] = useState(true);
 
   // ===== STEP2 専用：文章分割（「きみは」で2つに分けてタイプ） =====
@@ -155,10 +157,6 @@ export default function Hero() {
       setPopupStep(0);
       setShowCTA(!seen);
 
-      setCrestAcquired(localStorage.getItem(LS_CREST_ACQUIRED) === "1");
-
-      // デバッグ：校章フラグを消す
-      window.__resetCrest = () => localStorage.removeItem(LS_CREST_ACQUIRED);
     } catch {
       setHasSeenPopup(false);
       setPopupStep(0);
@@ -167,25 +165,17 @@ export default function Hero() {
   }, []);
 
   /* -----------------------------
-   * Crest 同期（同一タブ & 別タブ）
+   * もちもの：拾った瞬間にその枠を光らせる
    * --------------------------- */
   useEffect(() => {
-    const onAcq = () => {
-      setCrestAcquired(true);
-      try {
-        localStorage.setItem(LS_CREST_ACQUIRED, "1");
-      } catch {}
+    const onItem = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id as string | undefined;
+      if (!id) return;
+      setGlowId(id);
+      window.setTimeout(() => setGlowId(null), 900);
     };
-    window.addEventListener("crest:acquired", onAcq);
-    return () => window.removeEventListener("crest:acquired", onAcq);
-  }, []);
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === LS_CREST_ACQUIRED) setCrestAcquired(e.newValue === "1");
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(ITEM_EVENT, onItem);
+    return () => window.removeEventListener(ITEM_EVENT, onItem);
   }, []);
 
   /* -----------------------------
@@ -595,9 +585,9 @@ export default function Hero() {
 </div>
 
 
-                {/* ② 去年の動画 */}
+                {/* ② 去年のソフト（2025） */}
                 <a
-                  href={YOUTUBE_LAST_YEAR}
+                  href="https://2025.gachibunkasai.com/"
                   className={[
                     "group relative flex w-full items-center gap-3 md:gap-4",
                     "rounded-2xl px-3.5 md:px-4 py-3",
@@ -611,7 +601,7 @@ export default function Hero() {
                   <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
                     <img
                       src={THUMB_LAST_YEAR}
-                      alt="去年の動画"
+                      alt="去年のソフト（2025）"
                       className="absolute inset-0 h-full w-full object-cover bg-gray-100"
                       draggable={false}
                       loading="lazy"
@@ -627,7 +617,7 @@ export default function Hero() {
                         "text-[16px] sm:text-[17px] md:text-[18px]",
                       ].join(" ")}
                     >
-                      去年の動画
+                      去年のソフト（2025）
                     </div>
                   </div>
 
@@ -644,9 +634,9 @@ export default function Hero() {
                   </span>
                 </a>
 
-                {/* ③ 第1回目の動画 */}
+                {/* ③ ライブラリ（2018〜） */}
                 <a
-                  href={YOUTUBE_FIRST}
+                  href="#library"
                   className={[
                     "group relative flex w-full items-center gap-3 md:gap-4",
                     "rounded-2xl px-3.5 md:px-4 py-3",
@@ -660,7 +650,7 @@ export default function Hero() {
                   <div className="relative shrink-0 w-36 md:w-40 aspect-[16/9] overflow-hidden rounded-xl ring-1 ring-black/10">
                     <img
                       src={THUMB_FIRST}
-                      alt="第1回目の動画"
+                      alt="ライブラリ（2018〜）"
                       className="absolute inset-0 h-full w-full object-cover bg-gray-100"
                       draggable={false}
                       loading="lazy"
@@ -676,7 +666,7 @@ export default function Hero() {
                         "text-[16px] sm:text-[17px] md:text-[18px]",
                       ].join(" ")}
                     >
-                      第1回目の動画
+                      ライブラリ（2018〜）
                     </div>
                   </div>
 
@@ -703,7 +693,7 @@ export default function Hero() {
           className="fixed z-[61] tg-inventory"
           style={{
             left: "calc(16px + env(safe-area-inset-left))",
-            top: "calc(16px + env(safe-area-inset-top))",
+            top: "calc(100px + env(safe-area-inset-top))", // 公式バー（84px）の下
             opacity: hasSeenPopup && popupStep === 0 ? 1 : 0,
             pointerEvents: hasSeenPopup && popupStep === 0 ? "auto" : "none",
           }}
@@ -712,20 +702,15 @@ export default function Hero() {
             もちもの
           </button>
           <div className="tg-inv-grid">
-            {/* 生徒証 */}
-            <button
-              type="button"
-              className="tg-inv-slot tg-inv-hasitem"
-              onClick={() => setPopupStep(2)}
-            >
-              <img src="/btn-next.png" alt="" className="tg-inv-item" />
-            </button>
-
-            {/* 校章の着地点（空でも常時存在） */}
-            <div id="inv-crest-slot" className="tg-inv-slot tg-inv-empty" aria-hidden />
-
-            {/* 予備スロット */}
-            <div className="tg-inv-slot tg-inv-empty" aria-hidden />
+            {site.items.map((it) => (
+              <div
+                key={it.id}
+                className={`tg-inv-slot ${owned.includes(it.id) ? "tg-inv-hasitem" : "tg-inv-empty"} ${glowId === it.id ? "inv-bling" : ""}`}
+                title={owned.includes(it.id) ? it.name : "？？？"}
+              >
+                {owned.includes(it.id) && <img src={it.img} alt={it.name} className="tg-inv-item" />}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -819,54 +804,6 @@ export default function Hero() {
                     <circle cx="100" cy="100" r="20" fill="#ffffff" opacity="0.95" filter="url(#mg-strong)" />
                   </svg>
                 </motion.button>
-              </div>
-
-              {/* 🎫 チケット（クリックは画像部のみ）＋小さなオーラ */}
-              <div className="relative">
-                {/* オーラ：ラッパー直下（Linkの外）でクリック無効 */}
-                <div
-                  className="absolute inset-0 -z-[1] pointer-events-none flex items-center justify-center"
-                  style={{
-                    transform: "scale(0.92)", // ほぼ同心・少しだけ小さく
-                    filter: "blur(1.2px)",
-                  }}
-                >
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: "90%", // チケットより僅かに大きい
-                      height: "90%",
-                      boxShadow:
-                        "0 0 6px rgba(255,255,255,0.22), 0 0 12px rgba(0,200,255,0.20)",
-                      animation: "gb-ticket-pulse 3.6s ease-in-out infinite alternate",
-                    }}
-                  />
-                </div>
-
-                {/* クリック可能なのはこの Link（= チケット本体）の範囲だけ */}
-                <a
-                  href={site.ticketUrl}
-                  aria-label="チケットを購入する"
-                  className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 relative z-10"
-                  rel="noopener"
-                >
-                  <div
-                    className="rounded-full overflow-hidden"
-                    style={{
-                      width: "clamp(110px, 20vw, 160px)",
-                      height: "clamp(110px, 20vw, 160px)",
-                      padding: 4,
-                      background: "transparent",
-                    }}
-                  >
-                    <img
-                      src="/ticket-btn.png"
-                      alt="ガチ文高等学校の生徒になる"
-                      className="block select-none pointer-events-auto rounded-full"
-                      draggable={false}
-                    />
-                  </div>
-                </a>
               </div>
             </motion.div>
           )}

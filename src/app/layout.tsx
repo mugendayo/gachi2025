@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { site } from "@/data/site"; // 👈 さっき作った src/data/site.ts を参照
 import Footer from "@/components/Footer";
+import OfficialBar from "@/components/OfficialBar";
+import JoinGate from "@/components/JoinGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.siteUrl),
-  title: `${site.title}｜魂の熱量は数値を超える`,
+  title: { default: `${site.title}｜${site.concept}`, template: `%s｜${site.title}` },
   description: "魂の熱量は数値を超える",
   openGraph: {
     title: site.title,
@@ -45,8 +47,10 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <OfficialBar />
         {children}
-         <Footer />
+        <Footer />
+        <JoinGate />
       </body>
     </html>
   );

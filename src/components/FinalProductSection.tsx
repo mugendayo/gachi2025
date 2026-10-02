@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { site, toFullWidthDigits } from "@/data/site";
+import { acquire, useItems } from "@/lib/items";
+import { openJoinGate } from "./JoinGate";
 
 /* === helper: href 正規化 & 外部判定（コンポーネント外） === */
 function normalizeHref(h: unknown, fallback = "/buy") {
@@ -20,19 +22,19 @@ export default function FinalProductSection({
   coverSrc = "/icons/cover.png",
   badgeText = "タイムスリップ版",
   msrp = site.price,
-  infoTitle = "購入する",
+  infoTitle = "参加する",
   infoBody = "　",
   rows = [
     { iconSrc: "/icons/ticket-red.png", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/guide" },
-    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "https://discord.gg/MXCb23rm2s" },
+    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "#join" },
   ] as InfoRow[],
   thirdItemSrc = "/icons/arm.png",
   companyLogoSrc = "/icons/thg.png",
   ariaLabelThird = "不思議なアイテムを手に入れる",
   // ▼ 追加
-  purchaseHref = site.ticketUrl,
-  purchaseSubText = "クレジットカード（事前）または現金払い（当日）可能",
-  thgHref = site.ticketUrl,
+  purchaseHref = site.discordUrl,
+  purchaseSubText = site.paymentLabel,
+  thgHref = site.discordUrl,
 }: {
   
   ariaLabelThird?: string;
@@ -50,12 +52,13 @@ export default function FinalProductSection({
   companyLogoSrc?: string;
 }) {
   /* ---------------- セッション内の所持状況（永続化しない） ---------------- */
-  const [crestAcquired, setCrestAcquired] = useState(false); // 2つ目（校章）
-  const [thirdAcquired, setThirdAcquired] = useState(false); // 3つ目（このセクション）
+  const owned = useItems();
+  const thirdAcquired = owned.includes("sword");
   // 追加
 const [showThgSweep, setShowThgSweep] = useState(false);
 
-  const hasAllItems = useMemo(() => crestAcquired && thirdAcquired, [crestAcquired, thirdAcquired]);
+  // 3つ揃った演出とリンクは最下部（BottomZone）へ移した
+  const hasAllItems = false;
 
   // 変身演出
   const [isTransforming, setIsTransforming] = useState(false);
@@ -64,44 +67,7 @@ const [showThgSweep, setShowThgSweep] = useState(false);
   const mountedRef = useRef(false);
   const prevHasAllRef = useRef(false);
 
-  // 初期化：リロード時は常に未所持（1個目のみ想定）/ セッション内のイベントで同期
-  useEffect(() => {
-    setCrestAcquired(false);
-    setThirdAcquired(false);
 
-    const onCrest = () => setCrestAcquired(true);           // 他セクションからの取得イベント
-    const onThird = () => setThirdAcquired(true);            // 念のため（同一タブ内で使う）
-    window.addEventListener("crest:acquired", onCrest);
-    window.addEventListener("artifact3:acquired", onThird);
-    return () => {
-      window.removeEventListener("crest:acquired", onCrest);
-      window.removeEventListener("artifact3:acquired", onThird);
-    };
-  }, []);
-
-  // “揃った瞬間”だけフラッシュ（初回マウントでは発火しない）
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      prevHasAllRef.current = crestAcquired && thirdAcquired;
-      return;
-    }
-    const prev = prevHasAllRef.current;
-    const now = crestAcquired && thirdAcquired;
-    if (!prev && now) {
-    setJustCompleted(true);
-    const t1 = window.setTimeout(() => setJustCompleted(false), 800);
-
-    // ▼ 追加：裏モード演出（1秒）
-    setShowThgSweep(true);
-    const t2 = window.setTimeout(() => setShowThgSweep(false), 1000);
-
-    timersRef.current.push(t1, t2);
-    try { window.dispatchEvent(new Event("items:all-collected")); } catch {}
-    }
-
-    prevHasAllRef.current = now;
-  }, [crestAcquired, thirdAcquired]);
 
   useEffect(() => {
     return () => {
@@ -112,37 +78,12 @@ const [showThgSweep, setShowThgSweep] = useState(false);
 
   // 3つ目をインベントリに挿入（DOM差し込み）— 永続化しない
   const giveThirdItem = () => {
-    try {
-      const slots = document.querySelectorAll<HTMLElement>(".tg-inv-grid .tg-inv-slot");
-      const slot = slots[2]; // 0: 生徒証, 1: 校章, 2: 3つ目
-      if (slot) {
-        let img = slot.querySelector("[data-auto='artifact3']") as HTMLImageElement | null;
-        if (!img) {
-          img = document.createElement("img");
-          img.src = thirdItemSrc;
-          img.alt = "3つ目のアイテム";
-          img.setAttribute("data-auto", "artifact3");
-          Object.assign(img.style, {
-            width: "86%", height: "86%", objectFit: "contain",
-            transform: "scale(0.6)", opacity: "0",
-            animation: "artifact-pop-in 460ms cubic-bezier(0.16,1,0.3,1) forwards",
-          } as CSSStyleDeclaration);
-          slot.classList.remove("tg-inv-empty");
-          slot.appendChild(img);
-        } else {
-          img.style.animation = "none"; void img.offsetWidth;
-          img.style.animation = "artifact-pop-in 460ms cubic-bezier(0.16,1,0.3,1) forwards";
-        }
-      }
-    } catch {}
-    setThirdAcquired(true);
-    try { window.dispatchEvent(new Event("artifact3:acquired")); } catch {}
+    acquire("sword"); // もちもの（バスターソード）。持ち物欄の演出は Hero 側
   };
 
   // クリック：2つ目を持ってない間は取れない（ガード）。取れる時は変身→付与→ロゴへ
   const onClickThird = () => {
     if (thirdAcquired || isTransforming) return;
-    if (!crestAcquired) return; // ★ ガード：校章未所持なら何もしない
 
     setIsTransforming(true);
     const tGrant = window.setTimeout(() => { giveThirdItem(); }, 400); // 中盤で取得
@@ -166,7 +107,7 @@ const breakdownItems = [
 
   
     // …既存のstateやuseEffectのあと、JSXの return の直前あたりに追加
-  const safePurchaseHref = normalizeHref(purchaseHref, site.ticketUrl);
+  const safePurchaseHref = normalizeHref(purchaseHref, site.discordUrl);
   const external = isExternalHref(safePurchaseHref);
 
   return (
@@ -209,11 +150,9 @@ const breakdownItems = [
            {/* 購入ボタン（Nintendo風） */}
 
 <div className="px-4 md:px-6 pt-5">
-  <a
-    href={safePurchaseHref}
-    aria-label={`${infoTitle}`}
-    target={external ? "_blank" : undefined}
-    rel={external ? "noopener noreferrer" : undefined}
+  <button
+    type="button"
+    onClick={openJoinGate}
     className="group relative block w-full rounded-[14px] px-5 py-4 md:py-5 text-center text-white bg-gradient-to-b from-[#FF6A9E] to-[#FF4F90] ring-1 ring-black/10 shadow-[0_10px_26px_rgba(0,0,0,.25)] transition-transform duration-200 will-change-transform transform-gpu hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(0,0,0,.32)] active:scale-[0.995]"
   >
     <span className="flex items-center justify-center gap-3">
@@ -233,7 +172,7 @@ const breakdownItems = [
 
     {/* 上面ハイライト */}
     <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-[14px] bg-white/10" />
-  </a>
+  </button>
 
   {/* ボタン直下の補足テキスト（細字） */}
   {infoBody && (
@@ -294,7 +233,11 @@ const breakdownItems = [
                       <div className="text-[15px] md:text-[16px] font-semibold text-[#1f2937]">{r.label}</div>
                     </div>
                   );
-                  return r.href ? (
+                  return r.href === "#join" ? (
+                    <button key={i} type="button" onClick={openJoinGate} className="block w-full text-left">
+                      {content}
+                    </button>
+                  ) : r.href ? (
                     <a key={i} href={r.href} className="block" target={r.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
                       {content}
                     </a>
@@ -361,7 +304,7 @@ const breakdownItems = [
               <div className="relative grid place-items-center -translate-y-6 md:-translate-y-4">
     {justCompleted && <div className="logo-flash absolute inset-0" aria-hidden />}
     <a
-      href="https://thanatos-games-jqgx8mo.gamma.site/"
+      href={site.rewardUrl}
       target="_blank"
       rel="noreferrer"
       aria-label="ThanatosGames 公式サイトへ"

@@ -229,15 +229,6 @@ export default function AdmissionPage() {
     <main className="bg-white text-slate-800">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <Image
-          src="/headers/admission-hero.jpg"
-          alt=""
-          width={1920}
-          height={800}
-          className="w-full h-[28svh] md:h-[36vh] object-cover"
-          draggable={false}
-          priority
-        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.85)_0%,rgba(233,241,251,.85)_35%,rgba(233,241,251,.6)_100%)]" />
         <div className="absolute inset-0 flex items-center justify-center px-4">
           <h1 className="text-center font-extrabold tracking-wide text-[clamp(20px,4.8vw,40px)] text-[#103B73]">
