@@ -5,6 +5,7 @@ import SchoolIntro from "@/components/SchoolIntro"; // or 相対パス ../compon
 import TimeScheduleSection from "@/components/TimeScheduleSection";
 import FinalProductSection from "@/components/FinalProductSection";
 import BottomZone from "@/components/BottomZone";
+import RewardSection from "@/components/RewardSection";
 
 
 export default function Page() {
@@ -17,6 +18,7 @@ export default function Page() {
       <TimeScheduleSection />
       <FinalProductSection/>
       <BottomZone />
+      <RewardSection />
     </main>
   );
 }

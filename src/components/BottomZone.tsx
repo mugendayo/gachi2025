@@ -1,26 +1,9 @@
 "use client";
 // 最下部：注意書き「落ちている鍵は拾わないこと」の横に、地下室の鍵が落ちている。
-// もちものが3つ揃うと、ここに ThanatosGames（thanatosgames.jp）へのリンクが出る。
-import { useEffect, useRef, useState } from "react";
-import { site } from "@/data/site";
-import { allCollected, useItems } from "@/lib/items";
+// 3つ揃ったときのリンクと演出は、この下の RewardSection が受け持つ。
 import FloorItem from "./FloorItem";
 
 export default function BottomZone() {
-  const owned = useItems();
-  const done = allCollected(owned);
-  const [flash, setFlash] = useState(false);
-  const prev = useRef<boolean | null>(null);
-
-  useEffect(() => {
-    if (prev.current === false && done) {
-      setFlash(true);
-      const t = window.setTimeout(() => setFlash(false), 900);
-      return () => window.clearTimeout(t);
-    }
-    prev.current = done;
-  }, [done]);
-
   return (
     <section aria-label="最下部" className="relative overflow-hidden bg-[#0d0f12] px-4 py-14 text-white">
       <div className="mx-auto flex max-w-[900px] flex-col items-center gap-8 md:flex-row md:items-end md:justify-center md:gap-14">
@@ -31,15 +14,9 @@ export default function BottomZone() {
           <p className="pb-3 pr-4 text-right text-xs">教務主任</p>
         </div>
 
-        <div className="grid min-h-[120px] place-items-center">
-          {done ? (
-            <a href={site.rewardUrl} target="_blank" rel="noopener" aria-label="ThanatosGames へ" className="relative grid place-items-center">
-              {flash && <span aria-hidden className="absolute inset-[-40px] animate-ping rounded-full bg-white/40" />}
-              <img src="/icons/thg.png" alt="ThanatosGames" className="relative w-[min(56vw,220px)] drop-shadow-[0_10px_28px_rgba(0,0,0,.5)]" draggable={false} />
-            </a>
-          ) : (
-            <FloorItem id="key" size={64} tilt={24} />
-          )}
+        <div className="grid min-h-[120px] min-w-[120px] place-items-center">
+          {/* 鍵を拾ったあとは何も残らない（3つ揃うと下に RewardSection が開く） */}
+          <FloorItem id="key" size={64} tilt={24} />
         </div>
       </div>
     </section>
