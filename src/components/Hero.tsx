@@ -55,6 +55,15 @@ export default function Hero() {
   const [hasSeenPopup, setHasSeenPopup] = useState(false);
   const owned = useItems();
   // 解禁前のお預け：true のあいだは導入に進めず、既視でも魔法陣から始まる
+  // 背景動画：縦長の画面＝縦の動画（スマホ）、横長の画面＝横の動画（PC）。素材＝ガチ文化祭2025
+  const [wideBg, setWideBg] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-aspect-ratio: 1/1)");
+    const sync = () => setWideBg(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [locked, setLocked] = useState(false);
   const [showTeaser, setShowTeaser] = useState(false);
   const [glowId, setGlowId] = useState<string | null>(null);
@@ -322,10 +331,11 @@ export default function Hero() {
           playsInline
           loop
           preload="metadata"
-          poster="/og.jpg"
+          key={wideBg ? "wide" : "tall"}
+          poster={wideBg ? "/hero-wide-poster.jpg" : "/hero-poster.jpg"}
           style={{ opacity: bgActive ? 1 : 0, transition: "opacity .35s ease" }}
         >
-          <source src="/hero.mp4" type="video/mp4" />
+          <source src={wideBg ? "/hero-wide.mp4" : "/hero.mp4"} type="video/mp4" />
         </video>
       </div>
 
