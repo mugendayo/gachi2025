@@ -24,6 +24,10 @@ export type ClockConfig = {
   timed: Record<string, [number, number, number, boolean][]>;
   /** 日の key → 消灯の分（その日の時刻のある行の最後の終わり） */
   lightsOut: Record<string, number>;
+  /** 時刻で始まる帯 [key, 開始分]（rhythmDay の時間割から導く・昇順） */
+  sceneStarts: [string, number][];
+  /** 青い手形が出始める帯の開始分（文化祭準備の始まり） */
+  handFrom: number;
   lat: number;
   lon: number;
 };
@@ -56,6 +60,12 @@ export type ClockState = {
   amb: number;
   /** night＝消灯／evening＝日没後で灯りの時間／dawn・dusk＝朝夕／day */
   band: "night" | "evening" | "dawn" | "day" | "dusk";
+  /** 8つの時間帯：shinya 深夜／akegata 明け方／asa 朝／choshinsei 超新星祭／hiru 昼／yugata 夕方／junbi 文化祭準備／shoto 消灯 */
+  scene: string;
+  /** 準備中の看板の青い手形の数（文化祭準備の始まりに1つ、毎正時に1つ増え、2時の9つで止まる。朝に看板が裏返されて0） */
+  handCount: number;
+  /** 手形の配置の種＝その夜の日付（0時〜朝は前の日） */
+  handNight: string;
 };
 
 export function clockCore(nowMs: number, c: ClockConfig): ClockState {
@@ -120,12 +130,30 @@ export function clockCore(nowMs: number, c: ClockConfig): ClockState {
   const out = c.lightsOut[dayKey] || 21 * 60 + 30;
   const dark = minute >= out ? 1 : minute < 12 * 60 ? clamp((-2 - sunAlt) / 4) : 0;
   const lit = dark < 0.5 && prep ? 1 : 0;
-  const dayAmb = Math.max(0.3 + 0.7 * sun, lit ? 0.92 : 0);
+  // 明るさの下限：日暮れ後〜準備の前や夜明け前でも、消灯（0.4）より暗くしない
+  const dayAmb = Math.max(0.42, 0.3 + 0.7 * sun, lit ? 0.92 : 0);
   const amb = dark * 0.4 + (1 - dark) * dayAmb;
   const band: ClockState["band"] = dark >= 0.5 ? "night" : sunAlt < -6 ? "evening" : sunAlt < 8 ? (minute < 12 * 60 ? "dawn" : "dusk") : "day";
 
+  // 8つの時間帯：朝までは太陽の高さ、そのあとは時間割の時刻のある行・消灯で区切る
+  let scene = "asa";
+  if (minute < 12 * 60 && sunAlt < -6) scene = "shinya";
+  else if (minute < 12 * 60 && sunAlt < 8) scene = "akegata";
+  else for (let i = 0; i < c.sceneStarts.length; i++) if (minute >= c.sceneStarts[i][1]) scene = c.sceneStarts[i][0];
+  let handCount = 0;
+  if (minute >= c.handFrom) handCount = 1 + Math.floor((minute - c.handFrom) / 60);
+  else if (scene === "shinya" || scene === "akegata") handCount = Math.min(9, Math.floor((24 * 60 - c.handFrom) / 60) + 1 + Math.floor(minute / 60));
+  handCount = Math.min(9, handCount);
+  const nightMs = nowMs + JST - (minute < 12 * 60 ? 86400000 : 0);
+  const nj = new Date(nightMs);
+  const handNight =
+    nj.getUTCFullYear() + "-" + String(nj.getUTCMonth() + 1).padStart(2, "0") + "-" + String(nj.getUTCDate()).padStart(2, "0");
+
   return {
     phase: phase,
+    scene: scene,
+    handCount: handCount,
+    handNight: handNight,
     dayKey: dayKey,
     todayLabel: todayLabel,
     daysLeft: daysLeft,
@@ -150,6 +178,27 @@ const parseRange = (s: string): [number, number] | null => {
   return [+m[1] * 60 + +m[2], +m[3] * 60 + +m[4]];
 };
 
+/** site.world.scenes の「時刻で始まる帯」を、rhythmDay の時間割から分に直す（太陽と0時の帯は clockCore が決める） */
+function sceneStarts(): [string, number][] {
+  const day = site.days.find((d) => d.key === site.world.rhythmDay) ?? site.days[0];
+  const ranges = day.items.map((row) => ({ label: row.label, r: parseRange(row.time) })).filter((x) => x.r);
+  const out: [string, number][] = [];
+  for (const sc of site.world.scenes) {
+    const f = sc.from as { row?: string; edge?: "start" | "end"; lightsOut?: boolean };
+    if (f.row) {
+      const hit = ranges.find((x) => x.label.includes(f.row as string));
+      if (hit && hit.r) out.push([sc.key, f.edge === "end" ? hit.r[1] : hit.r[0]]);
+    } else if (f.lightsOut) {
+      out.push([sc.key, Math.max(0, ...ranges.map((x) => (x.r as [number, number])[1]))]);
+    }
+  }
+  return out.sort((a, b) => a[1] - b[1]);
+}
+
+/** 検分用の上書き（?t= ・?return=）を効かせてよい場所か。本番ドメインでは効かせない（時刻の秘密を守る） */
+export const debugAllowed = () =>
+  typeof window === "undefined" || !/(^|\.)gachibunkasai\.com$/.test(window.location.hostname);
+
 export const clockConfig: ClockConfig = {
   unlockTs: Date.parse(site.unlockAt),
   afterTs: Date.parse(site.world.afterAt),
@@ -170,6 +219,8 @@ export const clockConfig: ClockConfig = {
   lightsOut: Object.fromEntries(
     site.days.map((day) => [day.key, Math.max(0, ...day.items.map((row) => parseRange(row.time)?.[1] ?? 0))]),
   ),
+  sceneStarts: sceneStarts(),
+  handFrom: sceneStarts().find(([k]) => k === "junbi")?.[1] ?? 18 * 60,
   lat: site.world.geo.lat,
   lon: site.world.geo.lon,
 };
@@ -179,6 +230,7 @@ export const clockConfig: ClockConfig = {
  * 戻り値は「実時刻からのずれ（ms）」。指定が無ければ null。
  */
 export function overrideOffset(search: string, realNow: number): number | null {
+  if (!debugAllowed()) return null;
   const t = new URLSearchParams(search).get("t");
   if (!t) return null;
   let target = NaN;
@@ -200,7 +252,7 @@ export function bootScript(): string {
       const room = document.getElementById("kb-world");
       if (!room) return;
       let now = Date.now();
-      const m = location.search.match(/[?&]t=([^&]+)/);
+      const m = /(^|\.)gachibunkasai\.com$/.test(location.hostname) ? null : location.search.match(/[?&]t=([^&]+)/);
       if (m) {
         const t = decodeURIComponent(m[1]);
         const j = new Date(now + 9 * 3600000);
@@ -218,6 +270,8 @@ export function bootScript(): string {
       room.dataset.phase = s.phase;
       room.dataset.day = s.dayKey;
       room.dataset.band = s.band;
+      room.dataset.scene = s.scene;
+      room.dataset.hands = String(s.handCount);
       const st = room.style;
       st.setProperty("--sun", s.sun.toFixed(3));
       st.setProperty("--warm", s.warm.toFixed(3));

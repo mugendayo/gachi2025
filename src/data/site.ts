@@ -23,6 +23,21 @@ export const site = {
    * 4枚とも同じ大きさの正方形・透過PNG/WebP。face＝針なしの文字盤、hour/minute/second＝中心から真上（12時）を指す針だけ。
    */
   clock: { face: "", hour: "", minute: "", second: "" },
+  /**
+   * 帯ごとの〔本人〕の文言（空なら出さない）。board＝黒板の右下の一行（こすれる）。
+   * 準備中の看板：front＝表の字（夜、黒板の下に立てかけてある面）・back＝裏のマジック書き（昼、教室の後ろで見える面）。
+   */
+  sceneCopy: {
+    shinya: { board: "" },
+    akegata: { board: "" },
+    asa: { board: "" },
+    choshinsei: { board: "" },
+    hiru: { board: "" },
+    yugata: { board: "" },
+    junbi: { board: "" },
+    shoto: { board: "" },
+  } as Record<string, { board: string }>,
+  signboard: { front: "", back: "" },
 
   /* ---------- 開催（DAY / VENUE） ---------- */
   /** 公式バー・Hero に出す会期 */
@@ -41,6 +56,21 @@ export const site = {
     afterAt: "2026-11-03T22:00:00+09:00",
     /** 窓の光（太陽の高さ・向き）の計算に使う位置。下市町の中心付近〔要確認：旧下市中学校の座標〕 */
     geo: { lat: 34.364, lon: 135.792 },
+    /**
+     * 一日を8つの帯に分ける（時刻ごとに学校の中身が変わる）。境目は4種類だけ：
+     * 太陽の高さ（上り）／rhythmDay の時間割の「時刻のある行」の始まり・終わり／消灯（その日の最後の時刻の行の終わり）／0時。
+     * 時刻のない行に時刻は作らない。時間割が変われば帯も一緒に動く。
+     */
+    scenes: [
+      { key: "shinya", from: { midnight: true } }, // 深夜：0時〜空が白むまで
+      { key: "akegata", from: { sun: -6 } }, // 明け方
+      { key: "asa", from: { sun: 8 } }, // 朝
+      { key: "choshinsei", from: { row: "超新星祭", edge: "start" } }, // 超新星祭
+      { key: "hiru", from: { row: "超新星祭", edge: "end" } }, // 昼
+      { key: "yugata", from: { row: "風呂", edge: "start" } }, // 夕方（全員が温泉）
+      { key: "junbi", from: { row: "文化祭準備", edge: "start" } }, // 文化祭準備（青い手形はここから）
+      { key: "shoto", from: { lightsOut: true } }, // 消灯
+    ],
   },
   /** 黒板の各日（2026-10-02 本人提供「文化祭準備シーズン特別時間割」より。時刻のない行は time 空） */
   days: [
