@@ -903,8 +903,13 @@ export default function BoardFx() {
       placeNowMark();
     };
 
+    let lastTick = performance.now();
     const recompute = () => {
       if (disposed) return;
+      // 裏に回っていたタブ（見回りが止まっていた）で日付をまたいだら、0時の黒板消しは流さず静かに合わせる
+      const stale = document.hidden || performance.now() - lastTick > 60000;
+      lastTick = performance.now();
+      if (stale && clockCore(now(), clockConfig).todayLabel !== state.todayLabel) return onClock();
       const prev = state;
       const next = clockCore(now(), clockConfig);
       state = next;
@@ -1006,6 +1011,14 @@ export default function BoardFx() {
     };
     boot();
 
+    // タブに戻ってきたら、演出なしでいまに合わせる
+    const onVisible = () => {
+      if (!document.hidden) {
+        lastTick = performance.now();
+        onClock();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
     window.addEventListener(ARRIVE_EVENT, onArrive);
     window.addEventListener(DEPART_EVENT, onDepart);
     window.addEventListener("pagehide", flushDoodle);
@@ -1038,6 +1051,7 @@ export default function BoardFx() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       wideMq.removeEventListener("change", onWide);
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener(ARRIVE_EVENT, onArrive);
       window.removeEventListener(DEPART_EVENT, onDepart);
       window.removeEventListener("pagehide", flushDoodle);

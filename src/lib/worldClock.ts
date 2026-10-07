@@ -198,9 +198,12 @@ function sceneStarts(): [string, number][] {
   return out.sort((a, b) => a[1] - b[1]);
 }
 
-/** 検分用の上書き（?t= ・?return=）を効かせてよい場所か。本番ドメインでは効かせない（時刻の秘密を守る） */
-export const debugAllowed = () =>
-  typeof window === "undefined" || !/(^|\.)gachibunkasai\.com$/.test(window.location.hostname);
+/**
+ * 検分用の上書き（?t= ・?return=・〔本人〕の枠の表示）を効かせてよい場所か。許可した所だけ（手元と Preview の URL）。
+ * 本番（gachibunkasai.com・gachi2025.vercel.app）では効かせない＝時刻の秘密を守る
+ */
+export const DEBUG_HOST = /^(localhost|127\.0\.0\.1)$|-mugendayos-projects\.vercel\.app$/;
+export const debugAllowed = () => typeof window === "undefined" || DEBUG_HOST.test(window.location.hostname);
 
 export const clockConfig: ClockConfig = {
   unlockTs: Date.parse(site.unlockAt),
@@ -256,7 +259,8 @@ export function bootScript(): string {
       const room = document.getElementById("kb-world");
       if (!room) return;
       let now = Date.now();
-      const m = /(^|\.)gachibunkasai\.com$/.test(location.hostname) ? null : location.search.match(/[?&]t=([^&]+)/);
+      const dbg = /^(localhost|127\.0\.0\.1)$|-mugendayos-projects\.vercel\.app$/.test(location.hostname);
+      const m = dbg ? location.search.match(/[?&]t=([^&]+)/) : null;
       if (m) {
         const t = decodeURIComponent(m[1]);
         const j = new Date(now + 9 * 3600000);
@@ -272,7 +276,7 @@ export function bootScript(): string {
       room.dataset.gate = gate;
       if (/[?&]motion(=|&|$)/.test(location.search)) room.dataset.motionForced = "";
       // 検分用の表示（〔本人〕の枠など）は Preview と手元だけ
-      if (!/(^|\.)gachibunkasai\.com$/.test(location.hostname)) room.dataset.debug = "1";
+      if (dbg) room.dataset.debug = "1";
       const s = core(now, cfg);
       room.dataset.phase = s.phase;
       room.dataset.day = s.dayKey;
