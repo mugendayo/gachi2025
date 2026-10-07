@@ -1,0 +1,178 @@
+/* 入口：背景動画の全画面＋魔法陣（Entry.tsx）。接頭辞 en- で黒板（kb-）と衝突させない。
+   data-motion="on" のときだけ魔法陣が回る・光る（動きを減らす設定では止める。?motion があれば動かす）。 */
+
+.en-root {
+  position: relative;
+  min-height: calc(100svh - 84px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  /* 中央下寄り＝スマホでも親指で届く高さ */
+  padding: 24px 16px clamp(40px, 10svh, 104px);
+  background: #000;
+  color: #fff;
+}
+
+/* ---------- 背景 ---------- */
+.en-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.en-poster,
+.en-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 最初の HTML から正しい向きのポスターが出る（読み込まれるのは当てはまる1枚だけ） */
+.en-poster {
+  background: #000 url("/hero-poster.jpg") center / cover no-repeat;
+}
+@media (min-aspect-ratio: 1/1) {
+  .en-poster {
+    background-image: url("/hero-wide-poster.jpg");
+  }
+}
+
+/* ---------- 魔法陣 ---------- */
+.en-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* 明るい映像の上でも魔法陣の白が沈まないよう、足もとだけ薄く暗くする */
+.en-stage::before {
+  content: "";
+  position: absolute;
+  inset: -30% -60%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.18) 55%, transparent);
+}
+
+.en-sigil {
+  --en-size: clamp(148px, min(44vw, 30svh), 260px);
+  position: relative;
+  display: block;
+  width: var(--en-size);
+  height: var(--en-size);
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  overflow: visible;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease;
+}
+.en-sigil:hover {
+  transform: scale(1.03);
+}
+.en-sigil:active {
+  transform: scale(0.98);
+}
+.en-sigil:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 8px;
+}
+
+.en-body {
+  position: absolute;
+  inset: 0;
+  display: block;
+  will-change: transform;
+}
+.en-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.en-aura {
+  position: absolute;
+  inset: -30%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(140, 230, 255, 0.5) 0%, rgba(0, 190, 255, 0.2) 42%, transparent 68%);
+  opacity: 0.8;
+}
+
+.en-root[data-motion="on"] .en-spin {
+  animation: en-spin 24s linear infinite;
+}
+.en-root[data-motion="on"] .en-core {
+  animation: en-pulse 3.2s ease-in-out infinite;
+}
+.en-root[data-motion="on"] .en-aura {
+  animation: en-aura 3.2s ease-in-out infinite;
+}
+@keyframes en-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes en-pulse {
+  0%,
+  100% {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+@keyframes en-aura {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+/* ---------- タイムスリップの光 ---------- */
+.en-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 1250; /* 公式バー（z-90）より上・お預けのモーダル（z-1300）より下 */
+  pointer-events: none;
+  visibility: hidden;
+  overflow: hidden;
+}
+.en-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 480px;
+  height: 480px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    #fff 0 58%,
+    rgba(255, 255, 255, 0.9) 70%,
+    rgba(210, 248, 255, 0.45) 85%,
+    rgba(160, 235, 255, 0) 100%
+  );
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.02);
+  will-change: transform, opacity;
+}
+.en-fill {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+}
