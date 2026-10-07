@@ -26,12 +26,36 @@ export default function Classroom() {
 
       <div className="kb-wall">
         {site.clock.face ? (
-          // 時計の絵（site.clock に画像が入ったら、仮の時計と入れ替わる）
-          <div className="kb-clock has-art" aria-hidden>
+          // 時計の絵（site.clock に画像が入ったら、仮の時計と入れ替わる）。針の絵が無ければ CSS の針を文字盤の中心に重ねる
+          <div
+            className="kb-clock has-art"
+            aria-hidden
+            style={
+              {
+                "--cx": `${site.clock.center[0]}%`,
+                "--cy": `${site.clock.center[1]}%`,
+                "--dial": site.clock.dial,
+                aspectRatio: String(site.clock.ratio),
+              } as React.CSSProperties
+            }
+          >
             <img className="kb-clock-art" src={site.clock.face} alt="" />
-            {site.clock.hour && <img className="kb-clock-art kb-art-h" src={site.clock.hour} alt="" />}
-            {site.clock.minute && <img className="kb-clock-art kb-art-m" src={site.clock.minute} alt="" />}
-            {site.clock.second && <img className="kb-clock-art kb-art-s" src={site.clock.second} alt="" />}
+            {site.clock.hour ? (
+              <img className="kb-clock-art kb-art-h" src={site.clock.hour} alt="" />
+            ) : (
+              <i className="kb-art-hand kb-art-hand-h" />
+            )}
+            {site.clock.minute ? (
+              <img className="kb-clock-art kb-art-m" src={site.clock.minute} alt="" />
+            ) : (
+              <i className="kb-art-hand kb-art-hand-m" />
+            )}
+            {site.clock.second ? (
+              <img className="kb-clock-art kb-art-s" src={site.clock.second} alt="" />
+            ) : (
+              <i className="kb-art-hand kb-art-hand-s" />
+            )}
+            {!site.clock.hour && <i className="kb-art-cap" />}
           </div>
         ) : (
           <div className="kb-clock" aria-hidden>

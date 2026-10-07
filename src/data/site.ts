@@ -19,10 +19,12 @@ export const site = {
   /** 黒板の最下段（本番の日） */
   boardFinale: "ガチ文化祭！",
   /**
-   * 教室の壁の時計の絵（Codex で作って差し替える）。public/clock/ に置いてパスを書く。空なら CSS の仮の時計。
-   * 4枚とも同じ大きさの正方形・透過PNG/WebP。face＝針なしの文字盤、hour/minute/second＝中心から真上（12時）を指す針だけ。
+   * 教室の壁の時計の絵。public/clock/ に置いてパスを書く。空なら CSS の仮の時計。
+   * face＝針なしの絵。hour/minute/second＝針の絵（face と同じ大きさで、文字盤の中心から真上を指す）。針の絵が無ければ CSS の針を重ねる。
+   * center＝文字盤の中心（絵の幅・高さに対する %）、dial＝文字盤の半径（絵の幅に対する %）。
+   * 2026：本人が Codex で作った「校長私物」の金の腕時計（STOL・SEISHUN MADE・日付窓に「祭」）。描かれていた針は消してある
    */
-  clock: { face: "", hour: "", minute: "", second: "" },
+  clock: { face: "/clock/stol.webp", hour: "", minute: "", second: "", center: [50.62, 43.61], dial: 37.22, ratio: 360 / 552 },
   /**
    * 帯ごとの〔本人〕の文言（空なら出さない）。board＝黒板の右下の一行（こすれる）。
    * 準備中の看板：front＝表の字（夜、黒板の下に立てかけてある面）・back＝裏のマジック書き（昼、教室の後ろで見える面）。

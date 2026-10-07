@@ -81,8 +81,53 @@
 }
 /* 時計の絵（site.clock）：文字盤と針は同じ大きさの正方形。針は中心で回す */
 .kb-clock.has-art {
+  width: clamp(72px, 17vw, 112px);
+  border-radius: 0;
   background: none;
   box-shadow: none;
+  container-type: inline-size;
+  filter: brightness(calc(0.45 + 0.55 * var(--amb))) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+}
+/* CSS の針（絵に針が無いとき）：文字盤の中心を軸に、--ch／--cm／--cs で回す。長さは文字盤の半径（--dial）から */
+.kb-art-hand {
+  position: absolute;
+  transform-origin: 50% 100%;
+  border-radius: 999px 999px 2px 2px;
+  background: #151515;
+}
+.kb-art-hand-h {
+  width: 2.6cqw;
+  height: calc(var(--dial) * 0.5cqw);
+  left: calc(var(--cx) - 1.3cqw);
+  top: calc(var(--cy) - var(--dial) * 0.5cqw);
+  transform: rotate(var(--ch));
+  clip-path: polygon(50% 0, 100% 22%, 78% 100%, 22% 100%, 0 22%);
+}
+.kb-art-hand-m {
+  width: 1.9cqw;
+  height: calc(var(--dial) * 0.8cqw);
+  left: calc(var(--cx) - 0.95cqw);
+  top: calc(var(--cy) - var(--dial) * 0.8cqw);
+  transform: rotate(var(--cm));
+  clip-path: polygon(50% 0, 100% 16%, 75% 100%, 25% 100%, 0 16%);
+}
+.kb-art-hand-s {
+  width: 0.8cqw;
+  height: calc(var(--dial) * 0.88cqw);
+  left: calc(var(--cx) - 0.4cqw);
+  top: calc(var(--cy) - var(--dial) * 0.88cqw);
+  transform: rotate(var(--cs));
+  background: #d81e1e;
+}
+.kb-art-cap {
+  position: absolute;
+  width: 5cqw;
+  height: 5cqw;
+  left: calc(var(--cx) - 2.5cqw);
+  top: calc(var(--cy) - 2.5cqw);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff3b0, #c99a2e 55%, #6d4f12);
+  box-shadow: 0 0 0 0.6cqw #111;
 }
 .kb-clock.has-art::after {
   display: none;
@@ -1023,7 +1068,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kb-world:not([data-motion-forced]) :is(.kb-hand-s, .kb-art-s) {
+  .kb-world:not([data-motion-forced]) :is(.kb-hand-s, .kb-art-s, .kb-art-hand-s) {
     display: none;
   }
   .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
