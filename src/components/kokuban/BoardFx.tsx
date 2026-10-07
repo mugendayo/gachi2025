@@ -4,7 +4,8 @@
 // こすると canvas だけが消える。消したあとの戻り方は2通り（?return=rewrite で切り替え・既定は焼き付き）。
 // 初期化はインラインスクリプトに頼らない（ページ内移動で戻ったときはスクリプトが走らないため、ここでも同じ初期化をする）。
 import { useEffect } from "react";
-import { clockConfig, clockCore, overrideOffset, type ClockState } from "@/lib/worldClock";
+import { clockConfig, clockCore, type ClockState } from "@/lib/worldClock";
+import { CLOCK_EVENT, now, syncWithServer } from "@/lib/now";
 
 type Item = {
   el: HTMLElement;
@@ -38,13 +39,6 @@ function rng(seed: number) {
 
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 
-/** 時刻の補正（?t= と配信元の時刻）を、カウントダウンなど他の部品と共有する */
-declare global {
-  interface Window {
-    __kbOffset?: number;
-  }
-}
-
 export default function BoardFx() {
   useEffect(() => {
     const world = document.getElementById("kb-world");
@@ -58,14 +52,6 @@ export default function BoardFx() {
     // ?motion=1：動きを減らす設定の端末でも演出を見る（検分用）
     const reduce = !params.has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mode = params.get("return") === "rewrite" ? "rewrite" : "burn";
-    const override = overrideOffset(location.search, Date.now());
-    let offset = override ?? 0;
-    const shareOffset = () => {
-      window.__kbOffset = offset;
-      window.dispatchEvent(new Event("kb:clock"));
-    };
-    shareOffset();
-    const now = () => Date.now() + offset;
     let state: ClockState = clockCore(now(), clockConfig);
     let disposed = false;
     const intervals: number[] = [];
@@ -718,19 +704,9 @@ export default function BoardFx() {
     };
     boot();
 
-    // 端末の時計を、配信元の時刻で1回だけ補正する（?t= のときはしない）
-    if (override === null) {
-      fetch(location.pathname, { method: "HEAD", cache: "no-store" })
-        .then((res) => {
-          const d = Date.parse(res.headers.get("date") || "");
-          if (!disposed && Number.isFinite(d) && Math.abs(d - Date.now()) > 60000) {
-            offset = d - Date.now();
-            shareOffset();
-            recompute();
-          }
-        })
-        .catch(() => {});
-    }
+    // 端末の時計を、配信元の時刻で1回だけ補正する（?t= のときはしない・lib/now が共有）
+    window.addEventListener(CLOCK_EVENT, recompute);
+    syncWithServer();
 
     // 動きを止めた人には秒針を見せず、針の更新も間引く
     intervals.push(window.setInterval(tickHands, reduce ? 15000 : 1000));
@@ -754,6 +730,7 @@ export default function BoardFx() {
       window.clearTimeout(rto);
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener(CLOCK_EVENT, recompute);
       board.removeEventListener("pointerdown", onDown);
       room.removeEventListener("pointermove", onMove);
       board.removeEventListener("pointerup", cancelRub);

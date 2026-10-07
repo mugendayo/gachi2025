@@ -5,11 +5,12 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { site } from "@/data/site";
 
+import { now } from "@/lib/now";
+
 const UNLOCK_TS = Date.parse(site.unlockAt);
-/** 黒板の世界時計と同じ「いま」（?t= と配信元の時刻の補正を共有する） */
-const nowMs = () => Date.now() + (typeof window !== "undefined" ? window.__kbOffset ?? 0 : 0);
-export const isLockedNow = () => nowMs() < UNLOCK_TS;
-export const msUntilUnlock = () => UNLOCK_TS - nowMs();
+/** 黒板の世界時計と同じ「いま」（?t= と配信元の時刻の補正を共有する＝lib/now） */
+export const isLockedNow = () => now() < UNLOCK_TS;
+export const msUntilUnlock = () => UNLOCK_TS - now();
 
 function useCountdown() {
   const [ms, setMs] = useState<number | null>(null);

@@ -10,7 +10,7 @@ const prevGoal = site.library.find((l) => l.year === site.year - 1)?.label ?? ""
 
 export default function Classroom() {
   return (
-    <section className="kb-room" aria-label="教室">
+    <section id="kb-classroom" className="kb-room" aria-label="教室">
       <h1 className="sr-only">{site.title}</h1>
       {/* 窓から差す光・蛍光灯 */}
       <div className="kb-sunlight" aria-hidden />
