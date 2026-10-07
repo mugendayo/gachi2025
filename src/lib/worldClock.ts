@@ -195,7 +195,7 @@ export function overrideOffset(search: string, realNow: number): number | null {
 
 /** main の開きタグの直後に走らせるスクリプト：描画前に光の状態を書き込む（今日の日付と残り日数は boardTextScript が黒板へ） */
 export function bootScript(): string {
-  const boot = function (cfg: ClockConfig, core: typeof clockCore) {
+  const boot = function (cfg: ClockConfig, core: typeof clockCore, gateKey: string) {
     try {
       const room = document.getElementById("kb-world");
       if (!room) return;
@@ -209,6 +209,11 @@ export function bootScript(): string {
           : Date.parse(t.split("T")[0] + "T" + (t.split("T")[1] || "").padStart(5, "0") + ":00+09:00");
         if (target === target) now = target;
       }
+      let gate = "closed";
+      try {
+        if (sessionStorage.getItem(gateKey) === "open") gate = "open";
+      } catch (e) {}
+      room.dataset.gate = gate;
       const s = core(now, cfg);
       room.dataset.phase = s.phase;
       room.dataset.day = s.dayKey;
@@ -227,7 +232,7 @@ export function bootScript(): string {
       w.__kbCount = s.countLabel;
     } catch (e) {}
   };
-  return `(${boot.toString()})(${JSON.stringify(clockConfig)},${clockCore.toString()});`;
+  return `(${boot.toString()})(${JSON.stringify(clockConfig)},${clockCore.toString()},${JSON.stringify(`gbf_${site.year}_gate`)});`;
 }
 
 /** 黒板の見出しの直後に走らせる：今日の日付と本番までの残り日数を書き込む（描画前） */

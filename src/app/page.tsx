@@ -46,20 +46,34 @@ export default function Page() {
       data-phase="eve"
       data-day={site.world.rhythmDay}
       data-band="day"
+      data-gate="closed"
       suppressHydrationWarning
     >
       <script dangerouslySetInnerHTML={{ __html: bootScript() }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }} />
 
+      {/* JS が動かない環境では門を開けたまま（学校もそのまま読める） */}
+      <noscript>
+        <style>{`.kb-world[data-gate="closed"] .kb-school { display: block !important; }`}</style>
+      </noscript>
+
       <Entry />
-      <Classroom />
-      <BackOfRoom />
-      <Corridor />
-      <Staffroom />
-      <Stage />
-      <PackageBox />
-      <BottomZone />
-      <RewardSection />
+      {/* 門の内側＝ゲームの中の世界線：学校 */}
+      <div className="kb-school" id="kb-school">
+        <Classroom />
+        <BackOfRoom />
+        <Corridor />
+        <Staffroom />
+        <Stage />
+      </div>
+      {/* 門の外＝現実の世界線：ThanatosGames が作っている「ガチ文化祭」というゲームの箱（公式の事実・参加する）。門をくぐると消える */}
+      <div className="kb-real">
+        <PackageBox />
+      </div>
+      <div className="kb-school">
+        <BottomZone />
+        <RewardSection />
+      </div>
       <Inventory />
     </main>
   );

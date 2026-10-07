@@ -850,7 +850,8 @@ export default function BoardFx() {
     };
 
     const onArrive = () => {
-      // 入口のタイムスリップで着いた：見えない手が今日の日付と残り日数を書く
+      // 入口のタイムスリップで着いた：見えない手が今日の日付と残り日数を書く（門が開いた直後なので測り直してから）
+      if (Math.abs(board.clientWidth - W) + Math.abs(board.clientHeight - H) > 2) layout();
       later(() => handWrite(["date", "count"], false), reduce ? 0 : 350);
     };
 

@@ -1,13 +1,15 @@
 "use client";
 // 入口：ページの一番最初。背景動画（縦＝スマホ／横＝PC）の全画面に魔法陣を置き、押すとタイムスリップして下の教室へ移る。
-// 入口は門ではない：下へ普通にスクロールしても教室に行ける（スクロールは奪わない）。公式の事実は公式バーと最下部の箱で常に読める。
+// 入口は門：魔法陣でタイムスリップした人だけが学校（教室〜舞台・最下部）に入れる（lib/gate）。
+// 閉じるのは学校だけで、公式の事実は公式バー・ゲームの箱の裏（学校の外）・フッターで常に読める。
 // 解禁前（UnlockTeaser の isLockedNow）は、押すとお預けのモーダルだけを出してタイムスリップしない。時刻は lib/now の now() を共有する。
 // 動きを減らす設定（prefers-reduced-motion: reduce）では動画を流さずポスターだけ・演出なしで教室へ移る。
 // URL に motion があれば reduce でも動かす（?motion=1・検分用・黒板と同じ規則）。
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import UnlockTeaser, { UnlockCountdownBadge, isLockedNow, msUntilUnlock } from "@/components/UnlockTeaser";
 import { ARRIVE_EVENT, CLOCK_EVENT } from "@/lib/now";
+import { applyGate, openGate } from "@/lib/gate";
 import "./entry.css";
 
 /** 公式バーの高さ（実寸が測れないときだけ使う） */
@@ -27,8 +29,9 @@ const barBottom = () => {
   return bar ? Math.max(0, bar.getBoundingClientRect().bottom) : FALLBACK_BAR;
 };
 
-/** 教室の上端が公式バーのすぐ下に来るよう、瞬時に移る（html の scroll-behavior: smooth を上書き） */
+/** 門を開けて、教室の上端が公式バーのすぐ下に来るよう瞬時に移る（html の scroll-behavior: smooth を上書き） */
 const goToClassroom = () => {
+  openGate();
   const room = document.getElementById("kb-classroom");
   if (!room) return;
   const top = room.getBoundingClientRect().top + window.scrollY - barBottom();
@@ -127,6 +130,11 @@ export default function Entry() {
   const busy = useRef(false);
   const timers = useRef<number[]>([]);
   const anims = useRef<Animation[]>([]);
+
+  // ページ内移動で戻ったとき（インラインスクリプトが走らない）も、描画前に門の状態をこの訪問に合わせる
+  useLayoutEffect(() => {
+    applyGate();
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-aspect-ratio: 1/1)");
