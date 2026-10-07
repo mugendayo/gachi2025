@@ -11,6 +11,7 @@ const prevGoal = site.library.find((l) => l.year === site.year - 1)?.label ?? ""
 export default function Classroom() {
   return (
     <section className="kb-room" aria-label="教室">
+      <h1 className="sr-only">{site.title}</h1>
       {/* 窓から差す光・蛍光灯 */}
       <div className="kb-sunlight" aria-hidden />
       <div className="kb-fluor" aria-hidden />
@@ -73,9 +74,13 @@ export default function Classroom() {
       </div>
 
       <div className="kb-night" aria-hidden />
-      {/* 解禁前：消灯した同じ教室。解禁の時刻に、開いている全員の教室で灯りがつく */}
+      {/* 解禁前：黒板は今日の日付のまま。解禁の時刻に、開いている全員の黒板で日付が書き換わる（光は時刻どおり） */}
       <div className="kb-sealed">
-        <p>{site.unlockLabel}より、この先が見れます！</p>
+        <p>
+          {site.unlockLabel}より、
+          <wbr />
+          この先が見れます！
+        </p>
         <UnlockCountdownBadge />
       </div>
       <BoardFx />

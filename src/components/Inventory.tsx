@@ -2,6 +2,7 @@
 // もちもの欄。1つ目を拾うまで出さない。持っているものだけを並べる（空き枠・「n/3」は出さない）。
 // 拾った瞬間、その1つが光る。
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { site } from "@/data/site";
 import { ITEM_EVENT, useItems } from "@/lib/items";
 
@@ -21,9 +22,17 @@ export default function Inventory() {
   }, []);
 
   const have = site.items.filter((it) => owned.includes(it.id));
+
+  // もちもの欄がある間だけ、ページの最下部（フッターのリンク）が欄に隠れないよう余白を足す
+  useEffect(() => {
+    document.body.classList.toggle("has-inv", have.length > 0);
+    return () => document.body.classList.remove("has-inv");
+  }, [have.length]);
+
   if (!have.length) return null;
 
-  return (
+  // body の直下に出す（3つ揃った瞬間の揺れに巻き込まれて画面外へ飛ばないように）
+  return createPortal(
     <aside className="gb-inv" aria-label="もちもの">
       <p className="gb-inv-label">もちもの</p>
       <ul>
@@ -92,6 +101,13 @@ export default function Inventory() {
           }
         }
       `}</style>
-    </aside>
+      <style jsx global>{`
+        body.has-inv {
+          padding-bottom: calc(84px + env(safe-area-inset-bottom));
+          background: #111; /* フッターと同じ色で余白をつなぐ */
+        }
+      `}</style>
+    </aside>,
+    document.body,
   );
 }

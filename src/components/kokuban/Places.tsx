@@ -108,7 +108,7 @@ export function PackageBox() {
   const d4 = site.days[site.days.length - 1];
   const facts: [string, string][] = [
     ["会期", site.dateLabel],
-    ["本番", `${d4.date}`],
+    ["本番", d4.date.replace("(", "（").replace(")", "）")],
     ["会場", site.place],
     ["参加費", site.price],
     ["支払い", site.paymentLabel],

@@ -42,7 +42,7 @@ export type ClockState = {
   warm: number;
   /** 蛍光灯 0/1（文化祭準備の行の間だけ点く） */
   lit: number;
-  /** 消灯 0/1 */
+  /** 消灯 0〜1（消灯の時刻は一段で1、明け方は連続で0へ） */
   dark: number;
   /** 部屋の明るさ 0〜1 */
   amb: number;
@@ -106,14 +106,16 @@ export function clockCore(nowMs: number, c: ClockConfig): ClockState {
     return v < 0 ? 0 : v > 1 ? 1 : v;
   };
   const sun = clamp((sunAlt + 4) / 24);
-  const warm = sunAlt > -6 && sunAlt < 16 ? clamp(1 - Math.abs(sunAlt - 3) / 13) : 0;
-  // 消灯：その日の最後の時刻の行が終わってから、朝に空が白むまで（解禁前も会期後も、光は時刻どおり）。
-  // 消灯中も月明かりと非常灯で時間割は読める明るさを残す（暗さで読ませない＝操作の摩擦を作らない）
+  // 朝日・夕日の色：太陽が地平線の少し下（-6°）から上（16°）までだけ。両端で0になり、一段で飛ばない
+  const warm = sunAlt > -6 && sunAlt < 16 ? clamp(Math.min((sunAlt + 6) / 9, (16 - sunAlt) / 13)) : 0;
+  // 消灯：その日の最後の時刻の行が終わってから（スイッチなので一段で切る）、朝に空が白むまで（明け方は連続で明るくなる）。
+  // 解禁前も会期後も、光は時刻どおり。消灯中も月明かりと非常灯で時間割は読める明るさを残す（暗さで読ませない）
   const out = c.lightsOut[dayKey] || 21 * 60 + 30;
-  const dark = minute >= out || (minute < 12 * 60 && sunAlt < -6) ? 1 : 0;
-  const lit = !dark && prep ? 1 : 0;
-  const amb = dark ? 0.3 : Math.max(0.22 + 0.78 * sun, lit ? 0.92 : 0);
-  const band: ClockState["band"] = dark ? "night" : sunAlt < -6 ? "evening" : sunAlt < 8 ? (minute < 12 * 60 ? "dawn" : "dusk") : "day";
+  const dark = minute >= out ? 1 : minute < 12 * 60 ? clamp((-2 - sunAlt) / 4) : 0;
+  const lit = dark < 0.5 && prep ? 1 : 0;
+  const dayAmb = Math.max(0.3 + 0.7 * sun, lit ? 0.92 : 0);
+  const amb = dark * 0.3 + (1 - dark) * dayAmb;
+  const band: ClockState["band"] = dark >= 0.5 ? "night" : sunAlt < -6 ? "evening" : sunAlt < 8 ? (minute < 12 * 60 ? "dawn" : "dusk") : "day";
 
   return {
     phase: phase,
@@ -206,7 +208,7 @@ export function bootScript(): string {
       st.setProperty("--sun", s.sun.toFixed(3));
       st.setProperty("--warm", s.warm.toFixed(3));
       st.setProperty("--lit", String(s.lit));
-      st.setProperty("--dark", String(s.dark));
+      st.setProperty("--dark", s.dark.toFixed(3));
       st.setProperty("--amb", s.amb.toFixed(3));
       st.setProperty("--sun-az", s.sunAz.toFixed(1));
       st.setProperty("--ch", ((s.minute / 60) % 12) * 30 + "deg");
