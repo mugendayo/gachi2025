@@ -18,6 +18,11 @@ export const site = {
   countdownTemplate: "文化祭まであと{n}日！",
   /** 黒板の最下段（本番の日） */
   boardFinale: "ガチ文化祭！",
+  /**
+   * 教室の壁の時計の絵（Codex で作って差し替える）。public/clock/ に置いてパスを書く。空なら CSS の仮の時計。
+   * 4枚とも同じ大きさの正方形・透過PNG/WebP。face＝針なしの文字盤、hour/minute/second＝中心から真上（12時）を指す針だけ。
+   */
+  clock: { face: "", hour: "", minute: "", second: "" },
 
   /* ---------- 開催（DAY / VENUE） ---------- */
   /** 公式バー・Hero に出す会期 */

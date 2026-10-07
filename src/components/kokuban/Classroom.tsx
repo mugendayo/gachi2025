@@ -24,11 +24,21 @@ export default function Classroom() {
       <div className="kb-fluor" aria-hidden />
 
       <div className="kb-wall">
-        <div className="kb-clock" aria-hidden>
-          <i className="kb-hand kb-hand-h" />
-          <i className="kb-hand kb-hand-m" />
-          <i className="kb-hand kb-hand-s" />
-        </div>
+        {site.clock.face ? (
+          // 時計の絵（site.clock に画像が入ったら、仮の時計と入れ替わる）
+          <div className="kb-clock has-art" aria-hidden>
+            <img className="kb-clock-art" src={site.clock.face} alt="" />
+            {site.clock.hour && <img className="kb-clock-art kb-art-h" src={site.clock.hour} alt="" />}
+            {site.clock.minute && <img className="kb-clock-art kb-art-m" src={site.clock.minute} alt="" />}
+            {site.clock.second && <img className="kb-clock-art kb-art-s" src={site.clock.second} alt="" />}
+          </div>
+        ) : (
+          <div className="kb-clock" aria-hidden>
+            <i className="kb-hand kb-hand-h" />
+            <i className="kb-hand kb-hand-m" />
+            <i className="kb-hand kb-hand-s" />
+          </div>
+        )}
         {/* 掛け軸：教育方針（アドミッションポリシーと同じ四字熟語） */}
         <figure className="kb-scroll">
           <p>{site.motto}</p>
