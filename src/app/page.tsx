@@ -3,6 +3,7 @@
 // 公式バーとフッター（定番規格）は layout 側。ここはその内側だけ。
 import { site } from "@/data/site";
 import { bootScript } from "@/lib/worldClock";
+import Entry from "@/components/entry/Entry";
 import Classroom from "@/components/kokuban/Classroom";
 import { BackOfRoom, Corridor, PackageBox, Staffroom, Stage } from "@/components/kokuban/Places";
 import BottomZone from "@/components/BottomZone";
@@ -50,6 +51,7 @@ export default function Page() {
       <script dangerouslySetInnerHTML={{ __html: bootScript() }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }} />
 
+      <Entry />
       <Classroom />
       <BackOfRoom />
       <Corridor />
