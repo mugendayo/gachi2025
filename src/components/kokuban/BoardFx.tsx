@@ -240,7 +240,7 @@ export default function BoardFx() {
       ctx.restore();
     };
 
-    const hazeAt = (x: number, y: number, a = 0.045) => {
+    const hazeAt = (x: number, y: number, a = 0.06) => {
       smear.save();
       const g = smear.createRadialGradient(x, y, 0, x, y, 42);
       g.addColorStop(0, `rgba(235,240,232,${a})`);
@@ -329,7 +329,7 @@ export default function BoardFx() {
         const x = x0 + ((x1 - x0) * i) / n;
         const y = y0 + ((y1 - y0) * i) / n;
         stampAt(chalk, x, y);
-        hazeAt(x, y, clip ? 0.012 : 0.045);
+        hazeAt(x, y, clip ? 0.03 : 0.06);
         if (i % 3 === 0) emit(x, y);
         for (const it of items)
           if (!it.dirty && x > it.x - SW / 2 && x < it.x + it.w + SW / 2 && y > it.y - SH / 2 && y < it.y + it.h + SH / 2) it.dirty = true;

@@ -107,11 +107,12 @@ export function clockCore(nowMs: number, c: ClockConfig): ClockState {
   };
   const sun = clamp((sunAlt + 4) / 24);
   const warm = sunAlt > -6 && sunAlt < 16 ? clamp(1 - Math.abs(sunAlt - 3) / 13) : 0;
-  // 消灯：その日の最後の時刻の行が終わってから、朝に空が白むまで。解禁前は一日中消灯した教室
+  // 消灯：その日の最後の時刻の行が終わってから、朝に空が白むまで（解禁前も会期後も、光は時刻どおり）。
+  // 消灯中も月明かりと非常灯で時間割は読める明るさを残す（暗さで読ませない＝操作の摩擦を作らない）
   const out = c.lightsOut[dayKey] || 21 * 60 + 30;
-  const dark = phase === "sealed" || phase === "after" || minute >= out || (minute < 12 * 60 && sunAlt < -6) ? 1 : 0;
+  const dark = minute >= out || (minute < 12 * 60 && sunAlt < -6) ? 1 : 0;
   const lit = !dark && prep ? 1 : 0;
-  const amb = dark ? 0.08 : Math.max(0.22 + 0.78 * sun, lit ? 0.92 : 0);
+  const amb = dark ? 0.3 : Math.max(0.22 + 0.78 * sun, lit ? 0.92 : 0);
   const band: ClockState["band"] = dark ? "night" : sunAlt < -6 ? "evening" : sunAlt < 8 ? (minute < 12 * 60 ? "dawn" : "dusk") : "day";
 
   return {
