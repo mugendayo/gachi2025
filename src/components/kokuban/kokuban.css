@@ -2,6 +2,8 @@
    画像を使わず、黒板・教室・光をすべて CSS と canvas で描く。 */
 
 .kb-world {
+  /* 公式バー（定番規格）の実際の高さ＝56＋線1＋連絡行28＋下線3 */
+  --bar-h: 88px;
   --sun: 1;
   --warm: 0;
   --lit: 0;
@@ -28,7 +30,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: calc(100svh - 84px);
+  min-height: calc(100svh - var(--bar-h, 88px));
   display: grid;
   grid-template-rows: auto 1fr auto;
   grid-template-columns: minmax(0, 1fr);

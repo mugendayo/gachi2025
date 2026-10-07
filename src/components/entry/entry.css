@@ -3,7 +3,7 @@
 
 .en-root {
   position: relative;
-  min-height: calc(100svh - 84px);
+  min-height: calc(100svh - var(--bar-h, 88px));
   overflow: hidden;
   display: flex;
   flex-direction: column;
