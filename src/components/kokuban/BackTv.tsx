@@ -8,7 +8,7 @@ export default function BackTv() {
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = !new URLSearchParams(location.search).has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return; // 動きを止めた人にはポスターだけ
     const io = new IntersectionObserver(
       (entries) => {

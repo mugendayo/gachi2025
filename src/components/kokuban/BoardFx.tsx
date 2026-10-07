@@ -54,8 +54,10 @@ export default function BoardFx() {
     const todayEl = document.getElementById("kb-today");
     if (!world || !board || !room || !eraser || !todayEl) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mode = new URLSearchParams(location.search).get("return") === "rewrite" ? "rewrite" : "burn";
+    const params = new URLSearchParams(location.search);
+    // ?motion=1：動きを減らす設定の端末でも演出を見る（検分用）
+    const reduce = !params.has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const mode = params.get("return") === "rewrite" ? "rewrite" : "burn";
     const override = overrideOffset(location.search, Date.now());
     let offset = override ?? 0;
     const shareOffset = () => {
