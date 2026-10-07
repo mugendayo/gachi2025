@@ -19,17 +19,17 @@ function isExternalHref(href: string) {
 type InfoRow = { iconSrc: string; label: string; href?: string };
 
 export default function FinalProductSection({
-  coverSrc = "/icons/cover.png",
+  coverSrc = "/icons/cover.webp",
   badgeText = "タイムスリップ版",
   msrp = site.price,
   infoTitle = "参加する",
   infoBody = "　",
   rows = [
-    { iconSrc: "/icons/ticket-red.png", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/guide" },
-    { iconSrc: "/icons/discord.jpg",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "#join" },
+    { iconSrc: "/icons/ticket-red.webp", label: "はじめて遊ぶ人へ「ガチ文のきほん」", href: "/guide" },
+    { iconSrc: "/icons/discord.webp",    label: "ガチ文高等学校　文化祭専用Discord（無料で入れます）", href: "#join" },
   ] as InfoRow[],
-  thirdItemSrc = "/icons/arm.png",
-  companyLogoSrc = "/icons/thg.png",
+  thirdItemSrc = "/icons/arm.webp",
+  companyLogoSrc = "/icons/thg.webp",
   ariaLabelThird = "不思議なアイテムを手に入れる",
   // ▼ 追加
   purchaseHref = site.discordUrl,

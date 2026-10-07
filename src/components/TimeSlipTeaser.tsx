@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function TimeSlipTeaser({
-  imageSrc = "/effects/time-machine.png",
+  imageSrc = "/effects/time-machine.webp",
   particleSrc = null,
   stagger = 0.35,
   baseDelay = 0.45,

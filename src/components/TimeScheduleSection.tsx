@@ -194,7 +194,7 @@ function BlueHand() {
 }
 
 /* ========= 本体 ========= */
-export default function TimeScheduleSection({ bg = "/chalkboard.png" }: { bg?: string }) {
+export default function TimeScheduleSection({ bg = "/chalkboard.webp" }: { bg?: string }) {
   const [idx, setIdx] = useState(0);
   const [direction, setDirection] = useState(0);
 

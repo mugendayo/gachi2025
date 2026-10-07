@@ -36,7 +36,7 @@ const SLIDES = [
   {
     id: "slide-a",
     title: "教育理念：魂の熱量は数値を超える",
-    img: "/past/B.png",
+    img: "/past/B.webp",
     alt: "教育理念",
     body: (
       <>
@@ -47,7 +47,7 @@ const SLIDES = [
   {
     id: "slide-b",
     title: "求める生徒",
-    img: "/past/A.png",
+    img: "/past/A.webp",
     alt: "求める生徒",
     body: (
       <>
@@ -130,7 +130,7 @@ const PHILO_SLIDES = [
   {
     id: "philo-plan",
     title: "企画：自己実現の Minimum Viable Product を可視化する",
-    img: "/past/philo-plan.jpg",
+    img: "/past/philo-plan.webp",
     alt: "企画スライド",
     body: (
       <>
@@ -141,7 +141,7 @@ const PHILO_SLIDES = [
   {
     id: "philo-class",
     title: "クラス：公共精神を体得し、帰属・協力意識を深化する",
-    img: "/past/philo-class.jpg",
+    img: "/past/philo-class.webp",
     alt: "クラススライド",
     body: (
       <>

@@ -32,15 +32,15 @@ const PRINCIPAL: Person = {
   name: "つかね ひろき",
   title: "ガチ文高等学校 校長",
   bio: "“いつでも高校生に戻れる社会をつくる” を合言葉に、生徒一人ひとりに青い春と希望を与える。前職はマザーテレサ。趣味は世界平和。",
-  thumb: "/principal/thumb.jpg",
+  thumb: "/principal/thumb.webp",
   gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/principal/v/${String(i + 1).padStart(2, "0")}.jpg`,
     caption: `校長ギャラリー ${i + 1}/10`,
   })),
   /** ★ここを2枚に */
   story: [
-    { src: "/principal/1.png", caption: "校長 1/2" },
-    { src: "/principal/2.png", caption: "校長 2/2" },
+    { src: "/principal/1.webp", caption: "校長 1/2" },
+    { src: "/principal/2.webp", caption: "校長 2/2" },
   ],
 };
 
@@ -49,15 +49,15 @@ const VICE: Person = {
   name: "炎山（えんざん）",
   title: "ガチ文高等学校 教頭",
   bio: "現実主義で“仕組みで青春”を推進。高校時代の文化祭そして使われなくなった廃校に命を芽吹くことに命を賭ける。前職は宮代健太。趣味は多拠点生活。",
-  thumb: "/vice/thumb.png",
+  thumb: "/vice/thumb.webp",
   gallery: Array.from({ length: 10 }).map((_, i) => ({
     src: `/vice/v/${String(i + 1).padStart(2, "0")}.jpg`,
     caption: `教頭ギャラリー ${i + 1}/10`,
   })),
   /** ★ここを2枚に */
   story: [
-    { src: "/vice/1.png", caption: "教頭 1/2" },
-    { src: "/vice/2.png", caption: "教頭 2/2" },
+    { src: "/vice/1.webp", caption: "教頭 1/2" },
+    { src: "/vice/2.webp", caption: "教頭 2/2" },
   ],
 };
 
@@ -102,7 +102,7 @@ export default function SchoolIntro() {
       {/* ▼ 背景 */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/school/bg-vert.png"
+          src="/school/bg-vert.webp"
           alt=""
           className="w-full h-full object-cover object-center block"
           draggable={false}
@@ -158,7 +158,7 @@ export default function SchoolIntro() {
         {/* 画像（基準面） */}
         <div className="relative z-10 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
           <img
-            src="/school/campus-hero-1.jpg"
+            src="/school/campus-hero-1.webp"
             alt="ガチ文高等学校の様子 1"
             className="w-full h-auto object-cover aspect-[16/9] block"
             draggable={false}
@@ -319,7 +319,7 @@ export default function SchoolIntro() {
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
         >
           <img
-            src="/school/campus-hero-2.jpg"
+            src="/school/campus-hero-2.webp"
             alt="ガチ文高等学校の様子 2"
             className="w-full h-auto object-cover aspect-[16/9] block"
             draggable={false}

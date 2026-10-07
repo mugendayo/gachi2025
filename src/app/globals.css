@@ -63,7 +63,9 @@ html, body {
 
 @font-face {
   font-family: 'ChalkHand';
-  src: url('/fonts/sora.ttf') format('truetype');
+  /* 空とひこうき（鈴木メモ）のサブセット：.font-chalk が付く要素の文字（StageIntroSection / TimeScheduleSection / data/site.ts）
+     ＋かな・英数・記号。ここに無い漢字は sans-serif で出るので、手書き部分の文言に新しい漢字を足したら作り直す */
+  src: url('/fonts/sora-subset.woff2') format('woff2');
   font-display: swap;
 }
 
