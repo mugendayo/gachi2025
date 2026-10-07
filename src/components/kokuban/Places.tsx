@@ -106,7 +106,7 @@ export function Stage() {
   );
 }
 
-/* ---------- 学校の外：THG のゲームの箱の裏（公式の事実・活字・ゲームを通らずに読める） ---------- */
+/* ---------- 門の外：今年の開催概要（文化祭のしおり。公式の事実・活字・ゲームを通らずに読める） ---------- */
 export function PackageBox() {
   const d4 = site.days[site.days.length - 1];
   const facts: [string, string][] = [
@@ -120,10 +120,9 @@ export function PackageBox() {
     ["打ち上げ", `${site.afterPartyLabel}（非公開）`],
   ];
   return (
-    <section className="kb-place kb-outside" aria-label="学校の外">
+    <section className="kb-place kb-outside" aria-label="開催概要">
       <article className="kb-box" aria-labelledby="kb-box-title">
         <header className="kb-box-head">
-          <p className="kb-box-maker">ThanatosGames</p>
           <h2 id="kb-box-title">{site.title}</h2>
           <p className="kb-box-concept">{site.concept}</p>
         </header>
@@ -164,11 +163,6 @@ export function PackageBox() {
         </section>
 
         <JoinButton className="kb-box-join">参加する</JoinButton>
-
-        <footer className="kb-box-foot">
-          <span className="kb-barcode" aria-hidden />
-          <span>© ThanatosGames</span>
-        </footer>
       </article>
     </section>
   );

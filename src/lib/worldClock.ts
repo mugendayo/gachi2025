@@ -266,6 +266,8 @@ export function bootScript(): string {
         if (sessionStorage.getItem(gateKey) === "open") gate = "open";
       } catch (e) {}
       room.dataset.gate = gate;
+      // 検分用の表示（〔本人〕の枠など）は Preview と手元だけ
+      if (!/(^|\.)gachibunkasai\.com$/.test(location.hostname)) room.dataset.debug = "1";
       const s = core(now, cfg);
       room.dataset.phase = s.phase;
       room.dataset.day = s.dayKey;

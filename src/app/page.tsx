@@ -5,7 +5,8 @@ import { site } from "@/data/site";
 import { bootScript } from "@/lib/worldClock";
 import Entry from "@/components/entry/Entry";
 import Classroom from "@/components/kokuban/Classroom";
-import { BackOfRoom, Corridor, PackageBox, Staffroom, Stage } from "@/components/kokuban/Places";
+import { BackOfRoom, Corridor, Staffroom, Stage } from "@/components/kokuban/Places";
+import Outside from "@/components/outside/Outside";
 import BottomZone from "@/components/BottomZone";
 import RewardSection from "@/components/RewardSection";
 import Inventory from "@/components/Inventory";
@@ -66,9 +67,9 @@ export default function Page() {
         <Staffroom />
         <Stage />
       </div>
-      {/* 門の外＝現実の世界線：ThanatosGames が作っている「ガチ文化祭」というゲームの箱（公式の事実・参加する）。門をくぐると消える */}
+      {/* 門の外＝現実の世界線：いつでも高校生に戻れる社会をつくるために、いろんな場所で文化祭をつくっている（理念・きっかけ・実績・今年の開催概要・参加する）。門をくぐると消える */}
       <div className="kb-real">
-        <PackageBox />
+        <Outside />
       </div>
       <div className="kb-school">
         <BottomZone />
