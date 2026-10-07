@@ -7,7 +7,8 @@
 // 入口のタイムスリップで着いたとき、日付と残り日数が書かれる。
 // 初期化はインラインスクリプトに頼らない（ページ内移動で戻ったときはスクリプトが走らないため、ここでも同じ初期化をする）。
 import { useEffect } from "react";
-import { clockConfig, clockCore, type ClockState } from "@/lib/worldClock";
+import { clockConfig, clockCore, debugAllowed, type ClockState } from "@/lib/worldClock";
+import { SCENE_EVENT } from "./Signboard";
 import { ARRIVE_EVENT, CLOCK_EVENT, now, syncWithServer } from "@/lib/now";
 import { site } from "@/data/site";
 
@@ -66,8 +67,11 @@ export default function BoardFx() {
     const params = new URLSearchParams(location.search);
     // ?motion=1：動きを減らす設定の端末でも演出を見る（検分用）
     const reduce = !params.has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mode = params.get("return") === "rewrite" ? "rewrite" : "burn";
     let state: ClockState = clockCore(now(), clockConfig);
+    // 戻り方：深夜だけ「誰もいないのに書き直される」、ほかの帯は焼き付き（?return=rewrite は検分用・本番では効かない）
+    const forceRewrite = debugAllowed() && params.get("return") === "rewrite";
+    const modeOf = (s: ClockState) => (forceRewrite || s.scene === "shinya" ? "rewrite" : "burn");
+    let mode = modeOf(state);
     let disposed = false;
     const intervals: number[] = [];
     const timeouts = new Set<number>();
@@ -161,6 +165,10 @@ export default function BoardFx() {
       world.dataset.phase = s.phase;
       world.dataset.day = s.dayKey;
       world.dataset.band = s.band;
+      world.dataset.scene = s.scene;
+      world.dataset.hands = String(s.handCount);
+      if (!prev || prev.scene !== s.scene || prev.handNight !== s.handNight)
+        window.dispatchEvent(new CustomEvent(SCENE_EVENT, { detail: { scene: s.scene, handNight: s.handNight } }));
       const st = world.style;
       st.setProperty("--sun", s.sun.toFixed(3));
       st.setProperty("--warm", s.warm.toFixed(3));
@@ -788,20 +796,34 @@ export default function BoardFx() {
     board.addEventListener("pointerup", endTouch);
     board.addEventListener("pointercancel", endTouch);
 
-    // 消灯のとき、最初に光が少しだけ揺れて「触れる」ことを示す（説明文は置かない）
+    // 消灯のとき、懐中電灯がひとりでに少し揺れて「触れる」ことを示す（説明文は置かない）。
+    // 看板に手形があれば、いちばん近い手形を照らして止まる
     const wobble = () => {
       if (reduce || lightMoved || state.dark < 0.5) return;
       const b = board.getBoundingClientRect();
       const r = room.getBoundingClientRect();
-      const cx = b.left - r.left + b.width * 0.42;
-      const cy = b.top - r.top + Math.min(b.height * 0.4, 360);
+      if (!b.width) return;
+      let ex = b.left - r.left + b.width * 0.42;
+      let ey = b.top - r.top + Math.min(b.height * 0.4, 360);
+      const hands = [...room.querySelectorAll<SVGElement>(".kb-sign-front .kb-hp")].filter((h) => getComputedStyle(h).opacity !== "0");
+      if (hands.length) {
+        const vh = window.innerHeight;
+        const near = hands
+          .map((h) => h.getBoundingClientRect())
+          .sort((p, q) => Math.abs(p.top - vh * 0.6) - Math.abs(q.top - vh * 0.6))[0];
+        ex = near.left - r.left + near.width / 2;
+        ey = near.top - r.top + near.height / 2;
+      }
+      const sx = ex - 120;
+      const sy = ey - 80;
       const t0 = performance.now();
       const step = () => {
         if (lightMoved || disposed) return;
         const t = (performance.now() - t0) / 1000;
         const k = Math.max(0, 1 - t / 2.6);
-        room.style.setProperty("--fx", `${cx + Math.sin(t * 5) * 46 * k}px`);
-        room.style.setProperty("--fy", `${cy + Math.cos(t * 3.4) * 22 * k}px`);
+        const e = 1 - k * k;
+        room.style.setProperty("--fx", `${sx + (ex - sx) * e + Math.sin(t * 5) * 40 * k}px`);
+        room.style.setProperty("--fy", `${sy + (ey - sy) * e + Math.cos(t * 3.4) * 20 * k}px`);
         if (k > 0) requestAnimationFrame(step);
       };
       step();
@@ -823,6 +845,13 @@ export default function BoardFx() {
       const next = clockCore(now(), clockConfig);
       state = next;
       apply(next, prev);
+      const nextMode = modeOf(next);
+      if (nextMode !== mode) {
+        // 深夜に入る・明ける：戻り方が変わるので、焼き付きの層を描き直す
+        mode = nextMode;
+        if (busy || active) pendingLayout = true;
+        else later(layout, 0);
+      }
       const dayTurned = next.todayLabel !== prev.todayLabel;
       if (dayTurned && next.phase !== "after") {
         // 0時：黒板消しで「あと◯日」と日付を消して、見えない手が書き直す
@@ -843,15 +872,24 @@ export default function BoardFx() {
       const t = now();
       const j = new Date(t + 9 * 3600000);
       const nextMidnight = Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate() + 1) - 9 * 3600000;
-      const next = [clockConfig.unlockTs, clockConfig.afterTs, nextMidnight].filter((x) => x > t).sort((a, b) => a - b)[0];
+      // 時間割の時刻のある行の境目（帯の切り替わり）と、毎正時（手形が増える）
+      const dayStart = nextMidnight - 86400000;
+      const rows = clockConfig.sceneStarts.map(([, m]) => dayStart + m * 60000);
+      const nextHour = Math.floor((t + 9 * 3600000) / 3600000) * 3600000 + 3600000 - 9 * 3600000;
+      const next = [clockConfig.unlockTs, clockConfig.afterTs, nextMidnight, nextHour, ...rows]
+        .filter((x) => x > t)
+        .sort((a, b) => a - b)[0];
       if (next === undefined) return;
       const ms = next - t + 50;
       if (ms < MAX_TIMEOUT) boundaryId = later(recompute, ms);
     };
 
     const onArrive = () => {
-      // 入口のタイムスリップで着いた：見えない手が今日の日付と残り日数を書く（門が開いた直後なので測り直してから）
+      // 入口のタイムスリップで着いた：見えない手が今日の日付と残り日数を書く（門が開いた直後なので測り直してから）。
+      // 消灯中なら、懐中電灯がひとりでに揺れて手形を照らす
       if (Math.abs(board.clientWidth - W) + Math.abs(board.clientHeight - H) > 2) layout();
+      lightMoved = false;
+      later(wobble, reduce ? 0 : 200);
       later(() => handWrite(["date", "count"], false), reduce ? 0 : 350);
     };
 
@@ -866,7 +904,7 @@ export default function BoardFx() {
       } catch {}
       if (disposed) return;
       layout();
-      wobble();
+      if (world.dataset.gate === "open") wobble();
     };
     boot();
 

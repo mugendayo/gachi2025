@@ -3,6 +3,7 @@
 import { site } from "@/data/site";
 import { boardTextScript, buildTimeBoardText } from "@/lib/worldClock";
 import BoardFx from "./BoardFx";
+import { HandSymbol, SignFront } from "./Signboard";
 
 /** チョーク（粉受けに置いてある色。拾うと黒板に書ける） */
 const CHALKS = [
@@ -84,6 +85,15 @@ export default function Classroom() {
           </span>
         </p>
 
+        {/* 帯ごとの黒板の一行〔本人〕（空なら出さない。いまの帯の1本だけを CSS で見せる） */}
+        {Object.entries(site.sceneCopy)
+          .filter(([, c]) => c.board)
+          .map(([k, c]) => (
+            <p key={k} className={`kb-scene-line kb-scene-${k}`}>
+              <span data-chalk="note">{c.board}</span>
+            </p>
+          ))}
+
         {/* 誰かの落書き（今年のコンセプト） */}
         <p className="kb-doodle">
           <span data-chalk="doodle" data-rot="-8">
@@ -106,6 +116,10 @@ export default function Classroom() {
         </div>
         <button type="button" className="kb-eraser" data-tool="eraser" aria-label="黒板消し" aria-pressed="true" />
       </div>
+
+      {/* 準備中の看板（夜は黒板の下に表向き） */}
+      <SignFront />
+      <HandSymbol />
 
       <div className="kb-night" aria-hidden />
       <BoardFx />

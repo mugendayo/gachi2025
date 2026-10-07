@@ -1064,3 +1064,244 @@
     font-size: 22px;
   }
 }
+
+/* ========================= 時間帯の仕掛け ========================= */
+/* 準備中の看板：夜（文化祭準備〜明け方）は黒板の下に表向き、昼は教室の後ろで表を壁に向ける */
+.kb-sign {
+  position: relative;
+  z-index: 2;
+}
+.kb-sign-front {
+  display: none;
+  width: min(92%, 560px);
+  margin: 28px auto 0;
+}
+.kb-world[data-scene="junbi"] .kb-sign-front,
+.kb-world[data-scene="shoto"] .kb-sign-front,
+.kb-world[data-scene="shinya"] .kb-sign-front,
+.kb-world[data-scene="akegata"] .kb-sign-front {
+  display: block;
+}
+.kb-sign-board {
+  position: relative;
+  aspect-ratio: 2.1 / 1;
+  overflow: hidden;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(92deg, rgba(120, 80, 40, 0.07) 0 3px, transparent 3px 11px),
+    linear-gradient(#e2c79c, #d2b081);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 2px rgba(110, 75, 40, 0.25);
+  filter: brightness(calc(0.55 + 0.45 * var(--amb)));
+  transform: rotate(-1.2deg);
+}
+.kb-sign-paint {
+  position: absolute;
+  border-radius: 2px;
+}
+.kb-sign-paint-a {
+  left: 12%;
+  top: 30%;
+  width: 52%;
+  height: 32%;
+  background: #f2eee2;
+  opacity: 0.92;
+  clip-path: polygon(0 4%, 96% 0, 100% 88%, 70% 100%, 2% 96%);
+}
+.kb-sign-paint-b {
+  right: 9%;
+  bottom: 11%;
+  width: 22%;
+  height: 24%;
+  background: #df5a3e;
+  opacity: 0.85;
+  clip-path: polygon(6% 0, 100% 10%, 92% 100%, 0 84%);
+}
+.kb-sign-sketch {
+  position: absolute;
+  inset: 16% 9%;
+  border: 2px dashed rgba(60, 40, 20, 0.32);
+  border-radius: 8px;
+}
+.kb-sign-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 36%;
+  margin: 0;
+  text-align: center;
+  color: #2a1d12;
+  font: 900 clamp(18px, 5vw, 32px) / 1.1 var(--font-print);
+}
+.kb-sign-paper {
+  height: 14px;
+  margin: -4px -5% 0;
+  background: repeating-linear-gradient(90deg, #dcd8cc 0 34px, #cbc6b8 34px 36px);
+  opacity: 0.85;
+  filter: brightness(calc(0.55 + 0.45 * var(--amb)));
+}
+/* 青い手形（数は data-hands。数字は出さない） */
+.kb-hp {
+  position: absolute;
+  width: 11%;
+  aspect-ratio: 100 / 120;
+  fill: #1d3fbf;
+  opacity: 0;
+  mix-blend-mode: multiply;
+}
+.kb-world[data-hands="1"] .kb-sign-front .kb-hp:nth-of-type(-n + 1) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="2"] .kb-sign-front .kb-hp:nth-of-type(-n + 2) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="3"] .kb-sign-front .kb-hp:nth-of-type(-n + 3) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="4"] .kb-sign-front .kb-hp:nth-of-type(-n + 4) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="5"] .kb-sign-front .kb-hp:nth-of-type(-n + 5) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="6"] .kb-sign-front .kb-hp:nth-of-type(-n + 6) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="7"] .kb-sign-front .kb-hp:nth-of-type(-n + 7) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="8"] .kb-sign-front .kb-hp:nth-of-type(-n + 8) {
+  opacity: 0.84;
+}
+.kb-world[data-hands="9"] .kb-sign-front .kb-hp:nth-of-type(-n + 9) {
+  opacity: 0.84;
+}
+.kb-sign-back {
+  display: block;
+  position: relative;
+  z-index: 1;
+  width: min(62vw, 300px);
+  justify-self: start;
+  margin: -6px 0 0 6%;
+}
+.kb-sign-back .kb-sign-board {
+  background:
+    repeating-linear-gradient(88deg, rgba(120, 80, 40, 0.06) 0 2px, transparent 2px 9px),
+    linear-gradient(#c9ab7c, #b8976a);
+  transform: rotate(2deg);
+}
+.kb-sign-brace {
+  position: absolute;
+  background: #a07c4f;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+.kb-sign-brace-a {
+  left: 6%;
+  right: 6%;
+  top: 46%;
+  height: 9%;
+}
+.kb-sign-brace-b {
+  top: 8%;
+  bottom: 8%;
+  left: 47%;
+  width: 6%;
+}
+.kb-sign-text-back {
+  top: 64%;
+  font: 700 clamp(13px, 3.4vw, 18px) / 1.2 var(--font-print);
+  color: #1b1b1b;
+}
+.kb-world[data-scene="junbi"] .kb-sign-back,
+.kb-world[data-scene="shoto"] .kb-sign-back,
+.kb-world[data-scene="shinya"] .kb-sign-back,
+.kb-world[data-scene="akegata"] .kb-sign-back {
+  display: none;
+}
+
+/* 教室の後ろのテレビ：点いている（昼・準備・消灯）／電源オフ（朝・超新星祭・夕方）／砂嵐（深夜・明け方） */
+.kb-tv-snow,
+.kb-tv-off {
+  position: absolute;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+}
+.kb-tv-off {
+  background:
+    radial-gradient(120% 100% at 30% 20%, rgba(255, 255, 255, 0.09), transparent 45%),
+    #07090a;
+}
+.kb-tv-snow {
+  background-color: #222;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px;
+  filter: grayscale(1) contrast(1.6) brightness(0.95);
+  animation: kb-snow 0.3s steps(4) infinite;
+}
+@keyframes kb-snow {
+  0% { background-position: 0 0; }
+  25% { background-position: -47px 23px; }
+  50% { background-position: 31px -61px; }
+  75% { background-position: -83px -17px; }
+  100% { background-position: 0 0; }
+}
+.kb-world[data-scene="asa"] .kb-tv-off,
+.kb-world[data-scene="choshinsei"] .kb-tv-off,
+.kb-world[data-scene="yugata"] .kb-tv-off,
+.kb-world[data-scene="shinya"] .kb-tv-snow,
+.kb-world[data-scene="akegata"] .kb-tv-snow {
+  display: block;
+}
+.kb-tv-led {
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: 6px auto 0;
+  border-radius: 50%;
+  background: #3a1010;
+}
+.kb-world[data-scene="asa"] .kb-tv-led,
+.kb-world[data-scene="choshinsei"] .kb-tv-led,
+.kb-world[data-scene="yugata"] .kb-tv-led {
+  background: #ff3030;
+  box-shadow: 0 0 8px rgba(255, 48, 48, 0.9);
+}
+/* 消灯：消し忘れのブラウン管だけが光り、ロッカーににじむ */
+.kb-world[data-scene="shoto"] .kb-tv-body {
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), 0 18px 30px rgba(0, 0, 0, 0.4), 0 0 90px 24px rgba(150, 185, 255, 0.22);
+}
+
+/* 職員室：消灯の帯はここだけ残業で明るい／超新星祭の帯は先生も体育館で灯りが落ちる */
+.kb-world[data-scene="shoto"] .kb-staff {
+  background: #d9d6cc;
+}
+.kb-world[data-scene="choshinsei"] .kb-staff-board {
+  filter: brightness(0.74);
+}
+
+/* 帯ごとの黒板の一行〔本人〕：いまの帯の1本だけ（準備の走り書きは消灯・深夜・明け方にも残り、朝に拭かれる） */
+.kb-scene-line {
+  display: none;
+  position: relative;
+  z-index: 4;
+  margin: 10px 0 0;
+  font-size: clamp(15px, 4vw, 21px);
+}
+.kb-world[data-scene="shinya"] .kb-scene-shinya,
+.kb-world[data-scene="akegata"] .kb-scene-akegata,
+.kb-world[data-scene="asa"] .kb-scene-asa,
+.kb-world[data-scene="choshinsei"] .kb-scene-choshinsei,
+.kb-world[data-scene="hiru"] .kb-scene-hiru,
+.kb-world[data-scene="yugata"] .kb-scene-yugata,
+.kb-world[data-scene="junbi"] .kb-scene-junbi,
+.kb-world[data-scene="shoto"] .kb-scene-junbi,
+.kb-world[data-scene="shinya"] .kb-scene-junbi,
+.kb-world[data-scene="akegata"] .kb-scene-junbi,
+.kb-world[data-scene="shoto"] .kb-scene-shoto {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kb-tv-snow {
+    animation: none;
+  }
+}
