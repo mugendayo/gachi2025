@@ -47,7 +47,7 @@ export default function Classroom() {
             <h2 className="kb-count">
               <span data-chalk="count">{day.countdown}</span>
             </h2>
-            <ol className="kb-rows">
+            <ol className="kb-rows" style={{ ["--half" as string]: Math.ceil(day.items.length / 2) }}>
               {day.items.map((row, i) => (
                 <li key={i} data-row={i} className={"smudged" in row && row.smudged ? "is-smudged" : undefined}>
                   <span className="kb-t">{row.time && <span data-chalk={"smudged" in row && row.smudged ? "smudge" : "row"}>{row.time}</span>}</span>
