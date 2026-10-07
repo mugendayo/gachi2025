@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { site } from "@/data/site";
 
 /* =========================================================
    スワイプ判定（左右40px以上・縦移動は無視）
@@ -242,7 +243,7 @@ export default function AdmissionPage() {
         <section className="py-12 md:py-16">
           <p className="text-sm font-semibold tracking-widest text-[#1E5AA8]">教育方針</p>
           <h2 className="mt-2 text-[clamp(56px,12.4vw,96px)] font-extrabold text-[#103B73] leading-tight">
-            臥薪嘗胆
+            {site.motto}
           </h2>
           <p className="mt-3 text-[15px] md:text-[16px] leading-relaxed">
             由来：苦難に耐え、志を胸に磨き続けること。困難を糧にして前へ進む姿勢を本校の基調とします。

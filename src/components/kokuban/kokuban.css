@@ -1,4 +1,4 @@
-/* 10月31日の黒板：状態の正本は世界時計 → CSS 変数（--sun --warm --lit --dark --amb --sun-az）。
+/* 教室の黒板：状態の正本は世界時計 → CSS 変数（--sun --warm --lit --dark --amb --sun-az）。
    画像を使わず、黒板・教室・光をすべて CSS と canvas で描く。 */
 
 .kb-world {
@@ -40,7 +40,7 @@
   touch-action: pan-y pinch-zoom;
 }
 
-/* 壁：時計・学級目標・非常口（消灯中は暗い幕の上に出し、暗さは各部品の filter だけで出す） */
+/* 壁：時計・掛け軸（消灯中は暗い幕の上に出し、暗さは各部品の filter だけで出す） */
 .kb-world[data-band="night"] .kb-wall {
   z-index: 9;
 }
@@ -99,39 +99,44 @@
   background: #c62828;
   transform: rotate(var(--cs));
 }
-.kb-goal {
+/* 掛け軸（教育方針）：横物の表装。本紙に四字熟語 */
+.kb-scroll {
+  position: relative;
   margin: 0;
-  padding: 6px clamp(12px, 3vw, 22px) 8px;
-  background: linear-gradient(#fffdf6, #f3efe2);
-  border: 5px solid #7a5833;
-  box-shadow: inset 0 0 0 2px #a07a4c, 0 4px 10px rgba(0, 0, 0, 0.25);
-  text-align: center;
-  color: #191919;
-  filter: brightness(calc(0.3 + 0.7 * var(--amb)));
-}
-.kb-goal figcaption {
-  font: 600 10px/1 var(--font-mincho);
-  letter-spacing: 0.4em;
-  color: #6d6556;
-}
-.kb-goal p {
-  margin-top: 4px;
-  font: 900 clamp(17px, 4.6vw, 28px) / 1.15 var(--font-mincho);
-  letter-spacing: 0.12em;
-}
-.kb-exit {
-  width: clamp(40px, 9vw, 56px);
-  height: clamp(18px, 4vw, 24px);
+  padding: 7px 10px;
+  background: linear-gradient(#6d3a2a, #5a2d20);
   border-radius: 2px;
-  background: #12a05a;
-  box-shadow: 0 0 calc(4px + 28px * var(--dark)) rgba(40, 255, 140, calc(0.15 + 0.7 * var(--dark)));
-  display: grid;
-  place-items: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.28);
+  filter: brightness(calc(0.45 + 0.55 * var(--amb)));
 }
-.kb-exit {
-  color: #fff;
-  font: 800 clamp(9px, 2.3vw, 12px) / 1 var(--font-print);
-  letter-spacing: 0.08em;
+.kb-scroll::before,
+.kb-scroll::after {
+  /* 両端の軸木 */
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 7px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #2b1a10, #5b3a22 50%, #2b1a10);
+}
+.kb-scroll::before {
+  left: -5px;
+}
+.kb-scroll::after {
+  right: -5px;
+}
+.kb-scroll p {
+  padding: 5px clamp(14px, 3.6vw, 26px) 6px;
+  background:
+    radial-gradient(120% 140% at 30% 20%, rgba(255, 255, 255, 0.5), transparent 60%),
+    #f1e9d2;
+  box-shadow: inset 0 0 0 1px rgba(120, 90, 50, 0.25);
+  color: #1a1612;
+  font: 900 clamp(19px, 5vw, 30px) / 1.15 var(--font-mincho);
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  white-space: nowrap;
 }
 
 /* 黒板 */
@@ -190,6 +195,9 @@
 .kb-cv-chalk {
   z-index: 3;
 }
+.kb-cv-doodle {
+  z-index: 5;
+}
 .kb-cv-dust {
   z-index: 6;
 }
@@ -208,112 +216,116 @@
   text-shadow: none;
 }
 
-.kb-date {
+.kb-head {
   position: relative;
   z-index: 4;
-  display: grid;
-  justify-items: end;
-  margin: 0 0 2px;
-  font-size: clamp(17px, 4.4vw, 26px);
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+  margin-bottom: clamp(10px, 2.2vh, 20px);
 }
-.kb-date > span {
-  grid-area: 1 / 1;
+.kb-date {
+  margin: 0 0 0 auto;
+  font-size: clamp(16px, 4.2vw, 25px);
 }
-.kb-today {
-  display: none;
-}
-.kb-world[data-flip="pending"] .kb-today {
-  display: inline;
-}
-.kb-world[data-flip="pending"] .kb-date-text {
-  visibility: hidden;
-}
-
-/* 表示する日（data-day）だけを出す */
-.kb-on-d1,
-.kb-on-d2,
-.kb-on-d3,
-.kb-on-d4 {
-  display: none;
-}
-.kb-world[data-day="d1"] .kb-on-d1,
-.kb-world[data-day="d2"] .kb-on-d2,
-.kb-world[data-day="d3"] .kb-on-d3,
-.kb-world[data-day="d4"] .kb-on-d4 {
-  display: block;
-}
-.kb-world[data-day] .kb-date .kb-on-d1,
-.kb-world[data-day] .kb-date .kb-on-d2,
-.kb-world[data-day] .kb-date .kb-on-d3,
-.kb-world[data-day] .kb-date .kb-on-d4 {
-  display: none;
-}
-.kb-world[data-day="d1"] .kb-date .kb-on-d1,
-.kb-world[data-day="d2"] .kb-date .kb-on-d2,
-.kb-world[data-day="d3"] .kb-date .kb-on-d3,
-.kb-world[data-day="d4"] .kb-date .kb-on-d4 {
-  display: inline;
-}
-
 .kb-count {
-  position: relative;
-  margin: 2px 0 clamp(10px, 2.4vh, 22px);
-  font-size: clamp(25px, 7.6vw, 52px);
+  margin: 0;
+  font-size: clamp(24px, 7.2vw, 50px);
   line-height: 1.15;
   font-weight: 400;
 }
 .kb-count [data-chalk] {
   color: var(--chalk-y);
 }
+
+/* 準備の3日（10/31〜11/2）。PCは3列、スマホは縦に並べる */
+.kb-days {
+  display: grid;
+  gap: clamp(14px, 3vh, 22px) 2.2em;
+}
+.kb-dayhead {
+  margin: 0 0 4px;
+  font-size: clamp(17px, 4.6vw, 24px);
+  font-weight: 400;
+}
+.kb-dayhead [data-chalk] {
+  color: var(--chalk-p);
+}
 .kb-rows {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: clamp(15px, 4.1vw, 23px);
+  font-size: clamp(14px, 3.9vw, 20px);
 }
 .kb-rows li {
   display: grid;
-  grid-template-columns: 7.2em 1fr;
+  grid-template-columns: 6.9em 1fr;
   align-items: center;
-  min-height: 1.72em;
+  min-height: 1.62em;
 }
 .kb-rows .kb-t [data-chalk] {
-  font-size: 0.92em;
+  font-size: 0.9em;
 }
 .kb-rows li.is-smudged [data-chalk] {
   opacity: 0.55;
 }
 @media (min-width: 900px) {
-  .kb-count {
-    font-size: clamp(40px, 4.4vw, 64px);
+  .kb-days {
+    grid-template-columns: repeat(3, minmax(0, max-content));
+    justify-content: space-between;
   }
   .kb-rows {
-    display: grid;
-    grid-auto-flow: column;
-    grid-template-rows: repeat(var(--half, 6), auto);
-    justify-content: start;
-    column-gap: 3.2em;
-    font-size: clamp(20px, 2.1vw, 29px);
+    font-size: clamp(15px, 1.5vw, 20px);
+  }
+  .kb-dayhead {
+    font-size: clamp(18px, 1.8vw, 24px);
   }
 }
 
-/* 去年の学級目標の消し残し */
-.kb-remnant {
+/* 最下段：本番の日 */
+.kb-finale {
   position: relative;
   z-index: 4;
-  margin: auto 0 0 4%;
-  padding-top: 18px;
-  align-self: flex-start;
-  font-size: clamp(20px, 6vw, 44px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: clamp(16px, 3vh, 28px) 0 0;
+}
+.kb-finale-date {
+  font-size: clamp(16px, 4.2vw, 24px);
+}
+.kb-finale-word {
+  font-size: clamp(34px, 10vw, 72px);
+  line-height: 1.1;
+}
+.kb-finale [data-chalk].kb-finale-word,
+.kb-finale .kb-finale-word {
+  color: var(--chalk-y);
+}
+
+/* 誰かの落書き（今年のコンセプト）。斜めに、別の手で */
+.kb-doodle {
+  position: relative;
+  z-index: 4;
+  margin: 6px 6% 0 auto;
+  align-self: flex-end;
+  font-size: clamp(22px, 6.4vw, 40px);
   pointer-events: none;
 }
-.kb-remnant [data-chalk] {
-  opacity: 0.3;
+.kb-doodle [data-chalk] {
+  display: inline-block;
+  transform: rotate(-8deg);
+  color: var(--chalk-p);
 }
 @media (min-width: 900px) {
-  .kb-remnant {
-    align-self: flex-end;
-    margin: auto 4% 0 0;
+  .kb-doodle {
+    position: absolute;
+    right: 5%;
+    bottom: 64px;
+    margin: 0;
   }
 }
 
@@ -337,7 +349,7 @@
   opacity: 0.9;
 }
 
-/* 粉受けとチョーク・黒板消し */
+/* 粉受けとチョーク・黒板消し（どちらも手に取れる道具） */
 .kb-tray {
   position: absolute;
   z-index: 5;
@@ -350,24 +362,38 @@
 }
 .kb-chalk {
   position: absolute;
-  bottom: 9px;
-  height: 6px;
+  bottom: 8px;
+  height: 7px;
+  padding: 0;
+  border: 0;
   border-radius: 3px;
+  cursor: pointer;
+  transform-origin: 50% 50%;
+}
+.kb-chalk::after {
+  /* 指で拾いやすいよう、見た目より大きい当たり判定 */
+  content: "";
+  position: absolute;
+  inset: -16px -8px -12px;
 }
 .kb-chalk-w {
-  left: 18%;
-  width: 34px;
+  left: 16%;
+  width: 36px;
   background: #f4f2ea;
 }
 .kb-chalk-y {
-  left: calc(18% + 44px);
-  width: 22px;
+  left: calc(16% + 56px);
+  width: 26px;
   background: #f1d65e;
 }
 .kb-chalk-r {
-  left: calc(18% + 74px);
-  width: 28px;
+  left: calc(16% + 98px);
+  width: 30px;
   background: #e7766c;
+}
+.kb-chalk.is-picked {
+  bottom: 14px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55), 0 0 14px rgba(255, 255, 255, 0.5);
 }
 .kb-eraser {
   position: absolute;
@@ -376,19 +402,34 @@
   bottom: -3px;
   width: 66px;
   height: 22px;
+  padding: 0;
+  border: 0;
   border-radius: 4px;
-  background:
-    linear-gradient(to bottom, #8a6440 0 55%, #e9e6dc 55% 100%);
+  background: linear-gradient(to bottom, #8a6440 0 55%, #e9e6dc 55% 100%);
   box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
+  cursor: pointer;
   transform-origin: 50% 50%;
 }
-.kb-eraser.is-moving {
+.kb-eraser::after {
+  content: "";
+  position: absolute;
+  inset: -12px -6px -10px;
+}
+.kb-eraser.is-moving,
+.kb-chalk.is-moving {
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.kb-eraser.is-held {
+.kb-eraser.is-held,
+.kb-chalk.is-held {
+  z-index: 8;
   transition: none;
   box-shadow: 0 8px 14px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+/* チョークを持っている間：黒板の上はどの向きにも書ける（スクロールしない） */
+.kb-board.is-drawing {
+  touch-action: none;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect x='9' y='-2' width='6' height='22' rx='2' transform='rotate(35 12 12)' fill='%23f4f2ea'/%3E%3C/svg%3E") 3 21, crosshair;
 }
 
 /* 窓から差す光（左の窓。太陽の向きで光の帯が教室を横切る） */
@@ -445,7 +486,7 @@
   transition: opacity 0.25s steps(3);
 }
 
-/* 消灯：非常灯の緑と月明かり。指（カーソル）が懐中電灯になる */
+/* 消灯：月明かり。指（カーソル）が懐中電灯になる。いちばん暗くても時間割は読める */
 .kb-night {
   position: absolute;
   inset: 0;
@@ -453,32 +494,32 @@
   pointer-events: none;
   background:
     radial-gradient(circle at var(--fx) var(--fy), rgba(255, 246, 220, 0.12) 0, transparent 90px),
-    radial-gradient(circle at var(--fx) var(--fy), transparent 0, transparent 80px, rgba(6, 10, 22, 0.16) 150px, rgba(6, 10, 22, 0.25) 260px),
-    radial-gradient(60% 40% at 92% 6%, rgba(40, 255, 140, 0.1), transparent 70%);
+    radial-gradient(circle at var(--fx) var(--fy), transparent 0, transparent 80px, rgba(6, 10, 22, 0.1) 150px, rgba(6, 10, 22, 0.17) 260px),
+    linear-gradient(100deg, rgba(150, 175, 220, 0.08), transparent 55%);
   opacity: var(--dark);
   transition: opacity 1.4s ease;
 }
 
-/* 解禁前の案内（機能文＝活字） */
-.kb-sealed {
-  display: none;
-  position: relative;
-  z-index: 9;
-  width: min(100%, 460px);
-  margin: 18px auto 0;
-  padding: 14px 16px 16px;
-  border-radius: 12px;
-  background: rgba(8, 10, 13, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  text-align: center;
-  font-family: var(--font-print);
+/* 蛍光灯がまたたく（点く・消える瞬間だけ） */
+.kb-world[data-flicker="on"] .kb-fluor {
+  animation: kb-flicker-on 0.8s steps(1) both;
 }
-.kb-sealed > p {
-  font-size: 14px;
-  font-weight: 700;
+.kb-world[data-flicker="off"] .kb-fluor {
+  animation: kb-flicker-off 0.6s steps(1) both;
 }
-.kb-world[data-phase="sealed"] .kb-sealed {
-  display: block;
+@keyframes kb-flicker-on {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  22% { opacity: 0.1; }
+  38% { opacity: 1; }
+  48% { opacity: 0.35; }
+  62%, 100% { opacity: 1; }
+}
+@keyframes kb-flicker-off {
+  0% { opacity: 1; }
+  25% { opacity: 0.2; }
+  45% { opacity: 0.8; }
+  70%, 100% { opacity: 0; }
 }
 
 /* ========================= 校舎（スクロール＝空間） ========================= */
@@ -953,13 +994,17 @@
   .kb-room::after,
   .kb-eraser.is-moving,
   .kb-clock,
-  .kb-goal {
+  .kb-scroll,
+  .kb-chalk.is-moving {
     transition: none;
+  }
+  .kb-world[data-flicker] .kb-fluor {
+    animation: none;
   }
 }
 
 /* 蛍光灯がつく・消える瞬間は、壁・黒板・時計・学級目標を一斉に切り替える */
-.kb-world[data-switching] :is(.kb-room, .kb-board, .kb-clock, .kb-goal) {
+.kb-world[data-switching] :is(.kb-room, .kb-board, .kb-clock, .kb-scroll) {
   transition: background-color 0.25s steps(3), filter 0.25s steps(3);
 }
 
@@ -972,12 +1017,12 @@
 /* 320〜359px：1行で収まるよう文字を小さく（canvas と1行で合わせるため折り返さない） */
 @media (max-width: 359px) {
   .kb-rows {
-    font-size: 13.5px;
+    font-size: 13px;
   }
   .kb-rows li {
     grid-template-columns: 6.4em 1fr;
   }
   .kb-count {
-    font-size: 23px;
+    font-size: 22px;
   }
 }

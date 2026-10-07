@@ -1,14 +1,21 @@
-// 入口＝教室の黒板1枚。時間割・日付・学級目標はサーバー描画の本物の文字（JSなしでも読める）。
-// 光・時計・日付の書き換え・こする動作は BoardFx が上から足す（文字は canvas に写して質感を付ける）。
+// 教室の黒板。今日の日付・本番までの残り日数・全日程（10/31〜11/2）・最下段の「ガチ文化祭！」・落書きは、
+// サーバー描画の本物の文字（JSなしでも読める）。光・時計・こする・チョークで書く・時間帯の仕掛けは BoardFx が上から足す。
 import { site } from "@/data/site";
-import { todayScript } from "@/lib/worldClock";
-import { UnlockCountdownBadge } from "@/components/UnlockTeaser";
+import { boardTextScript, buildTimeBoardText } from "@/lib/worldClock";
 import BoardFx from "./BoardFx";
 
-/** 去年の学級目標＝黒板の消し残し（2027年には2026年の concept が自動でここに来る） */
-const prevGoal = site.library.find((l) => l.year === site.year - 1)?.label ?? "";
+/** チョーク（粉受けに置いてある色。拾うと黒板に書ける） */
+const CHALKS = [
+  { key: "w", color: "#f2f0e6", name: "白いチョーク" },
+  { key: "y", color: "#f3df7a", name: "黄色いチョーク" },
+  { key: "r", color: "#f2a7a0", name: "赤いチョーク" },
+];
 
 export default function Classroom() {
+  const prepDays = site.days.slice(0, -1); // 10/31〜11/2（準備の3日）
+  const finalDay = site.days[site.days.length - 1]; // 11/3（本番）
+  const built = buildTimeBoardText();
+
   return (
     <section id="kb-classroom" className="kb-room" aria-label="教室">
       <h1 className="sr-only">{site.title}</h1>
@@ -22,67 +29,75 @@ export default function Classroom() {
           <i className="kb-hand kb-hand-m" />
           <i className="kb-hand kb-hand-s" />
         </div>
-        <figure className="kb-goal">
-          <figcaption>学級目標</figcaption>
-          <p>{site.concept}</p>
+        {/* 掛け軸：教育方針（アドミッションポリシーと同じ四字熟語） */}
+        <figure className="kb-scroll">
+          <p>{site.motto}</p>
         </figure>
-        <div className="kb-exit" aria-hidden>
-          非常口
-        </div>
       </div>
 
       <div className="kb-board" id="kb-board">
-        <p className="kb-date">
-          {/* 今日の実際の日付（直後のスクリプトが書き込む。React は中身を照合しない） */}
-          <span id="kb-today" className="kb-today" data-chalk="today" dangerouslySetInnerHTML={{ __html: "" }} suppressHydrationWarning />
-          <script dangerouslySetInnerHTML={{ __html: todayScript }} />
-          {site.days.map((d) => (
-            <span key={d.key} className={`kb-date-text kb-on-${d.key}`} data-chalk="date">
-              {d.date}
-            </span>
+        <div className="kb-head">
+          {/* 本番までの実際の日数と今日の日付（直後のスクリプトが描画前に書き込む。React は中身を照合しない） */}
+          <h2 className="kb-count">
+            <span id="kb-count" data-chalk="count" dangerouslySetInnerHTML={{ __html: built.count }} suppressHydrationWarning />
+          </h2>
+          <p className="kb-date">
+            <span id="kb-today" data-chalk="date" dangerouslySetInnerHTML={{ __html: built.today }} suppressHydrationWarning />
+          </p>
+          <script dangerouslySetInnerHTML={{ __html: boardTextScript }} />
+        </div>
+
+        <div className="kb-days">
+          {prepDays.map((day) => (
+            <section key={day.key} className="kb-dayblock" data-key={day.key} aria-label={day.date}>
+              <h3 className="kb-dayhead">
+                <span data-chalk="dayhead">{day.date}</span>
+              </h3>
+              <ol className="kb-rows">
+                {day.items.map((row, i) => (
+                  <li key={i} data-row={i} className={"smudged" in row && row.smudged ? "is-smudged" : undefined}>
+                    <span className="kb-t">{row.time && <span data-chalk={"smudged" in row && row.smudged ? "smudge" : "row"}>{row.time}</span>}</span>
+                    <span className="kb-l">{row.label && <span data-chalk="row">{row.label}</span>}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
           ))}
+        </div>
+
+        <p className="kb-finale" data-key={finalDay.key}>
+          <span className="kb-finale-date" data-chalk="finale-date">
+            {finalDay.date}
+          </span>
+          <span className="kb-finale-word" data-chalk="finale">
+            {site.boardFinale}
+          </span>
         </p>
 
-        {site.days.map((day) => (
-          <div key={day.key} className={`kb-day kb-on-${day.key}`}>
-            <h2 className="kb-count">
-              <span data-chalk="count">{day.countdown}</span>
-            </h2>
-            <ol className="kb-rows" style={{ ["--half" as string]: Math.ceil(day.items.length / 2) }}>
-              {day.items.map((row, i) => (
-                <li key={i} data-row={i} className={"smudged" in row && row.smudged ? "is-smudged" : undefined}>
-                  <span className="kb-t">{row.time && <span data-chalk={"smudged" in row && row.smudged ? "smudge" : "row"}>{row.time}</span>}</span>
-                  <span className="kb-l">{row.label && <span data-chalk="row">{row.label}</span>}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        ))}
+        {/* 誰かの落書き（今年のコンセプト） */}
+        <p className="kb-doodle">
+          <span data-chalk="doodle" data-rot="-8">
+            {site.concept}
+          </span>
+        </p>
 
-        {prevGoal && (
-          <p className="kb-remnant" aria-hidden>
-            <span data-chalk="remnant">{prevGoal}</span>
-          </p>
-        )}
-
-        <div className="kb-tray" aria-hidden>
-          <i className="kb-chalk kb-chalk-w" />
-          <i className="kb-chalk kb-chalk-y" />
-          <i className="kb-chalk kb-chalk-r" />
+        <div className="kb-tray">
+          {CHALKS.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className={`kb-chalk kb-chalk-${c.key}`}
+              data-tool="chalk"
+              data-color={c.color}
+              aria-label={c.name}
+              aria-pressed="false"
+            />
+          ))}
         </div>
-        <i className="kb-eraser" aria-hidden />
+        <button type="button" className="kb-eraser" data-tool="eraser" aria-label="黒板消し" aria-pressed="true" />
       </div>
 
       <div className="kb-night" aria-hidden />
-      {/* 解禁前：黒板は今日の日付のまま。解禁の時刻に、開いている全員の黒板で日付が書き換わる（光は時刻どおり） */}
-      <div className="kb-sealed">
-        <p>
-          {site.unlockLabel}より、
-          <wbr />
-          この先が見れます！
-        </p>
-        <UnlockCountdownBadge />
-      </div>
       <BoardFx />
     </section>
   );

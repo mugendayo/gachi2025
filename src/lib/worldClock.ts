@@ -1,5 +1,6 @@
 // 世界時計：日本時間の「いま」から、トップの教室の状態を計算する（保存しない純関数）。
-// 日付は site.world.frozenDay に止まり、時刻・太陽・灯りだけが実時刻で進む。
+// 日付も時刻も実時刻。黒板の「文化祭まであと◯日」は本番（11/3）までの実際の日数。
+// 灯りの生活リズム（蛍光灯・消灯）は、会期前は site.world.rhythmDay の時間割で、会期中はその日の時間割で決まる。
 // clockCore は自己完結（import も外の変数も使わない）。head 直後のインラインスクリプトにも
 // toString() でそのまま埋め込み、描画前に同じ計算で光の状態を決める。
 import { site } from "@/data/site";
@@ -9,13 +10,18 @@ export type Phase = "sealed" | "eve" | "live" | "after";
 export type ClockConfig = {
   unlockTs: number;
   afterTs: number;
-  frozenDay: string;
+  /** 会期前の灯りのリズムに使う日 */
+  rhythmDay: string;
+  /** 本番の日（"YYYY-MM-DD"・JST）＝カウントダウンの起点 */
+  finalDate: string;
+  /** 「文化祭まであと{n}日！」 */
+  countTpl: string;
+  /** 本番の日に黒板に書く言葉 */
+  countToday: string;
   /** 日の key → "YYYY-MM-DD"（JST） */
   eventDates: Record<string, string>;
   /** 日の key → 時刻のある行 [開始分, 終了分, 行番号, 教室に灯りがつく行か（準備・片付け）] */
   timed: Record<string, [number, number, number, boolean][]>;
-  /** 日の key → 黒板に書く日付 */
-  dateLabels: Record<string, string>;
   /** 日の key → 消灯の分（その日の時刻のある行の最後の終わり） */
   lightsOut: Record<string, number>;
   lat: number;
@@ -24,12 +30,14 @@ export type ClockConfig = {
 
 export type ClockState = {
   phase: Phase;
-  /** 黒板に出す日 */
+  /** 灯りのリズムを決める日（会期中は実際のその日） */
   dayKey: string;
   /** 今日の実際の日付（例：10月7日(水)） */
   todayLabel: string;
-  /** 黒板の日付と今日が違う＝書き換えが起きる */
-  flips: boolean;
+  /** 本番まであと何日（当日0・過ぎたら負） */
+  daysLeft: number;
+  /** 黒板の見出し（例：文化祭まであと27日！／本番の日は「ガチ文化祭の日！」／過ぎたら空） */
+  countLabel: string;
   /** 一日の中の分（0〜1439・JST） */
   minute: number;
   /** いま当てはまる、時刻のある行の番号（無ければ -1） */
@@ -55,13 +63,12 @@ export function clockCore(nowMs: number, c: ClockConfig): ClockState {
   const WD = ["日", "月", "火", "水", "木", "金", "土"];
   const j = new Date(nowMs + JST);
   const minute = j.getUTCHours() * 60 + j.getUTCMinutes();
-  const sec = j.getUTCSeconds();
   const ymd =
     j.getUTCFullYear() + "-" + String(j.getUTCMonth() + 1).padStart(2, "0") + "-" + String(j.getUTCDate()).padStart(2, "0");
   const todayLabel = j.getUTCMonth() + 1 + "月" + j.getUTCDate() + "日(" + WD[j.getUTCDay()] + ")";
 
   let phase: Phase = "eve";
-  let dayKey = c.frozenDay;
+  let dayKey = c.rhythmDay;
   const firstDay = c.eventDates[Object.keys(c.eventDates)[0]];
   if (nowMs < c.unlockTs) phase = "sealed";
   else if (nowMs >= c.afterTs) phase = "after";
@@ -80,12 +87,12 @@ export function clockCore(nowMs: number, c: ClockConfig): ClockState {
     }
   }
 
-  // 太陽：黒板の日（止まった日付）の、いまの時刻の高さと向き（下市町）
-  const dateForSun = phase === "live" ? ymd : c.eventDates[dayKey];
-  const hh = String(j.getUTCHours()).padStart(2, "0");
-  const mm = String(j.getUTCMinutes()).padStart(2, "0");
-  const ss = String(sec).padStart(2, "0");
-  const t = Date.parse(dateForSun + "T" + hh + ":" + mm + ":" + ss + "+09:00");
+  // 本番までの日数（JST の日付どうしの差）
+  const daysLeft = Math.round((Date.parse(c.finalDate + "T00:00:00Z") - Date.parse(ymd + "T00:00:00Z")) / 86400000);
+  const countLabel = daysLeft > 0 ? c.countTpl.replace("{n}", String(daysLeft)) : daysLeft === 0 ? c.countToday : "";
+
+  // 太陽：今日の、いまの時刻の高さと向き（下市町）
+  const t = nowMs;
   const rad = Math.PI / 180;
   const d = t / 86400000 + 2440587.5 - 2451545.0;
   const g = (357.529 + 0.98560028 * d) * rad;
@@ -109,19 +116,20 @@ export function clockCore(nowMs: number, c: ClockConfig): ClockState {
   // 朝日・夕日の色：太陽が地平線の少し下（-6°）から上（16°）までだけ。両端で0になり、一段で飛ばない
   const warm = sunAlt > -6 && sunAlt < 16 ? clamp(Math.min((sunAlt + 6) / 9, (16 - sunAlt) / 13)) : 0;
   // 消灯：その日の最後の時刻の行が終わってから（スイッチなので一段で切る）、朝に空が白むまで（明け方は連続で明るくなる）。
-  // 解禁前も会期後も、光は時刻どおり。消灯中も月明かりと非常灯で時間割は読める明るさを残す（暗さで読ませない）
+  // 解禁前も会期後も、光は時刻どおり。消灯中も月明かりで時間割は読める明るさを残す（暗さで読ませない）
   const out = c.lightsOut[dayKey] || 21 * 60 + 30;
   const dark = minute >= out ? 1 : minute < 12 * 60 ? clamp((-2 - sunAlt) / 4) : 0;
   const lit = dark < 0.5 && prep ? 1 : 0;
   const dayAmb = Math.max(0.3 + 0.7 * sun, lit ? 0.92 : 0);
-  const amb = dark * 0.3 + (1 - dark) * dayAmb;
+  const amb = dark * 0.4 + (1 - dark) * dayAmb;
   const band: ClockState["band"] = dark >= 0.5 ? "night" : sunAlt < -6 ? "evening" : sunAlt < 8 ? (minute < 12 * 60 ? "dawn" : "dusk") : "day";
 
   return {
     phase: phase,
     dayKey: dayKey,
     todayLabel: todayLabel,
-    flips: (phase === "eve" || phase === "sealed") && todayLabel !== c.dateLabels[dayKey],
+    daysLeft: daysLeft,
+    countLabel: countLabel,
     minute: minute,
     timedRow: timedRow,
     sunAlt: sunAlt,
@@ -145,7 +153,10 @@ const parseRange = (s: string): [number, number] | null => {
 export const clockConfig: ClockConfig = {
   unlockTs: Date.parse(site.unlockAt),
   afterTs: Date.parse(site.world.afterAt),
-  frozenDay: site.world.frozenDay,
+  rhythmDay: site.world.rhythmDay,
+  finalDate: site.world.eventDates.d4,
+  countTpl: site.countdownTemplate,
+  countToday: site.days[site.days.length - 1].countdown,
   eventDates: site.world.eventDates,
   timed: Object.fromEntries(
     site.days.map((day) => [
@@ -156,7 +167,6 @@ export const clockConfig: ClockConfig = {
       }),
     ]),
   ),
-  dateLabels: Object.fromEntries(site.days.map((day) => [day.key, day.date])),
   lightsOut: Object.fromEntries(
     site.days.map((day) => [day.key, Math.max(0, ...day.items.map((row) => parseRange(row.time)?.[1] ?? 0))]),
   ),
@@ -183,7 +193,7 @@ export function overrideOffset(search: string, realNow: number): number | null {
   return Number.isFinite(target) ? target - realNow : null;
 }
 
-/** 教室の開きタグの直後に走らせるスクリプト：描画前に光の状態を教室へ書き込む（今日の日付は todayScript が日付欄へ） */
+/** main の開きタグの直後に走らせるスクリプト：描画前に光の状態を書き込む（今日の日付と残り日数は boardTextScript が黒板へ） */
 export function bootScript(): string {
   const boot = function (cfg: ClockConfig, core: typeof clockCore) {
     try {
@@ -203,7 +213,6 @@ export function bootScript(): string {
       room.dataset.phase = s.phase;
       room.dataset.day = s.dayKey;
       room.dataset.band = s.band;
-      if (s.flips) room.dataset.flip = "pending";
       const st = room.style;
       st.setProperty("--sun", s.sun.toFixed(3));
       st.setProperty("--warm", s.warm.toFixed(3));
@@ -213,11 +222,19 @@ export function bootScript(): string {
       st.setProperty("--sun-az", s.sunAz.toFixed(1));
       st.setProperty("--ch", ((s.minute / 60) % 12) * 30 + "deg");
       st.setProperty("--cm", (s.minute % 60) * 6 + "deg");
-      (window as unknown as { __kbToday: string }).__kbToday = s.todayLabel;
+      const w = window as unknown as { __kbToday: string; __kbCount: string };
+      w.__kbToday = s.todayLabel;
+      w.__kbCount = s.countLabel;
     } catch (e) {}
   };
   return `(${boot.toString()})(${JSON.stringify(clockConfig)},${clockCore.toString()});`;
 }
 
-/** 日付欄の直後に走らせる：今日の実際の日付を書き込む（書き換えの演出の起点） */
-export const todayScript = `try{let e=document.getElementById("kb-today");if(e&&window.__kbToday)e.textContent=window.__kbToday}catch(e){}`;
+/** 黒板の見出しの直後に走らせる：今日の日付と本番までの残り日数を書き込む（描画前） */
+export const boardTextScript = `try{var a=document.getElementById("kb-today"),b=document.getElementById("kb-count");if(a&&window.__kbToday)a.textContent=window.__kbToday;if(b&&window.__kbCount!==undefined)b.textContent=window.__kbCount}catch(e){}`;
+
+/** ビルド時点の今日の日付と見出し（JS が動かないときの代わり。動けば描画前に正しい値へ書き換わる） */
+export const buildTimeBoardText = () => {
+  const s = clockCore(Date.now(), clockConfig);
+  return { today: s.todayLabel, count: s.countLabel };
+};
