@@ -1,7 +1,26 @@
 /* 入口：背景動画の全画面＋魔法陣（Entry.tsx）。接頭辞 en- で黒板（kb-）と衝突させない。
-   data-motion="on" のときだけ魔法陣が回る・光る（動きを減らす設定では止める。?motion があれば動かす）。 */
+   data-motion="on" のときだけ魔法陣が回る・光る（動きを減らす設定では止める。?motion があれば動かす）。
+   8つの時間帯（世界時計が #kb-world に書く data-scene）は、下の「時間帯」の節で CSS 変数だけを差し替えて見分ける。 */
 
 .en-root {
+  /* 時間帯の変数（既定＝昼。data-scene が無い・JS が無いときもこの見た目） */
+  --en-filter: none; /* 背景の映像とポスター */
+  --en-tint: none; /* 背景に色だけを重ねる（明るさは変えない）。block で重ねる */
+  --mc-hue: 0deg; /* 魔法陣の色相（元はシアン） */
+  --mc-sat: 1; /* 魔法陣の彩度 */
+  --mc-bright: 1; /* 魔法陣の明るさ */
+  --mc-glow: opacity(1); /* 魔法陣の外側の光（drop-shadow）。opacity(1)＝無し */
+  --mc-speed: 1; /* 回転の速さの倍率（1＝24秒で1周） */
+  --mc-dir: normal; /* 回る向き（reverse＝逆に回る） */
+  --mc-aura-in: rgba(140, 230, 255, 0.5); /* 光の輪の内側 */
+  --mc-aura-out: rgba(0, 190, 255, 0.2); /* 光の輪の外側 */
+  --mc-aura-size: -30%; /* 光の輪の広がり（負の inset） */
+  --mc-motes: none; /* 光の粒を増やす（block） */
+  --slip: #fff; /* タイムスリップの光の色 */
+  --slip-soft: rgba(255, 255, 255, 0.9);
+  --slip-rim: rgba(210, 248, 255, 0.45);
+  --slip-burst: radial-gradient(closest-side, var(--slip) 0 58%, var(--slip-soft) 70%, var(--slip-rim) 85%, transparent 100%);
+
   position: relative;
   min-height: calc(100svh - var(--bar-h, 88px));
   overflow: hidden;
@@ -29,6 +48,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: var(--en-filter);
 }
 /* 最初の HTML から正しい向きのポスターが出る（読み込まれるのは当てはまる1枚だけ） */
 .en-poster {
@@ -38,6 +58,16 @@
   .en-poster {
     background-image: url("/hero-wide-poster.jpg");
   }
+}
+/* 色だけを重ねる（mix-blend-mode: color は明るさを元の映像のまま残す） */
+.en-bg::after {
+  content: "";
+  display: var(--en-tint);
+  position: absolute;
+  inset: 0;
+  background: rgb(60, 105, 215);
+  mix-blend-mode: color;
+  opacity: 0.3;
 }
 
 /* ---------- 魔法陣 ---------- */
@@ -100,20 +130,24 @@
 }
 .en-aura {
   position: absolute;
-  inset: -30%;
+  inset: var(--mc-aura-size);
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(140, 230, 255, 0.5) 0%, rgba(0, 190, 255, 0.2) 42%, transparent 68%);
+  background: radial-gradient(circle, var(--mc-aura-in) 0%, var(--mc-aura-out) 42%, transparent 68%);
   opacity: 0.8;
 }
 
 .en-root[data-motion="on"] .en-spin {
   animation: en-spin 24s linear infinite;
+  animation-duration: calc(24s / var(--mc-speed));
+  animation-direction: var(--mc-dir);
 }
 .en-root[data-motion="on"] .en-core {
   animation: en-pulse 3.2s ease-in-out infinite;
+  animation-duration: calc(3.2s / var(--mc-speed));
 }
 .en-root[data-motion="on"] .en-aura {
   animation: en-aura 3.2s ease-in-out infinite;
+  animation-duration: calc(3.2s / var(--mc-speed));
 }
 @keyframes en-spin {
   to {
@@ -143,6 +177,59 @@
   }
 }
 
+/* 増やす光の粒（超新星祭）。色は元のシアン系で置き、魔法陣の色相と一緒に回る */
+.en-body::before,
+.en-body::after {
+  content: "";
+  display: var(--mc-motes);
+  position: absolute;
+  inset: -14%;
+  z-index: 1;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+.en-body::before {
+  background:
+    radial-gradient(circle at 92.4% 50%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px),
+    radial-gradient(circle at 71.3% 68.5%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 53.3% 84.5%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 34.3% 85.8%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px),
+    radial-gradient(circle at 17.9% 63.6%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 14.1% 42.5%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 31.5% 27.9%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px),
+    radial-gradient(circle at 42.3% 12.6%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 62.5% 28.3%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 80.4% 36.3%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px);
+}
+.en-body::after {
+  background:
+    radial-gradient(circle at 87.1% 62.1%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px),
+    radial-gradient(circle at 66.8% 91.9%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 38.4% 90.7%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 19.7% 78.8%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px),
+    radial-gradient(circle at 24.4% 51.7%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 17.2% 27.1%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 37.6% 19.6%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px),
+    radial-gradient(circle at 59% 7.7%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 68.3% 33.8%, #fff 0 1px, rgba(170, 238, 255, 0.7) 1.8px, transparent 3px),
+    radial-gradient(circle at 92.8% 49.2%, #fff 0 1.6px, rgba(170, 238, 255, 0.7) 2.6px, transparent 4.2px);
+}
+.en-root[data-motion="on"] .en-body::before {
+  animation: en-motes 2.6s ease-in-out infinite, en-spin 30s linear infinite reverse;
+}
+.en-root[data-motion="on"] .en-body::after {
+  animation: en-motes 2.6s ease-in-out -1.3s infinite, en-spin 22s linear infinite;
+}
+@keyframes en-motes {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
 /* ---------- タイムスリップの光 ---------- */
 .en-flash {
   position: fixed;
@@ -159,13 +246,7 @@
   width: 480px;
   height: 480px;
   border-radius: 9999px;
-  background: radial-gradient(
-    closest-side,
-    #fff 0 58%,
-    rgba(255, 255, 255, 0.9) 70%,
-    rgba(210, 248, 255, 0.45) 85%,
-    rgba(160, 235, 255, 0) 100%
-  );
+  background: var(--slip-burst);
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.02);
   will-change: transform, opacity;
@@ -173,6 +254,172 @@
 .en-fill {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: var(--slip);
   opacity: 0;
+}
+
+/* ---------- 時間帯（data-scene） ----------
+   変数だけを差し替える。映像の明るさは 0.55 より下げない（消灯・深夜でも映像は読める）。
+   魔法陣の色は hue-rotate で元のシアンから回す（白い芯は白のまま残る＝どの帯でも沈まない）。 */
+.kb-world[data-scene]:not([data-scene="hiru"]) .en-sigil {
+  filter: hue-rotate(var(--mc-hue)) saturate(var(--mc-sat)) brightness(var(--mc-bright)) var(--mc-glow);
+}
+
+/* 朝：映像を少し明るく。魔法陣は澄んだ白で、輪郭をくっきり */
+.kb-world[data-scene="asa"] .en-root {
+  --en-filter: brightness(1.05);
+  --mc-sat: 0.12;
+  --mc-bright: 1.08;
+  --mc-glow: drop-shadow(0 0 1.5px rgba(0, 24, 48, 0.55));
+  --mc-aura-in: rgba(230, 248, 255, 0.34);
+  --mc-aura-out: rgba(200, 236, 255, 0.1);
+}
+/* 超新星祭：金色・回転1.4倍・光の粒を増やす。光は中心から放射状の筋が弾ける */
+.kb-world[data-scene="choshinsei"] .en-root {
+  --mc-hue: -140deg;
+  --mc-sat: 1.35;
+  --mc-bright: 1.05;
+  --mc-glow: drop-shadow(0 0 6px rgba(255, 196, 64, 0.55));
+  --mc-speed: 1.4;
+  --mc-motes: block;
+  --slip: #fffaf0;
+  --slip-burst:
+    radial-gradient(closest-side, #fff 0 12%, rgba(255, 249, 228, 0.9) 22%, rgba(255, 240, 200, 0) 46%),
+    repeating-conic-gradient(rgba(255, 228, 150, 0.95) 0deg 2.6deg, rgba(255, 228, 150, 0) 4.6deg 11.25deg),
+    radial-gradient(closest-side, rgba(255, 244, 214, 0.35) 0 72%, transparent 100%);
+}
+/* 夕方：映像に夕日の色。魔法陣は橙寄り、光は橙を帯びた白 */
+.kb-world[data-scene="yugata"] .en-root {
+  --en-filter: sepia(0.35) saturate(1.2);
+  --mc-hue: -165deg;
+  --mc-sat: 1.6;
+  --mc-bright: 1.06;
+  --slip: #fff1df;
+  --slip-soft: rgba(255, 236, 214, 0.9);
+  --slip-rim: rgba(255, 196, 140, 0.45);
+}
+/* 文化祭準備：映像を少し落とす。魔法陣は蛍光灯の白（画面に入った最初の1回だけ、またたいてから点く＝下の節）。光は青白い蛍光色 */
+.kb-world[data-scene="junbi"] .en-root {
+  --en-filter: brightness(0.85);
+  --mc-hue: -40deg;
+  --mc-sat: 0.6;
+  --mc-bright: 1.06;
+  --slip: #eef7ff;
+  --slip-soft: rgba(232, 246, 255, 0.9);
+  --slip-rim: rgba(190, 228, 255, 0.45);
+}
+/* 消灯：映像を暗く（0.55 が下限）。魔法陣が画面でいちばん明るいもの＝光の輪を強める・藍色・40秒で1周。
+   光は青白で白く飛ばさない（光が引くと暗い教室に着くので、目がくらまないように） */
+.kb-world[data-scene="shoto"] .en-root {
+  --en-filter: brightness(0.55) saturate(0.5);
+  --mc-hue: 50deg;
+  --mc-sat: 1.8;
+  --mc-bright: 1.12;
+  --mc-glow: drop-shadow(0 0 12px rgba(110, 130, 255, 0.85));
+  --mc-speed: 0.6;
+  --mc-aura-in: rgba(170, 236, 255, 0.85);
+  --mc-aura-out: rgba(30, 200, 255, 0.42);
+  --mc-aura-size: -46%;
+  --slip: #b4c4e4;
+  --slip-soft: rgba(176, 194, 230, 0.9);
+  --slip-rim: rgba(130, 160, 225, 0.45);
+}
+/* 深夜：映像を暗く。魔法陣は藍色で逆に回る（60秒で1周）。光は青白 */
+.kb-world[data-scene="shinya"] .en-root {
+  --en-filter: brightness(0.55) saturate(0.4);
+  --mc-hue: 52deg;
+  --mc-sat: 2.2;
+  --mc-bright: 1;
+  --mc-glow: drop-shadow(0 0 7px rgba(56, 66, 210, 0.9));
+  --mc-speed: 0.4;
+  --mc-dir: reverse;
+  --slip: #b4c4e4;
+  --slip-soft: rgba(176, 194, 230, 0.9);
+  --slip-rim: rgba(130, 160, 225, 0.45);
+}
+/* 明け方：映像は青く沈む（色だけ青を重ねる）。魔法陣は淡い青白・回転0.6倍。光は青白 */
+.kb-world[data-scene="akegata"] .en-root {
+  --en-filter: brightness(0.62) saturate(0.5);
+  --en-tint: block;
+  --mc-hue: 25deg;
+  --mc-sat: 0.5;
+  --mc-bright: 1.06;
+  --mc-speed: 0.6;
+  --mc-aura-in: rgba(160, 225, 255, 0.4);
+  --mc-aura-out: rgba(60, 170, 255, 0.14);
+  --slip: #ccd9f0;
+  --slip-soft: rgba(200, 216, 240, 0.9);
+  --slip-rim: rgba(150, 180, 232, 0.45);
+}
+
+/* 文化祭準備：画面に入った最初の1回だけ（Entry.tsx が data-seen を付ける）、蛍光灯のように2〜3回またたいてから点く。
+   入るまでは点く前の暗さで待つ（3秒たっても印が付かなければ、またたかずに点けておく） */
+@media (prefers-reduced-motion: no-preference) {
+  .kb-world[data-scene="junbi"] .en-root:not([data-seen]) .en-body {
+    opacity: 0.3;
+    animation: en-tube-wait 0.01s 3s both;
+  }
+  .kb-world[data-scene="junbi"] .en-root[data-seen] .en-body {
+    animation: en-tube 1.3s steps(1) both;
+  }
+}
+/* 動きを減らす設定でも ?motion があれば同じ（data-motion="on"） */
+.kb-world[data-scene="junbi"] .en-root[data-motion="on"]:not([data-seen]) .en-body {
+  opacity: 0.3;
+  animation: en-tube-wait 0.01s 3s both;
+}
+.kb-world[data-scene="junbi"] .en-root[data-motion="on"][data-seen] .en-body {
+  animation: en-tube 1.3s steps(1) both;
+}
+@keyframes en-tube {
+  0% {
+    opacity: 0.3;
+  }
+  22% {
+    opacity: 0.95;
+  }
+  28% {
+    opacity: 0.3;
+  }
+  42% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 0.4;
+  }
+  58% {
+    opacity: 0.3;
+  }
+  66%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes en-tube-wait {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 蛍光灯が点く・消える瞬間（黒板が #kb-world に data-flicker を約0.9秒付ける）、入口の魔法陣も一緒にまたたく */
+.kb-world[data-flicker] .en-root[data-motion="on"] .en-sigil {
+  animation: en-flicker 0.8s steps(1) both;
+}
+@keyframes en-flicker {
+  0% {
+    opacity: 1;
+  }
+  14% {
+    opacity: 0.2;
+  }
+  26% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.35;
+  }
+  55%,
+  100% {
+    opacity: 1;
+  }
 }

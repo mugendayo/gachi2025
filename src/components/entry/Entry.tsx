@@ -5,6 +5,7 @@
 // 解禁前（UnlockTeaser の isLockedNow）は、押すとお預けのモーダルだけを出してタイムスリップしない。時刻は lib/now の now() を共有する。
 // 動きを減らす設定（prefers-reduced-motion: reduce）では動画を流さずポスターだけ・演出なしで教室へ移る。
 // URL に motion があれば reduce でも動かす（?motion=1・検分用・黒板と同じ規則）。
+// 8つの時間帯（世界時計が #kb-world に書く data-scene）の見分けは entry.css の CSS 変数だけで付ける（ここは向きと初見の印だけ読む・書く）。
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import UnlockTeaser, { UnlockCountdownBadge, isLockedNow, msUntilUnlock } from "@/components/UnlockTeaser";
@@ -193,6 +194,23 @@ export default function Entry() {
     return () => io.disconnect();
   }, [motionOn, wideBg]);
 
+  // 魔法陣が初めて画面に入ったら印（data-seen）を付ける。文化祭準備の帯では、これを合図に蛍光灯のようにまたたいてから点く（最初の1回だけ・entry.css）
+  useEffect(() => {
+    const root = rootRef.current;
+    const sigil = bodyRef.current;
+    if (!root || !sigil || root.hasAttribute("data-seen")) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        root.setAttribute("data-seen", "");
+        io.disconnect();
+      },
+      { threshold: 0.6, rootMargin: `-${Math.ceil(barBottom())}px 0px 0px 0px` },
+    );
+    io.observe(sigil);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     const ts = timers.current;
     const as = anims.current;
@@ -249,11 +267,13 @@ export default function Entry() {
     flash.style.visibility = "visible";
 
     const charge = { duration: T_WHITE, fill: "forwards" as const };
+    // 魔法陣がふだん回る向き（深夜は逆＝entry.css の --mc-dir）のまま加速する
+    const turn = getComputedStyle(body).getPropertyValue("--mc-dir").trim() === "reverse" ? -900 : 900;
     const sigilA = track(
       body.animate(
         [
           { transform: "rotate(0deg) scale(1)", filter: "brightness(1)" },
-          { transform: "rotate(900deg) scale(2.8)", filter: "brightness(2.2)" },
+          { transform: `rotate(${turn}deg) scale(2.8)`, filter: "brightness(2.2)" },
         ],
         { ...charge, easing: "cubic-bezier(.55,0,.85,.25)" },
       ),
