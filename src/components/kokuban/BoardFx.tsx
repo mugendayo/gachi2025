@@ -9,7 +9,7 @@
 import { useEffect } from "react";
 import { clockConfig, clockCore, debugAllowed, type ClockState } from "@/lib/worldClock";
 import { SCENE_EVENT } from "./Signboard";
-import { ARRIVE_EVENT, CLOCK_EVENT, now, syncWithServer } from "@/lib/now";
+import { ARRIVE_EVENT, CLOCK_EVENT, DEPART_EVENT, now, syncWithServer } from "@/lib/now";
 import { site } from "@/data/site";
 
 type Item = {
@@ -36,7 +36,8 @@ type Stroke = { t: "c" | "e"; c?: string; p: number[] };
 const EDGE = 24; // 左右の端はこすらない（LINE などの戻るスワイプと取り合わない）
 const IDLE_MS = 2400;
 const MAX_TIMEOUT = 2147483647;
-const DOODLE_KEY = `gbf_${site.year}_doodle`;
+// 落書きの保存先：列の組み方（PC＝3列／スマホ＝縦）で文字の並びが変わるので分ける。座標は x も y も黒板の幅で割る（回転・幅の変化で伸び縮みしない）
+const doodleKey = () => `gbf_${site.year}_doodle_v2:${window.matchMedia("(min-width: 900px)").matches ? "wide" : "narrow"}`;
 const DOODLE_MAX_POINTS = 12000;
 const CHALK_IDLE_MS = 10000; // 指でチョークを持ったまま放っておくと、粉受けに戻す（スクロールできなくならないように）
 
@@ -67,6 +68,7 @@ export default function BoardFx() {
     const params = new URLSearchParams(location.search);
     // ?motion=1：動きを減らす設定の端末でも演出を見る（検分用）
     const reduce = !params.has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (params.has("motion")) world.dataset.motionForced = "";
     let state: ClockState = clockCore(now(), clockConfig);
     // 戻り方：深夜だけ「誰もいないのに書き直される」、ほかの帯は焼き付き（?return=rewrite は検分用・本番では効かない）
     const forceRewrite = debugAllowed() && params.get("return") === "rewrite";
@@ -192,6 +194,7 @@ export default function BoardFx() {
     const syncText = () => {
       if (todayEl.textContent !== state.todayLabel) todayEl.textContent = state.todayLabel;
       if (countEl.textContent !== state.countLabel) countEl.textContent = state.countLabel;
+      if (countEl.parentElement) countEl.parentElement.hidden = !state.countLabel;
     };
 
     /* ---------------- canvas ---------------- */
@@ -397,6 +400,7 @@ export default function BoardFx() {
         return;
       }
       for (const it of items) {
+        if (headPending && (it.kind === "date" || it.kind === "count")) continue;
         drawText(chalk, it);
         if (it.kind === "smudge") wipeSeeded(it, 5, 6, 0.3, 0.01);
         if (mode === "burn") drawText(ghost, it, 0.2);
@@ -405,20 +409,38 @@ export default function BoardFx() {
 
     /* ---------------- 落書き（チョークで書く・その端末に残す） ---------------- */
     let strokes: Stroke[] = [];
-    try {
-      const raw = JSON.parse(localStorage.getItem(DOODLE_KEY) || "null");
-      if (raw && Array.isArray(raw.s)) strokes = raw.s;
-    } catch {}
+    let headPending = false;
+    const loadDoodle = () => {
+      strokes = [];
+      try {
+        const raw = JSON.parse(localStorage.getItem(doodleKey()) || "null");
+        if (raw && Array.isArray(raw.s))
+          strokes = raw.s.filter(
+            (st: Stroke) => st && (st.t === "c" || st.t === "e") && Array.isArray(st.p) && st.p.length >= 2 && st.p.length % 2 === 0 && st.p.every(Number.isFinite),
+          );
+      } catch {}
+    };
+    loadDoodle();
     let saveTimer = 0;
-    const saveDoodle = () => {
+    let savePending = false;
+    const flushDoodle = () => {
+      if (!savePending) return;
+      savePending = false;
       window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {
-        let total = strokes.reduce((n, s) => n + s.p.length / 2, 0);
-        while (total > DOODLE_MAX_POINTS && strokes.length > 1) total -= strokes.shift()!.p.length / 2;
-        try {
-          localStorage.setItem(DOODLE_KEY, JSON.stringify({ s: strokes }));
-        } catch {}
-      }, 400);
+      // 上限を超えたら、先に黒板消しの記録を古い順に捨て、チョークの線は最後に捨てる
+      let total = strokes.reduce((n, st) => n + st.p.length / 2, 0);
+      while (total > DOODLE_MAX_POINTS && strokes.length > 1) {
+        const i = strokes.findIndex((st) => st.t === "e");
+        total -= strokes.splice(i >= 0 ? i : 0, 1)[0].p.length / 2;
+      }
+      try {
+        localStorage.setItem(doodleKey(), JSON.stringify({ s: strokes }));
+      } catch {}
+    };
+    const saveDoodle = () => {
+      savePending = true;
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(flushDoodle, 400);
     };
     const chalkLine = (x0: number, y0: number, x1: number, y1: number, color: string) => {
       doodle.save();
@@ -443,11 +465,12 @@ export default function BoardFx() {
     const replayDoodle = () => {
       doodle.clearRect(0, 0, W, H);
       for (const s of strokes) {
+        if (s.t === "c" && s.p.length === 2) chalkLine(s.p[0] * W, s.p[1] * W, s.p[0] * W + 0.1, s.p[1] * W + 0.1, s.c || "#f2f0e6");
         for (let i = 2; i < s.p.length; i += 2) {
           const x0 = s.p[i - 2] * W;
-          const y0 = s.p[i - 1] * H;
+          const y0 = s.p[i - 1] * W;
           const x1 = s.p[i] * W;
-          const y1 = s.p[i + 1] * H;
+          const y1 = s.p[i + 1] * W;
           if (s.t === "c") chalkLine(x0, y0, x1, y1, s.c || "#f2f0e6");
           else {
             const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4));
@@ -502,7 +525,11 @@ export default function BoardFx() {
       };
       if (clip) clipTo(clip, run);
       else run();
-      if (eraseStroke) eraseStroke.p.push(norm(x1, W), norm(y1, H));
+      if (eraseStroke) {
+        const lx = eraseStroke.p[eraseStroke.p.length - 2] * W;
+        const ly = eraseStroke.p[eraseStroke.p.length - 1] * W;
+        if (Math.hypot(x1 - lx, y1 - ly) >= 4) eraseStroke.p.push(norm(x1, W), norm(y1, W));
+      }
     };
 
     /* ---------------- 道具（黒板消し・チョーク） ---------------- */
@@ -534,15 +561,12 @@ export default function BoardFx() {
       if (tool.kind === "chalk") {
         putBack(tool.el);
         tool.el.classList.remove("is-picked");
-        tool.el.setAttribute("aria-pressed", "false");
       }
       tool = next;
-      eraser.setAttribute("aria-pressed", String(next.kind === "eraser"));
       board.classList.toggle("is-drawing", next.kind === "chalk");
       window.clearTimeout(chalkIdle);
       if (next.kind === "chalk") {
         next.el.classList.add("is-picked");
-        next.el.setAttribute("aria-pressed", "true");
         armChalkIdle();
       }
     };
@@ -634,12 +658,13 @@ export default function BoardFx() {
       putBack(eraser);
     };
     /** 見えない手が書く（左から右へ） */
+    let skipWrite = false;
     const writeItem = (it: Item, dur: number) =>
       new Promise<void>((done) => {
         const t0 = performance.now();
         const step = () => {
           if (disposed) return done();
-          const p = dur ? Math.min(1, (performance.now() - t0) / dur) : 1;
+          const p = dur && !skipWrite ? Math.min(1, (performance.now() - t0) / dur) : 1;
           clearItem(it);
           drawText(chalk, it, 1, p);
           if (p < 1) requestAnimationFrame(step);
@@ -648,30 +673,48 @@ export default function BoardFx() {
         step();
       });
     const handWrite = async (kinds: string[], wipeFirst: boolean) => {
-      if (busy || state.phase === "after") return;
-      busy = true;
-      if (!reduce && wipeFirst) {
-        for (const it of items.filter((i) => kinds.includes(i.kind))) await wipeItem(it);
-        await wait(250);
-      }
-      syncText();
-      // 文字が変わると位置も変わるので、測り直してから書く
-      sizeCanvases();
-      collect();
-      drawAll();
-      replayDoodle();
-      placeNowMark();
-      const targets = items.filter((i) => kinds.includes(i.kind));
-      if (!reduce) {
-        targets.forEach(clearItem);
-        for (const it of targets) {
-          await writeItem(it, 300 + it.text.length * 90);
-          if (mode === "burn") drawText(ghost, it, 0.2);
-          await wait(160);
+      if (busy || state.phase === "after") {
+        if (headPending) {
+          headPending = false;
+          layout();
         }
+        return;
       }
-      busy = false;
-      settleLayout();
+      busy = true;
+      skipWrite = false;
+      try {
+        if (!reduce && wipeFirst) {
+          for (const it of items.filter((i) => kinds.includes(i.kind))) await wipeItem(it);
+          await wait(250);
+        }
+        syncText();
+        // 文字が変わると位置も変わるので測り直す（大きさが同じなら落書きは描き直さない）
+        const resized = Math.abs(board.clientWidth - W) + Math.abs(board.clientHeight - H) > 2;
+        if (resized) sizeCanvases();
+        collect();
+        drawAll();
+        if (resized) replayDoodle();
+        placeNowMark();
+        headPending = false;
+        const targets = items.filter((i) => kinds.includes(i.kind));
+        if (!reduce) {
+          targets.forEach(clearItem);
+          for (const it of targets) {
+            await writeItem(it, 300 + it.text.length * 90);
+            if (mode === "burn") drawText(ghost, it, 0.2);
+            if (!skipWrite) await wait(160);
+          }
+        } else {
+          for (const it of targets) {
+            drawText(chalk, it);
+            if (mode === "burn") drawText(ghost, it, 0.2);
+          }
+        }
+      } finally {
+        busy = false;
+        headPending = false;
+        settleLayout();
+      }
     };
 
     /* ---------------- 触る（こする・書く・照らす） ---------------- */
@@ -681,6 +724,7 @@ export default function BoardFx() {
     let last = { x: 0, y: 0 };
     let lightMoved = false;
     let drawStroke: Stroke | null = null;
+    let downAt = 0;
     const local = (e: PointerEvent) => {
       const b = board.getBoundingClientRect();
       return { x: e.clientX - b.left, y: e.clientY - b.top };
@@ -703,7 +747,7 @@ export default function BoardFx() {
       window.clearTimeout(idleTimer);
       capture(e);
       measureRest(eraser);
-      if (strokes.length) eraseStroke = { t: "e", p: [norm(last.x, W), norm(last.y, H)] };
+      if (strokes.some((st) => st.t === "c")) eraseStroke = { t: "e", p: [norm(last.x, W), norm(last.y, W)] };
     };
     const endTouch = () => {
       if (active === "rub") {
@@ -714,13 +758,25 @@ export default function BoardFx() {
           saveDoodle();
         }
       }
-      if (active === "draw" && drawStroke) {
-        if (drawStroke.p.length > 2) {
-          strokes.push(drawStroke);
-          saveDoodle();
+      if (active === "draw" && drawStroke && tool.kind === "chalk") {
+        const dx = Math.abs(last.x - start.x);
+        const dy = Math.abs(last.y - start.y);
+        if (lastPointerType !== "mouse" && dy > 120 && dx < dy / 4 && performance.now() - downAt < 450) {
+          // 指で速く真っすぐ縦に払った＝スクロールしたかった：線は捨てて、チョークを粉受けに戻す（次からスクロールできる）
+          replayDoodle();
+          selectTool({ kind: "eraser", el: eraser });
+        } else {
+          if (drawStroke.p.length >= 2) {
+            strokes.push(drawStroke);
+            saveDoodle();
+          }
+          // 書き終えたら手から離す（粉受けで少し浮いて光る＝まだ持っている）
+          putBack(tool.el);
+          armChalkIdle();
         }
-        armChalkIdle();
       }
+      // 黒板をただタップした：少しだけ粉が舞う（消しも書きもしない）
+      if (armed && active === null) emit(start.x, start.y, 10, 6);
       eraseStroke = drawStroke = null;
       armed = false;
       active = null;
@@ -739,7 +795,11 @@ export default function BoardFx() {
         return;
       }
       if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (busy) return;
+      if (busy) {
+        // 見えない手が書いている途中に触った：残りを一気に書き切って、すぐ触れるようにする
+        skipWrite = true;
+        return;
+      }
       const p = local(e);
       if (tool.kind === "chalk") {
         // チョーク：どの向きにも書ける（持っている間は黒板の上でスクロールしない）
@@ -748,12 +808,15 @@ export default function BoardFx() {
         active = "draw";
         capture(e);
         start = last = p;
-        drawStroke = { t: "c", c: tool.color, p: [norm(p.x, W), norm(p.y, H)] };
+        downAt = performance.now();
+        drawStroke = { t: "c", c: tool.color, p: [norm(p.x, W), norm(p.y, W)] };
         chalkLine(p.x, p.y, p.x + 0.1, p.y + 0.1, tool.color);
+        measureRest(tool.el);
         hold(tool.el, p.x, p.y, -35);
         return;
       }
-      if (p.x < EDGE || p.x > W - EDGE) return;
+      // 指は左右の端をこすらない（戻るスワイプと取り合わない）。マウスは端からでもこすれる
+      if (e.pointerType !== "mouse" && (p.x < EDGE || p.x > W - EDGE)) return;
       armed = true;
       start = last = p;
       if (e.pointerType === "mouse") {
@@ -770,7 +833,7 @@ export default function BoardFx() {
         if (Math.hypot(p.x - last.x, p.y - last.y) < 1.2) return;
         chalkLine(last.x, last.y, p.x, p.y, tool.color);
         if (Math.random() < 0.15) emit(p.x, p.y, 4, 1);
-        drawStroke.p.push(norm(p.x, W), norm(p.y, H));
+        drawStroke.p.push(norm(p.x, W), norm(p.y, W));
         hold(tool.el, p.x, p.y, -35);
         last = p;
         return;
@@ -780,8 +843,9 @@ export default function BoardFx() {
         // 指：横に動いたときだけこする（縦はスクロールに任せる）
         const dx = Math.abs(p.x - start.x);
         const dy = Math.abs(p.y - start.y);
-        if (dx < 6 && dy < 6) return;
-        if (dy >= dx) {
+        // はっきり横（水平から約27°以内）のときだけこする。斜めに始めたスクロールで日程を削らない
+        if (Math.max(dx, dy) < 12) return;
+        if (dx < dy * 2) {
           armed = false;
           return;
         }
@@ -876,7 +940,9 @@ export default function BoardFx() {
       const dayStart = nextMidnight - 86400000;
       const rows = clockConfig.sceneStarts.map(([, m]) => dayStart + m * 60000);
       const nextHour = Math.floor((t + 9 * 3600000) / 3600000) * 3600000 + 3600000 - 9 * 3600000;
-      const next = [clockConfig.unlockTs, clockConfig.afterTs, nextMidnight, nextHour, ...rows]
+      const dayRows = (clockConfig.timed[state.dayKey] || []).flatMap(([a, b]) => [dayStart + a * 60000, dayStart + b * 60000]);
+      const out = dayStart + (clockConfig.lightsOut[state.dayKey] || 0) * 60000;
+      const next = [clockConfig.unlockTs, clockConfig.afterTs, nextMidnight, nextHour, out, ...rows, ...dayRows]
         .filter((x) => x > t)
         .sort((a, b) => a - b)[0];
       if (next === undefined) return;
@@ -890,8 +956,40 @@ export default function BoardFx() {
       if (Math.abs(board.clientWidth - W) + Math.abs(board.clientHeight - H) > 2) layout();
       lightMoved = false;
       later(wobble, reduce ? 0 : 200);
-      later(() => handWrite(["date", "count"], false), reduce ? 0 : 350);
+      later(() => handWrite(["date", "count"], false), reduce ? 0 : 150);
     };
+    const onDepart = () => {
+      // タイムスリップの真っ白の瞬間：門が開いた直後なので測り直し、見出し（日付・残り日数）だけ空にしておく
+      if (Math.abs(board.clientWidth - W) + Math.abs(board.clientHeight - H) > 2) {
+        sizeCanvases();
+        collect();
+        replayDoodle();
+        restOf.clear();
+      }
+      headPending = true;
+      drawAll();
+      placeNowMark();
+    };
+    // 配信元の時刻での補正：演出なしで合わせる（読み込み直後に0時の黒板消しを走らせない）
+    const onClock = () => {
+      if (disposed) return;
+      const prev = state;
+      state = clockCore(now(), clockConfig);
+      apply(state, prev);
+      mode = modeOf(state);
+      syncText();
+      if (busy || active) pendingLayout = true;
+      else layout();
+      scheduleBoundary();
+    };
+    // 列の組み方が変わる幅をまたいだら、その組み方の落書きを読み直す
+    const wideMq = window.matchMedia("(min-width: 900px)");
+    const onWide = () => {
+      flushDoodle();
+      loadDoodle();
+      later(layout, 250);
+    };
+    wideMq.addEventListener("change", onWide);
 
     const boot = async () => {
       apply(state);
@@ -909,8 +1007,10 @@ export default function BoardFx() {
     boot();
 
     window.addEventListener(ARRIVE_EVENT, onArrive);
+    window.addEventListener(DEPART_EVENT, onDepart);
+    window.addEventListener("pagehide", flushDoodle);
     // 端末の時計を、配信元の時刻で1回だけ補正する（?t= のときはしない・lib/now が共有）
-    window.addEventListener(CLOCK_EVENT, recompute);
+    window.addEventListener(CLOCK_EVENT, onClock);
     syncWithServer();
 
     // 動きを止めた人には秒針を見せず、針の更新も間引く
@@ -934,11 +1034,14 @@ export default function BoardFx() {
       window.clearTimeout(idleTimer);
       window.clearTimeout(rto);
       window.clearTimeout(chalkIdle);
-      window.clearTimeout(saveTimer);
+      flushDoodle();
       cancelAnimationFrame(raf);
       ro.disconnect();
+      wideMq.removeEventListener("change", onWide);
       window.removeEventListener(ARRIVE_EVENT, onArrive);
-      window.removeEventListener(CLOCK_EVENT, recompute);
+      window.removeEventListener(DEPART_EVENT, onDepart);
+      window.removeEventListener("pagehide", flushDoodle);
+      window.removeEventListener(CLOCK_EVENT, onClock);
       board.removeEventListener("pointerdown", onDown);
       room.removeEventListener("pointermove", onMove);
       board.removeEventListener("pointerup", endTouch);

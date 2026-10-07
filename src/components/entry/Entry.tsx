@@ -7,9 +7,8 @@
 // URL に motion があれば reduce でも動かす（?motion=1・検分用・黒板と同じ規則）。
 // 8つの時間帯（世界時計が #kb-world に書く data-scene）の見分けは entry.css の CSS 変数だけで付ける（ここは向きと初見の印だけ読む・書く）。
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { AnimatePresence } from "framer-motion";
 import UnlockTeaser, { UnlockCountdownBadge, isLockedNow, msUntilUnlock } from "@/components/UnlockTeaser";
-import { ARRIVE_EVENT, CLOCK_EVENT } from "@/lib/now";
+import { ARRIVE_EVENT, CLOCK_EVENT, DEPART_EVENT } from "@/lib/now";
 import { applyGate, openGate } from "@/lib/gate";
 import "./entry.css";
 
@@ -220,7 +219,10 @@ export default function Entry() {
     };
   }, []);
 
-  const closeTeaser = useCallback(() => setShowTeaser(false), []);
+  const closeTeaser = useCallback(() => {
+    setShowTeaser(false);
+    document.querySelector<HTMLButtonElement>(".en-sigil")?.focus({ preventScroll: true });
+  }, []);
 
   const later = (fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -304,8 +306,9 @@ export default function Entry() {
     const fillIn = track(fill.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 700, easing: "ease-in", fill: "both" }));
 
     later(() => {
-      // 真っ白：教室へ移り、入口の演出を元に戻す（もう画面の外なので見えない）
+      // 真っ白：教室へ移り、入口の演出を元に戻す（もう画面の外なので見えない）。黒板には見出しを空けてもらう
       goToClassroom();
+      window.dispatchEvent(new Event(DEPART_EVENT));
       sigilA.cancel();
       bgA.cancel();
       burstA.cancel();
@@ -374,7 +377,10 @@ export default function Entry() {
             <Sigil />
           </span>
         </button>
-        {locked && <UnlockCountdownBadge />}
+        {/* 解禁前のカウントダウン：描画前に書かれる data-phase="sealed" で最初から枠を出す（読み込み後に魔法陣が跳ねない） */}
+        <div className="en-badge">
+          <UnlockCountdownBadge />
+        </div>
       </div>
 
       {/* タイムスリップの光（公式バーごと画面全体を覆う。ふだんは見えない） */}
@@ -383,7 +389,7 @@ export default function Entry() {
         <div ref={fillRef} className="en-fill" />
       </div>
 
-      <AnimatePresence>{showTeaser && <UnlockTeaser onClose={closeTeaser} />}</AnimatePresence>
+      {showTeaser && <UnlockTeaser onClose={closeTeaser} />}
     </section>
   );
 }

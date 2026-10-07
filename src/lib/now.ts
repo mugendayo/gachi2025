@@ -47,3 +47,6 @@ export function syncWithServer() {
 
 /** 入口のタイムスリップが終わって教室に着いたとき、入口から送るイベント */
 export const ARRIVE_EVENT = "kb:arrive";
+
+/** 入口のタイムスリップで真っ白になった瞬間（教室へ移った直後）に、入口から送るイベント */
+export const DEPART_EVENT = "kb:depart";

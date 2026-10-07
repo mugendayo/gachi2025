@@ -101,20 +101,25 @@ export default function Classroom() {
           </span>
         </p>
 
-        <div className="kb-tray">
-          {CHALKS.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              className={`kb-chalk kb-chalk-${c.key}`}
-              data-tool="chalk"
-              data-color={c.color}
-              aria-label={c.name}
-              aria-pressed="false"
-            />
-          ))}
+        {/* 粉受け（チョークと黒板消し）。スマホでは黒板が画面にある間、画面の下に貼り付く。
+            指・マウスで使う道具なので、キーボードと読み上げの対象からは外す（読み上げの正本は黒板の文字） */}
+        <div className="kb-ledge">
+          <div className="kb-tray">
+            {CHALKS.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                className={`kb-chalk kb-chalk-${c.key}`}
+                data-tool="chalk"
+                data-color={c.color}
+                aria-label={c.name}
+                aria-hidden="true"
+                tabIndex={-1}
+              />
+            ))}
+          </div>
+          <button type="button" className="kb-eraser" data-tool="eraser" aria-label="黒板消し" aria-hidden="true" tabIndex={-1} />
         </div>
-        <button type="button" className="kb-eraser" data-tool="eraser" aria-label="黒板消し" aria-pressed="true" />
       </div>
 
       {/* 準備中の看板（夜は黒板の下に表向き） */}

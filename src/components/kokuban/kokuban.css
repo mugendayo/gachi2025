@@ -39,7 +39,9 @@
   --fy: 45%;
   position: relative;
   isolation: isolate;
+  /* clip＝はみ出しは切るがスクロールの枠にはしない（粉受けの貼り付き＝sticky を止めない） */
   overflow: hidden;
+  overflow: clip;
   min-height: calc(100svh - var(--bar-h, 88px));
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -347,7 +349,7 @@
 .kb-doodle {
   position: relative;
   z-index: 4;
-  margin: 6px 6% 0 auto;
+  margin: 16px 6% 0 auto;
   align-self: flex-end;
   font-size: clamp(22px, 6.4vw, 40px);
   pointer-events: none;
@@ -363,6 +365,7 @@
     right: 5%;
     bottom: 64px;
     margin: 0;
+    font-size: clamp(24px, 3.2vw, 40px);
   }
 }
 
@@ -465,7 +468,7 @@
 }
 /* チョークを持っている間：黒板の上はどの向きにも書ける（スクロールしない） */
 .kb-board.is-drawing {
-  touch-action: none;
+  touch-action: pinch-zoom;
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect x='9' y='-2' width='6' height='22' rx='2' transform='rotate(35 12 12)' fill='%23f4f2ea'/%3E%3C/svg%3E") 3 21, crosshair;
 }
 
@@ -1020,23 +1023,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kb-hand-s,
-  .kb-art-s {
+  .kb-world:not([data-motion-forced]) :is(.kb-hand-s, .kb-art-s) {
     display: none;
   }
-  .kb-room,
-  .kb-board,
-  .kb-night,
-  .kb-sunlight,
-  .kb-fluor,
-  .kb-room::after,
-  .kb-eraser.is-moving,
-  .kb-clock,
-  .kb-scroll,
-  .kb-chalk.is-moving {
+  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
+  .kb-world:not([data-motion-forced]) .kb-room::after {
     transition: none;
   }
-  .kb-world[data-flicker] .kb-fluor {
+  .kb-world:not([data-motion-forced])[data-flicker] .kb-fluor {
     animation: none;
   }
 }
@@ -1301,7 +1295,105 @@
   display: block;
 }
 @media (prefers-reduced-motion: reduce) {
-  .kb-tv-snow {
+  .kb-world:not([data-motion-forced]) .kb-tv-snow {
     animation: none;
+  }
+}
+
+/* ========================= 粉受け（.kb-ledge） =========================
+   PC：黒板の下の縁に置く（今までどおり）。スマホ：黒板が画面にある間、画面の下に貼り付く（触れる道具がいつも見える） */
+.kb-ledge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  z-index: 6;
+}
+@media (hover: hover) {
+  .kb-chalk:not(.is-held):hover {
+    bottom: 11px;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+  }
+  .kb-eraser:not(.is-held):hover {
+    bottom: 0;
+  }
+}
+@media (max-width: 899px) {
+  .kb-board {
+    padding-bottom: 14px;
+  }
+  .kb-ledge {
+    position: sticky;
+    bottom: env(safe-area-inset-bottom, 0px);
+    height: 22px;
+    margin: auto calc(-1 * clamp(20px, 4.5vw, 52px)) -14px;
+    left: auto;
+    right: auto;
+  }
+  body.has-inv .kb-ledge {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .kb-ledge .kb-tray {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 22px;
+  }
+  .kb-ledge .kb-eraser {
+    bottom: 10px;
+  }
+  .kb-ledge .kb-chalk {
+    bottom: 11px;
+  }
+  .kb-ledge .kb-chalk.is-picked {
+    bottom: 16px;
+  }
+}
+
+/* タブレット縦（700〜899px）：全日程を2列に */
+@media (min-width: 700px) and (max-width: 899px) {
+  .kb-days {
+    grid-template-columns: repeat(2, minmax(0, max-content));
+    justify-content: space-between;
+  }
+  .kb-rows {
+    font-size: 17px;
+  }
+  .kb-dayhead {
+    font-size: 20px;
+  }
+}
+
+/* 背の低い PC 画面（ノートPC 1366x768・1536x730 など）：着いた画面に最下段まで入るよう詰める */
+@media (min-width: 900px) and (max-height: 860px) {
+  .kb-room {
+    padding-top: 8px;
+    padding-bottom: 14px;
+  }
+  .kb-wall {
+    padding-bottom: 8px;
+  }
+  .kb-clock {
+    width: 50px;
+  }
+  .kb-scroll p {
+    font-size: 24px;
+  }
+  .kb-board {
+    padding-top: 20px;
+    padding-bottom: 34px;
+  }
+  .kb-head {
+    margin-bottom: 6px;
+  }
+  .kb-rows li {
+    min-height: 1.36em;
+  }
+  .kb-finale {
+    margin-top: 10px;
+  }
+  .kb-finale-word {
+    font-size: clamp(34px, 8vh, 72px);
   }
 }

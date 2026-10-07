@@ -25,7 +25,7 @@ export default function FloorItem({ id, className = "", size = 56, tilt = -18 }:
       className={`gb-floor-item ${picking ? "is-picking" : ""} ${className}`}
       style={{ width: size, height: size, ["--tilt" as string]: `${tilt}deg` }}
     >
-      <img src={item.img} alt="" draggable={false} />
+      <img src={item.img} alt="" draggable={false} loading="lazy" decoding="async" />
       <style jsx>{`
         .gb-floor-item {
           position: relative;

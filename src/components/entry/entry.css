@@ -423,3 +423,11 @@
     opacity: 1;
   }
 }
+
+/* 解禁前のカウントダウンの枠（描画前に書かれる data-phase で出し分け。JS が無ければ出ない） */
+.en-badge {
+  display: none;
+}
+.kb-world[data-phase="sealed"] .en-badge {
+  display: block;
+}

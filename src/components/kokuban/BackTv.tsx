@@ -11,19 +11,28 @@ export default function BackTv() {
     const v = ref.current;
     if (!v) return;
     const reduce = !new URLSearchParams(location.search).has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return; // 動きを止めた人にはポスターだけ
+    if (reduce) {
+      // 動きを止めた人には静止画だけ（近づいてから付ける）
+      const io0 = new IntersectionObserver((en) => {
+        if (en[0].isIntersecting && !v.poster) v.poster = "/tv-poster.jpg";
+      }, { rootMargin: "200px 0px" });
+      io0.observe(v);
+      return () => io0.disconnect();
+    }
     const world = document.getElementById("kb-world");
     const isOn = () => ["hiru", "junbi", "shoto"].includes(world?.dataset.scene ?? "hiru");
     let visible = false;
     const sync = () => {
       if (visible && isOn()) {
-        if (!v.src) v.src = "/hero-wide.mp4";
+        if (!v.src) v.src = "/tv.mp4";
         v.play().catch(() => {});
       } else if (v.src) v.pause();
     };
     const io = new IntersectionObserver(
       (entries) => {
         visible = entries[0].isIntersecting;
+        // 近づいてから静止画を付ける（最初の画面で先読みしない）
+        if (visible && !v.poster) v.poster = "/tv-poster.jpg";
         sync();
       },
       { rootMargin: "200px 0px" },
@@ -41,7 +50,7 @@ export default function BackTv() {
     <div className="kb-tv" aria-hidden>
       <div className="kb-tv-body">
         <div className="kb-tv-screen">
-          <video ref={ref} muted loop playsInline preload="none" poster="/hero-wide-poster.jpg" />
+          <video ref={ref} muted loop playsInline preload="none" />
           <i className="kb-tv-snow" />
           <i className="kb-tv-off" />
           <i className="kb-tv-glass" />
