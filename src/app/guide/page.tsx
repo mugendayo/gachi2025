@@ -254,26 +254,26 @@ function FunCloud({ items }: { items: FunItem[] }) {
 export default function GuidePage() {
   // 後夜祭スライド
   const kouyasaiSlides: Slide[] = [
-    { src: "/images/2019.jpeg", caption: "2019 後夜祭" },
-    { src: "/images/2021.jpg", caption: "2021 後夜祭" },
-    { src: "/images/2022.jpg", caption: "2022 後夜祭" },
-    { src: "/images/2023.jpg", caption: "2023 後夜祭" },
-    { src: "/images/2024.jpg", caption: "2024 後夜祭" },
-    { src: "/images/yusei.jpeg", caption: "担当：ゆうせい（クリエイティブ学科 首席合格）" },
+    { src: "/images/2019.webp", caption: "2019 後夜祭" },
+    { src: "/images/2021.webp", caption: "2021 後夜祭" },
+    { src: "/images/2022.webp", caption: "2022 後夜祭" },
+    { src: "/images/2023.webp", caption: "2023 後夜祭" },
+    { src: "/images/2024.webp", caption: "2024 後夜祭" },
+    { src: "/images/yusei.webp", caption: "担当：ゆうせい（クリエイティブ学科 首席合格）" },
   ];
 
   // 楽しみ方（丸画像）— 画像パスは /public 配下
   const funItems: FunItem[] = [
-    { label: "制服を着る", src: "/images/uniform.jpg" },
-    { label: "やりたい企画をする", src: "/images/max.jpg" },
-    { label: "学校をサボる", src: "/images/savo.jpg" },
-    { label: "クラスで企画をする", src: "/images/make.jpeg" },
-    { label: "チルアウトする", src: "/images/chill.jpeg" },
-    { label: "情熱を注ぐ", src: "/images/passion.jpg" },
-    { label: "授業を受ける", src: "/images/class.jpg" },
-    { label: "体育祭を楽しむ", src: "/images/sports.jpg" },
-    { label: "キャラを演じる", src: "/images/role.jpeg" },
-    { label: "ライブをする", src: "/images/live.jpeg" },
+    { label: "制服を着る", src: "/images/uniform.webp" },
+    { label: "やりたい企画をする", src: "/images/max.webp" },
+    { label: "学校をサボる", src: "/images/savo.webp" },
+    { label: "クラスで企画をする", src: "/images/make.webp" },
+    { label: "チルアウトする", src: "/images/chill.webp" },
+    { label: "情熱を注ぐ", src: "/images/passion.webp" },
+    { label: "授業を受ける", src: "/images/class.webp" },
+    { label: "体育祭を楽しむ", src: "/images/sports.webp" },
+    { label: "キャラを演じる", src: "/images/role.webp" },
+    { label: "ライブをする", src: "/images/live.webp" },
   ];
 
   return (
@@ -281,7 +281,7 @@ export default function GuidePage() {
       {/* ===================== Hero ===================== */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <Image src="/images/hero.jpg" alt="" fill priority className="object-cover" />
+          <Image src="/images/hero.webp" alt="" fill priority className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-white/0" />
         </div>
         <Container>
@@ -350,7 +350,7 @@ export default function GuidePage() {
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">① ガチ文高校の生徒になってみよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>定期テストの提出や制服の投稿などで学籍番号を手に入れられます。学籍番号の付与順に、Discord限定チャンネルへアクセス可能。</p>
-          <Tips title="豆知識" icon="/images/tips/run.jpg">
+          <Tips title="豆知識" icon="/images/tips/run.webp">
             学籍番号があるとDiscord内の限定情報・連絡が見やすくなります。
           </Tips>
         </div>
@@ -368,7 +368,7 @@ export default function GuidePage() {
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">② 企画一覧を事前チェック</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>食べ物・体験・展示など、多彩な企画が並びます。チケット購入後に一覧を確認できるので、「絶対行きたい」をいくつかピックしておくと当日動きやすいです。</p>
-          <Tips title="ワンポイント" icon="/images/tips/catalog.png">行きたい企画を3つだけ決めておくと、当日の満足度がグンと上がります。</Tips>
+          <Tips title="ワンポイント" icon="/images/tips/catalog.webp">行きたい企画を3つだけ決めておくと、当日の満足度がグンと上がります。</Tips>
         </div>
       </Panel>
 
@@ -384,7 +384,7 @@ export default function GuidePage() {
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">③ 制服を準備して、放課後を満喫しよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>「自分にとっての青春」を表すものが制服です。実際の制服、憧れのデザイン、推しのコーデでもOK。</p>
-          <Tips title="写真のコツ" icon="/images/tips/uniform.JPG">背景をシンプルにして逆光を避けるだけで、SNS映えが安定します。</Tips>
+          <Tips title="写真のコツ" icon="/images/tips/uniform.webp">背景をシンプルにして逆光を避けるだけで、SNS映えが安定します。</Tips>
         </div>
       </Panel>
 
@@ -400,7 +400,7 @@ export default function GuidePage() {
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">④ オンラインホームルームに参加してみよう</h2>
         <div className="mt-4 text-[15px] leading-7 text-gray-800">
           <p>DiscordでオンラインHRを開催。先生や友達と事前に話して仲良くなるチャンス。</p>
-          <Tips title="入室の不安" icon="/images/tips/homeroom.jpg">マイクや顔出しは無理しなくてOK。聞くだけ参加から始めましょう。</Tips>
+          <Tips title="入室の不安" icon="/images/tips/homeroom.webp">マイクや顔出しは無理しなくてOK。聞くだけ参加から始めましょう。</Tips>
         </div>
       </Panel>
 
@@ -421,7 +421,7 @@ export default function GuidePage() {
             <li>運動靴</li>
             <li>お風呂セット</li>
           </ul>
-          <Tips title="忘れ物対策" icon="/images/tips/packing.jpg">チェックリスト化して、前日夜に鞄へ詰めてから寝よう！</Tips>
+          <Tips title="忘れ物対策" icon="/images/tips/packing.webp">チェックリスト化して、前日夜に鞄へ詰めてから寝よう！</Tips>
         </div>
       </Panel>
 
@@ -435,7 +435,7 @@ export default function GuidePage() {
         borderColor="#2563eb"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">1日目：集団登校・授業・クラス企画の初動</h2>
-        <Tips title="迷子になったら" icon="/images/tips/day1.jpg">集合場所の写真をスマホに保存。時間と改札名もメモに控えておくと安心。</Tips>
+        <Tips title="迷子になったら" icon="/images/tips/day1.webp">集合場所の写真をスマホに保存。時間と改札名もメモに控えておくと安心。</Tips>
       </Panel>
 
       {/* ===================== 2日目（BOOST） ===================== */}
@@ -448,7 +448,7 @@ export default function GuidePage() {
         borderColor="#f59e0b"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">2日目：準備と本気が混ざり合う日</h2>
-        <Tips title="火力の回復" icon="/images/tips/day2.jpg">睡眠・ごはん・水分・同期（誰かと共有）の4点が満タンかを毎回チェック。</Tips>
+        <Tips title="火力の回復" icon="/images/tips/day2.webp">睡眠・ごはん・水分・同期（誰かと共有）の4点が満タンかを毎回チェック。</Tips>
       </Panel>
 
       {/* ===================== 3日目（FIGHT） ===================== */}
@@ -461,7 +461,7 @@ export default function GuidePage() {
         borderColor="#ef4444"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">3日目：いよいよ本番、文化祭当日</h2>
-        <Tips title="巡り方のコツ" icon="/images/tips/day3.jpg">企画を3つ体験・1つお手伝い・1つ写真に残す。それが“最高の文化祭”黄金比！</Tips>
+        <Tips title="巡り方のコツ" icon="/images/tips/day3.webp">企画を3つ体験・1つお手伝い・1つ写真に残す。それが“最高の文化祭”黄金比！</Tips>
       </Panel>
 
       {/* ===================== 後夜祭（NIGHT） ===================== */}
@@ -474,7 +474,7 @@ export default function GuidePage() {
         borderColor="#0ea5e9"
       >
         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">後夜祭</h2>
-        <Tips title="写真スポット" icon="/images/tips/koyasai.jpg">ステージのライト後方が最高の逆光ポイント。友達と記念撮影を忘れずに！</Tips>
+        <Tips title="写真スポット" icon="/images/tips/koyasai.webp">ステージのライト後方が最高の逆光ポイント。友達と記念撮影を忘れずに！</Tips>
         <SimpleSlider slides={kouyasaiSlides} />
       </Panel>
 

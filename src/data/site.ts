@@ -107,9 +107,9 @@ export const site = {
 
   /* ---------- もちもの（ITEM）：アーツとは別 ---------- */
   items: [
-    { id: "badge", name: "超新星バッジ", img: "/stage/crest.png" },
+    { id: "badge", name: "超新星バッジ", img: "/stage/crest.webp" },
     // 全自動腕洗い：後夜祭最後の曲「ARMSONG」（KAZUNOLONELY）に登場する腕洗いになぞらえた概念アイテム。タイムマシンの絵で拾う
-    { id: "armwash", name: "全自動腕洗い", img: "/effects/time-machine.png" },
+    { id: "armwash", name: "全自動腕洗い", img: "/effects/time-machine.webp" },
     { id: "key", name: "地下室の鍵", img: "/items/key.svg" },
   ] as { id: ItemId; name: string; img: string }[],
   /** 3つ揃うと最下部に出るリンク */

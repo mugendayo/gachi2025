@@ -27,8 +27,8 @@ const YOUTUBE_FIRST = "https://www.youtube.com/watch?v=8yE9pJWsJ-QY";
 const ASSET = process.env.NEXT_PUBLIC_ASSET_PREFIX ?? ""; // 例: "", "/gachi2025" など
 
 // サムネ
-const THUMB_LAST_YEAR = `${ASSET}/thumbs/lastyear.jpg`;
-const THUMB_FIRST = `${ASSET}/thumbs/1.jpg`;
+const THUMB_LAST_YEAR = `${ASSET}/thumbs/lastyear.webp`;
+const THUMB_FIRST = `${ASSET}/thumbs/1.webp`;
 
 // デバッグ用（校章の取得フラグをリセット）
 declare global {
@@ -435,7 +435,7 @@ export default function Hero() {
                             whileTap={{ scale: 0.98 }}
                           >
                             <img
-                              src="/btn-next.png"
+                              src="/btn-next.webp"
                               alt=""
                               className="block w-full h-auto select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(0,0,0,.45)] transition will-change-transform"
                               draggable={false}
@@ -478,7 +478,7 @@ export default function Hero() {
                       <div className="absolute inset-0 grid place-items-center">
                         <div className="flex flex-col items-center -translate-y-4 w-full px-4">
                           <motion.img
-                            src="/fairy.png"
+                            src="/fairy.webp"
                             alt="妖精"
                             className="w-40 md:w-52 h-auto select-none pointer-events-none mb-5"
                             draggable={false}

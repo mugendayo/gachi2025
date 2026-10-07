@@ -28,13 +28,13 @@ export const TEACHER_PLACEHOLDER = "/og.png";
 
 // 〔仮〕＝2025年版の素材・肩書きを流用している行。本人が上書きする
 export const teachers: Teacher[] = [
-  { id: "akatsuki", name: "斬島悪暁", reading: "きりしま あくあ", title: "教務主任/数学科　教員番号000", image: "/images/teachers/1.png", thumb: "/images/teachers/akatsuki.jpg", hobby: "検定・資格収集＆勝利", motto: "教育は⬛⬛である。", subjects: "数学科 代数学専攻" },
-  { id: "ganon", name: "新山ガノンドロフ", reading: "", title: "1学年主任/国語科", image: "/images/teachers/2.png", hobby: "ガノンドロフする＆下克上", motto: "熱があるうちに打て", subjects: "国語科 現代文専攻" },
-  { id: "shinai", name: "霧島シナイ", reading: "", title: "生徒指導部/保健体育科", image: "/images/teachers/7.png", hobby: "女性鑑賞＆混浴", motto: "おにぎりは丸い", subjects: "保健体育科" },
-  { id: "zenshu", name: "然愁", reading: "ゼンシュウ", title: "2学年主任/社会科", image: "/images/teachers/8.png", hobby: "禅＆二郎系ラーメン", motto: "情熱と哀愁", subjects: "社会科 倫理専攻" },
-  { id: "hanhan", name: "令爆誕飯飯", reading: "リー・バース・イーハン", title: "進路指導部/英語科", image: "/images/teachers/3.png", hobby: "学歴アキネーター＆学歴エンジェルフォール", motto: "天上天下唯我独尊", subjects: "英語科 東大英語専攻" },
+  { id: "akatsuki", name: "斬島悪暁", reading: "きりしま あくあ", title: "教務主任/数学科　教員番号000", image: "/images/teachers/1.webp", thumb: "/images/teachers/akatsuki.webp", hobby: "検定・資格収集＆勝利", motto: "教育は⬛⬛である。", subjects: "数学科 代数学専攻" },
+  { id: "ganon", name: "新山ガノンドロフ", reading: "", title: "1学年主任/国語科", image: "/images/teachers/2.webp", hobby: "ガノンドロフする＆下克上", motto: "熱があるうちに打て", subjects: "国語科 現代文専攻" },
+  { id: "shinai", name: "霧島シナイ", reading: "", title: "生徒指導部/保健体育科", image: "/images/teachers/7.webp", hobby: "女性鑑賞＆混浴", motto: "おにぎりは丸い", subjects: "保健体育科" },
+  { id: "zenshu", name: "然愁", reading: "ゼンシュウ", title: "2学年主任/社会科", image: "/images/teachers/8.webp", hobby: "禅＆二郎系ラーメン", motto: "情熱と哀愁", subjects: "社会科 倫理専攻" },
+  { id: "hanhan", name: "令爆誕飯飯", reading: "リー・バース・イーハン", title: "進路指導部/英語科", image: "/images/teachers/3.webp", hobby: "学歴アキネーター＆学歴エンジェルフォール", motto: "天上天下唯我独尊", subjects: "英語科 東大英語専攻" },
   { id: "yamato", name: "皇 大和", reading: "すめらぎ やまと", title: "", image: "", hobby: "", motto: "", subjects: "" },
-  { id: "monchin", name: "問珍仏破", reading: "といれあぶっぱ", title: "英語科", image: "/images/teachers/5.png", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
+  { id: "monchin", name: "問珍仏破", reading: "といれあぶっぱ", title: "英語科", image: "/images/teachers/5.webp", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
 ];
 
 /* ---------- 以下は表示側の補助（書き換え不要） ---------- */

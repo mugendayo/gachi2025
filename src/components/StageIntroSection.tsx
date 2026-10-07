@@ -105,7 +105,7 @@ function VerticalTitle({
 
 /* =============== 校章（常時ゆっくり回転） =============== */
 function CrestCenter({
-  crestSrc = "/stage/crest.png",
+  crestSrc = "/stage/crest.webp",
   invSelector = "#inv-crest-slot",
   onAcquire,
 }: { crestSrc?: string; invSelector?: string; onAcquire?: () => void }) {
@@ -383,7 +383,7 @@ function ShimoichiPopup({
 /* =============== 本体 =============== */
 export default function StageIntroSection({
   ctaHref = "/shimoichi",
-  crestSrc = "/stage/crest.png",
+  crestSrc = "/stage/crest.webp",
 }: { ctaHref?: string; crestSrc?: string }) {
   const [showDrops, setShowDrops] = useState(false);
   const [ctaOpen, setCtaOpen] = useState(false);
@@ -427,29 +427,29 @@ export default function StageIntroSection({
 
   /* 深め落下（既存のまま） */
   const drops: DropItem[] = [
-    { src: "/stage/drop-1.jpg", dx: 0, dy: 460, dxMd: 0, dyMd: 760, dxLg: 0, dyLg: 900, delay: 0.00, rotate: -6, z: 60, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-2.jpg", dx: -90, dy: 420, dxMd: -170, dyMd: 720, dxLg: -210, dyLg: 860, delay: 0.18, rotate: -4, z: 62, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-3.JPG", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 62, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
-    { src: "/stage/drop-4.jpg", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 69, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
+    { src: "/stage/drop-1.webp", dx: 0, dy: 460, dxMd: 0, dyMd: 760, dxLg: 0, dyLg: 900, delay: 0.00, rotate: -6, z: 60, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-2.webp", dx: -90, dy: 420, dxMd: -170, dyMd: 720, dxLg: -210, dyLg: 860, delay: 0.18, rotate: -4, z: 62, w: "w-[36%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-3.webp", dx: 120, dy: 520, dxMd: 200, dyMd: 820, dxLg: 260, dyLg: 960, delay: 0.36, rotate: 6, z: 62, w: "w-[34%]", wMd: "w-[20%]", wLg: "w-[18%]" },
+    { src: "/stage/drop-4.webp", dx: -70, dy: 600, dxMd: -150, dyMd: 900, dxLg: -200, dyLg: 1040, delay: 0.54, rotate: 8, z: 69, w: "w-[32%]", wMd: "w-[18%]", wLg: "w-[16%]" },
   ];
 
   /* ギャラリー画像 */
   const galleryItems: GalleryItem[] = [
-    { src: "/gallery/eri.jpg", caption: "普通教室で「いのうえ学級」" },
-    { src: "/gallery/sports.jpg", caption: "校庭で「準備体操」" },
-    { src: "/gallery/food.jpg", caption: "そと廊下で「購買部」" },
-    { src: "/gallery/bun.jpg", caption: "文化祭当日朝「エジプトカフェ」" },
-    { src: "/gallery/front.jpg", caption: "文化祭当日 子どもたちの受付" },
-    { src: "/gallery/school.jpg", caption: "廊下から中庭を眺める" },
-    { src: "/gallery/school2.jpg", caption: "中庭から廊下を眺める" },
-    { src: "/gallery/morning.jpg", caption: "文化祭当日 みんなの企画発表！" },
+    { src: "/gallery/eri.webp", caption: "普通教室で「いのうえ学級」" },
+    { src: "/gallery/sports.webp", caption: "校庭で「準備体操」" },
+    { src: "/gallery/food.webp", caption: "そと廊下で「購買部」" },
+    { src: "/gallery/bun.webp", caption: "文化祭当日朝「エジプトカフェ」" },
+    { src: "/gallery/front.webp", caption: "文化祭当日 子どもたちの受付" },
+    { src: "/gallery/school.webp", caption: "廊下から中庭を眺める" },
+    { src: "/gallery/school2.webp", caption: "中庭から廊下を眺める" },
+    { src: "/gallery/morning.webp", caption: "文化祭当日 みんなの企画発表！" },
   ];
 
   return (
     <section
       id="stage"
       className="relative pt-20 md:pt-28 pb-20 md:pb-28 bg-cover bg-center"
-      style={{ backgroundImage: "url('/stage/bg-vert.png')", overflowX: "clip" }}
+      style={{ backgroundImage: "url('/stage/bg-vert.webp')", overflowX: "clip" }}
     >
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white to-white/60" />
 
@@ -458,7 +458,7 @@ export default function StageIntroSection({
         <div className="relative grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-10">
           <VerticalTitle small="舞台は" big="奈良の学校" align="left" />
           <motion.img
-            src="/stage/nara-1.png"
+            src="/stage/nara-1.webp"
             alt="奈良の学校イメージ"
             className="md:justify-self-end rounded-2xl object-cover absolute top-2 right-[-12%] w-[78%] max-w-[520px] sm:top-3 sm:right-[-14%] sm:w-[82%] sm:max-w-[560px] md:static md:w-[125%] md:translate-x-[15%] lg:w-[140%] lg:translate-x-[20%] z-10"
             initial={{ opacity: 0, x: 120, rotate: 0, scale: 0.96 }}

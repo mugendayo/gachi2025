@@ -10,7 +10,7 @@ type Character = {
   id: string;
   name: string;
   title?: string;
-  image: string;      // ex) "/chars/01.png"
+  image: string;      // ex) "/chars/01.webp"
   accent?: string;    // ボーダー/ハイライト色
   lines: Line[];      // 複数可（次へで進む）
 };
@@ -20,7 +20,7 @@ const CHARACTERS: Character[] = [
     id: "a",
     name: "横山ガノンドロフ先生",
     title: "主人公界隈",
-    image: "/chars/01.png",
+    image: "/chars/01.webp",
     accent: "#22d3ee",
     lines: [
       { text: "教育実習の横山です。今年もやってきましたね。ガチ文化祭。誰よりも目立ってやりますよ！" },
@@ -30,7 +30,7 @@ const CHARACTERS: Character[] = [
     id: "b",
     name: "志導マモル",
     title: "指導教諭",
-    image: "/chars/02.png",
+    image: "/chars/02.webp",
     accent: "#f59e0b",
     lines: [
       { text: "本当の幸福とは、制約のなかの自由です。" },
@@ -40,7 +40,7 @@ const CHARACTERS: Character[] = [
     id: "c",
     name: "志導シナイ",
     title: "マージャン部の顧問",
-    image: "/chars/03.png",
+    image: "/chars/03.webp",
     accent: "#ef4444",
     lines: [
       { text: "んーテレビもねえ。ラジオもねえ。上着もズボンも履いてねえ。去年は脱衣でマージャン。今年は脱衣で格付け？！私がウワサの経費王、シナイでございますの。" },
@@ -51,7 +51,7 @@ const CHARACTERS: Character[] = [
     id: "d",
     name: "GACKT",
     title: "ヘルボール同好会",
-    image: "/chars/04.png",
+    image: "/chars/04.webp",
     accent: "#8b5cf6",
     lines: [
       { text: "『仕事が辛い。転職を考えている。』と相談されることがある。「変えたきゃ変えろよ」と答えると『いや、でも・・・』と別の言葉が出てくる。「だったら続けろよ」と言うと、『好きだったことが嫌いになるのが怖い』という。" },
@@ -63,7 +63,7 @@ const CHARACTERS: Character[] = [
     id: "e",
     name: "斬島悪暁",
     title: "教務主任",
-    image: "/chars/05.png",
+    image: "/chars/05.webp",
     accent: "#10b981",
     lines: [
       { text: "..................教育者は『道具』である。" }
@@ -73,7 +73,7 @@ const CHARACTERS: Character[] = [
     id: "f",
     name: "片野ユニコーン様",
     title: "卒業写真部",
-    image: "/chars/06.png",
+    image: "/chars/06.webp",
     accent: "#eab308",
     lines: [
       { text: "卒業卒業ってよー、いったい何から卒業するんだろうな！？" },
@@ -83,7 +83,7 @@ const CHARACTERS: Character[] = [
     id: "g",
     name: "アマノジャキ",
     title: "最大火力",
-    image: "/chars/07.png",
+    image: "/chars/07.webp",
     accent: "#60a5fa",
     lines: [
       { text: "結局ガチ文化祭っつーのはさ、俺たちみたいな青春モンスターが、社会に悪あがきしてるだけなんだよね。" }
@@ -157,7 +157,7 @@ export default function CharacterIntro() {
     <section id="characters" className="relative bg-black text-white pt-32 md:pt-40 isolate">
       {/* 背景 */}
       <div className="absolute inset-0 -z-10">
-        <img src="/section-bg/characters-bg.jpg" alt="" className="w-full h-full object-cover" draggable={false} />
+        <img src="/section-bg/characters-bg.webp" alt="" className="w-full h-full object-cover" draggable={false} />
       </div>
 
       <SectionHeadingCard label="ガチ文高等学校の人たち" title="厨二病（高二病？）です" />
