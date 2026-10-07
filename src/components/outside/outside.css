@@ -315,3 +315,39 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* 見出しの出典（見出しが本人の一文のとき） */
+.ou-h-stamp {
+  margin: -12px 0 22px;
+}
+/* 控えめな段（きっかけ）：閉じた状態で置き、開くと読める */
+.ou-sec-minor {
+  margin-bottom: clamp(48px, 9vh, 88px);
+}
+.ou-minor {
+  border-top: 1px solid var(--ou-line);
+  border-bottom: 1px solid var(--ou-line);
+  padding: 14px 0;
+}
+.ou-minor > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  list-style: none;
+  cursor: pointer;
+}
+.ou-minor > summary::-webkit-details-marker {
+  display: none;
+}
+.ou-minor-h {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ou-sub);
+  letter-spacing: 0.1em;
+}
+.ou-minor[open] > summary {
+  margin-bottom: 18px;
+}
+.ou-minor[open] > summary .ou-fold-more {
+  display: none;
+}

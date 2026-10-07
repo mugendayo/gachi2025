@@ -1,6 +1,6 @@
 // 門の外＝現実の世界線。「いつでも高校生に戻れる社会をつくる」ために、いろんな場所で文化祭をつくっている、という文脈。
-// 並び（2019 の LP と生徒手帳の順を下敷き）：理念 → きっかけ → 一生文化祭 → タイムスリップできる場所 → 企画とクラス →
-// 過去を作り続ける（ポートフォリオ） → いろんな場所で（年表） → 今年（開催概要・参加する） → 主催。
+// 主役は3つ（本人 2026-10-07）：いつでも高校生に戻れる社会をつくる → 高校生から見たときの、かっこいい大人 → 廃校（年表）。
+// そのあと タイムスリップできる場所 → 企画とクラス → 過去を作り続ける → きっかけ（原点と引き金。控えめに閉じて置く） → 今年 → 主催。
 // 文章はすべて本人の原文（年と出典の小札つき）か事実のデータ（src/data/outside.ts）。〔本人〕の枠は本番では出さない。
 import { site } from "@/data/site";
 import { basho, organizer, outsideSections, portfolio, portfolioCards, timeline, type OutsideBlock } from "@/data/outside";
@@ -35,25 +35,86 @@ function Block({ b }: { b: OutsideBlock }) {
   );
 }
 
+const sec = (id: string) => outsideSections.find((s) => s.id === id)!;
+
+function Section({ id, num }: { id: string; num: number }) {
+  const s = sec(id);
+  return (
+    <section id={`ou-${s.id}`} className={`ou-sec ou-sec-${s.id}`}>
+      <p className="ou-num" aria-hidden>
+        {String(num).padStart(2, "0")}
+      </p>
+      <h2 className="ou-h">{s.heading}</h2>
+      {s.blocks.map((b, k) => (
+        <Block key={k} b={b} />
+      ))}
+    </section>
+  );
+}
+
 export default function Outside() {
+  const kikkake = sec("kikkake");
   return (
     <div className="ou" aria-label="ガチ文化祭について">
-      {outsideSections.map((s, i) => (
-        <section key={s.id} id={`ou-${s.id}`} className={`ou-sec ou-sec-${s.id}`}>
-          <p className="ou-num" aria-hidden>
-            {String(i + 1).padStart(2, "0")}
-          </p>
-          <h2 className="ou-h">{s.heading}</h2>
-          {s.blocks.map((b, k) => (
-            <Block key={k} b={b} />
+      {/* 主役の3つ：いつでも高校生に戻れる社会／かっこいい大人／廃校 */}
+      <Section id="rinen" num={1} />
+      <Section id="issho" num={2} />
+
+      {/* ぼくは廃校を借りて、文化祭をつくっています。（年表＝実績一覧。最後の行が今年で、下の開催概要につながる） */}
+      <section id="ou-basho" className="ou-sec ou-sec-basho">
+        <p className="ou-num" aria-hidden>
+          03
+        </p>
+        <h2 className="ou-h">{basho.heading}</h2>
+        <p className="ou-h-stamp">
+          <span className="ou-stamp">{basho.headingStamp}</span>
+        </p>
+        {basho.blocks.map((b, k) => (
+          <Block key={k} b={b} />
+        ))}
+        <ol className="ou-timeline">
+          {timeline.map((r) => (
+            <li key={r.year} className={r.off ? "is-off" : undefined}>
+              <span className="ou-tl-year">{r.year}</span>
+              <span className="ou-tl-title">
+                {r.url ? (
+                  <a href={r.url} target="_blank" rel="noopener">
+                    {r.label}
+                  </a>
+                ) : (
+                  r.label
+                )}
+              </span>
+              <span className="ou-tl-date">{r.date}</span>
+              <span className="ou-tl-place">{r.place}</span>
+              {r.pending && (
+                <span className="ou-slot ou-slot-small" aria-hidden>
+                  〔本人確認〕{r.pending}
+                </span>
+              )}
+            </li>
           ))}
-        </section>
-      ))}
+          <li className="is-now">
+            <span className="ou-tl-year">{site.year}</span>
+            <span className="ou-tl-title">
+              <a href="#ou-kotoshi">{site.concept}</a>
+            </span>
+            <span className="ou-tl-date">2026年10月31日〜11月3日</span>
+            <span className="ou-tl-place">奈良県吉野郡下市町（{site.placeShort}）</span>
+          </li>
+        </ol>
+        <p className="ou-slot" aria-hidden>
+          〔本人〕{basho.regionSlot}
+        </p>
+      </section>
+
+      <Section id="timeslip" num={4} />
+      <Section id="kikaku-class" num={5} />
 
       {/* 過去を作り続ける（遺物の棚） */}
       <section id="ou-portfolio" className="ou-sec ou-sec-portfolio">
         <p className="ou-num" aria-hidden>
-          {String(outsideSections.length + 1).padStart(2, "0")}
+          06
         </p>
         <h2 className="ou-h">{portfolio.heading}</h2>
         <figure className="ou-quote ou-sub">
@@ -99,49 +160,17 @@ export default function Outside() {
         </div>
       </section>
 
-      {/* いろんな場所で（年表＝実績一覧）。最後の行が今年で、そのまま下の開催概要につながる */}
-      <section id="ou-basho" className="ou-sec ou-sec-basho">
-        <p className="ou-num" aria-hidden>
-          {String(outsideSections.length + 2).padStart(2, "0")}
-        </p>
-        <h2 className="ou-h">{basho.heading}</h2>
-        {basho.blocks.map((b, k) => (
-          <Block key={k} b={b} />
-        ))}
-        <ol className="ou-timeline">
-          {timeline.map((r) => (
-            <li key={r.year} className={r.off ? "is-off" : undefined}>
-              <span className="ou-tl-year">{r.year}</span>
-              <span className="ou-tl-title">
-                {r.url ? (
-                  <a href={r.url} target="_blank" rel="noopener">
-                    {r.label}
-                  </a>
-                ) : (
-                  r.label
-                )}
-              </span>
-              <span className="ou-tl-date">{r.date}</span>
-              <span className="ou-tl-place">{r.place}</span>
-              {r.pending && (
-                <span className="ou-slot ou-slot-small" aria-hidden>
-                  〔本人確認〕{r.pending}
-                </span>
-              )}
-            </li>
+      {/* きっかけ（原点と引き金）。書いてはおくが主役ではない＝閉じた状態で置く */}
+      <section id="ou-kikkake" className="ou-sec ou-sec-minor">
+        <details className="ou-minor">
+          <summary>
+            <span className="ou-minor-h">{kikkake.heading}</span>
+            <span className="ou-fold-more">開く</span>
+          </summary>
+          {kikkake.blocks.map((b, k) => (
+            <Block key={k} b={b} />
           ))}
-          <li className="is-now">
-            <span className="ou-tl-year">{site.year}</span>
-            <span className="ou-tl-title">
-              <a href="#ou-kotoshi">{site.concept}</a>
-            </span>
-            <span className="ou-tl-date">2026年10月31日〜11月3日</span>
-            <span className="ou-tl-place">奈良県吉野郡下市町（{site.placeShort}）</span>
-          </li>
-        </ol>
-        <p className="ou-slot" aria-hidden>
-          〔本人〕{basho.regionSlot}
-        </p>
+        </details>
       </section>
 
       {/* 今年の開催概要（公式の事実・参加する） */}
