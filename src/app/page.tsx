@@ -5,6 +5,7 @@ import { site } from "@/data/site";
 import { bootScript } from "@/lib/worldClock";
 import Entry from "@/components/entry/Entry";
 import Classroom from "@/components/kokuban/Classroom";
+import WindowSide from "@/components/kokuban/WindowSide";
 import { BackOfRoom, Corridor, Staffroom, Stage } from "@/components/kokuban/Places";
 import Outside from "@/components/outside/Outside";
 import BottomZone from "@/components/BottomZone";
@@ -62,6 +63,7 @@ export default function Page() {
       {/* 門の内側＝ゲームの中の世界線：学校 */}
       <div className="kb-school" id="kb-school">
         <Classroom />
+        <WindowSide />
         <BackOfRoom />
         <Corridor />
         <Staffroom />

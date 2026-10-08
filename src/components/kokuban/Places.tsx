@@ -5,6 +5,7 @@ import { teachers, thumbOf } from "@/data/teachers";
 import FloorItem from "@/components/FloorItem";
 import { JoinButton } from "@/components/JoinGate";
 import BackTv from "./BackTv";
+import Garland from "./Garland";
 import { SignBack } from "./Signboard";
 
 /* ---------- 教室の後ろ：去年の記録が流れるテレビと、乗ってきたタイムマシン ---------- */
@@ -16,6 +17,7 @@ export function BackOfRoom() {
           <i key={i} />
         ))}
       </div>
+      <Garland />
       <BackTv />
       {/* 昼の準備中の看板（表を壁に向けてある） */}
       <SignBack />

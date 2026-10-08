@@ -10,6 +10,8 @@
   --dark: 0;
   --amb: 1;
   --sun-az: 180;
+  --moon: 0;
+  --moon-az: 180;
   --ch: 300deg;
   --cm: 60deg;
   --cs: 0deg;
@@ -505,6 +507,26 @@
   position: absolute;
   inset: -12px -6px -10px;
 }
+/* 黒板消しの汚れ：こするほど粉で白くなる（--load＝0〜1 を JS が書く。叩くと薄くなる） */
+.kb-eraser {
+  --load: 0;
+}
+.kb-eraser::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(240, 238, 230, 0.9) 0 1.5px, transparent 2px) 0 0 / 7px 6px,
+    radial-gradient(circle at 60% 70%, rgba(240, 238, 230, 0.8) 0 1px, transparent 1.5px) 0 0 / 5px 5px;
+  opacity: calc(var(--load) * 0.85);
+}
+/* 絵の黒板消しは、絵の形の中だけ白くする（透明な余白に粉が浮かないように） */
+.kb-eraser.has-art::before {
+  -webkit-mask: var(--art) center / contain no-repeat;
+  mask: var(--art) center / contain no-repeat;
+}
 .kb-eraser.is-moving,
 .kb-chalk.is-moving {
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -617,6 +639,25 @@
     linear-gradient(100deg, rgba(150, 175, 220, 0.08), transparent 55%);
   opacity: var(--dark);
   transition: opacity 1.4s ease;
+}
+/* 月の光の帯：本物の月が昇っていて、消灯しているときだけ、窓から青白く差す（向きは月の方角・強さは満ち欠けと高さ）。
+   月が昇って光が差し始めるのは世界の中の変化なので、見ている前でゆっくり変わってよい */
+.kb-moonlight {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 0, rgba(150, 175, 220, 0.9) 30%, rgba(150, 175, 220, 0.5) 60%, transparent 85%);
+  clip-path: polygon(
+    calc((var(--moon-az) - 110) / 150 * 60% - 10%) 0,
+    calc((var(--moon-az) - 110) / 150 * 60% + 34%) 0,
+    calc((var(--moon-az) - 110) / 150 * 60% + 14%) 100%,
+    calc((var(--moon-az) - 110) / 150 * 60% - 30%) 100%
+  );
+  mix-blend-mode: screen;
+  filter: blur(8px);
+  opacity: calc(var(--moon) * var(--dark) * 0.3);
+  transition: opacity 4s ease;
 }
 
 /* 蛍光灯がまたたく（点く・消える瞬間だけ） */
@@ -1105,7 +1146,7 @@
   .kb-world:not([data-motion-forced]) :is(.kb-hand-s, .kb-art-s, .kb-art-hand-s) {
     display: none;
   }
-  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
+  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-moonlight, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
   .kb-world:not([data-motion-forced]) .kb-room::after {
     transition: none;
   }

@@ -168,6 +168,7 @@ export default function Classroom() {
       <HandSymbol />
 
       <div className="kb-night" aria-hidden />
+      <div className="kb-moonlight" aria-hidden />
       <BoardFx />
     </section>
   );

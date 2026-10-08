@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { clockConfig, clockCore, debugAllowed, type ClockState } from "@/lib/worldClock";
 import { SCENE_EVENT } from "./Signboard";
 import { ARRIVE_EVENT, CLOCK_EVENT, DEPART_EVENT, now, syncWithServer } from "@/lib/now";
+import { moonState, MOON_GAIN } from "@/lib/sky";
 import { site } from "@/data/site";
 
 type Item = {
@@ -43,6 +44,10 @@ const DOODLE_MAX_POINTS = 12000;
 const RUB_KEEP = 0.5;
 // にじみ：こすった向きへ、すくった粉を薄く置き直す濃さ
 const SMUDGE = 0.22;
+// 黒板消しの汚れ：こするほど粉を含んで白くなり、消えにくく・にじみやすくなる。叩けば落ちる（その端末に残す）
+const eraserKey = () => `gbf_${site.year}_eraser_v1`;
+const LOAD_PER_PX = 0.0001; // こすった長さ 1px あたりの溜まり方（黒板をまるごと数回拭くと白くなる）〔Preview で本人が決める〕
+const LOAD_KEEP_MAX = 0.75; // いちばん汚れたときの消え残り〔Preview で本人が決める〕
 // 誰もいない教室（見えない手が落書きしたり消したりする帯）と、触られていない時間
 const QUIET_SCENES = new Set(["akegata", "asa", "yugata", "shinya"]);
 const GHOST_IDLE_MS = 12000;
@@ -182,8 +187,15 @@ export default function BoardFx() {
       st.setProperty("--warm", s.warm.toFixed(3));
       st.setProperty("--lit", String(s.lit));
       st.setProperty("--dark", s.dark.toFixed(3));
-      st.setProperty("--amb", s.amb.toFixed(3));
       st.setProperty("--sun-az", s.sunAz.toFixed(1));
+      // 月明かり：本物の月の高さ・向き・満ち欠けで、消灯後の暗さと窓から差す青白い帯を決める（窓のある側＝南寄りほど強い）。
+      // 部屋を明るくする向きにしか効かない（昼は --dark が0なので --amb は世界時計のまま）
+      const mo = moonState(now(), clockConfig.lat, clockConfig.lon);
+      const side = mo.az > 90 && mo.az < 270 ? 1 : 0.3;
+      const moon = mo.alt > 0 ? mo.k * Math.min(1, Math.sin((mo.alt * Math.PI) / 180) * 2.5) * side : 0;
+      st.setProperty("--moon", moon.toFixed(3));
+      st.setProperty("--moon-az", mo.az.toFixed(1));
+      st.setProperty("--amb", (s.amb + s.dark * MOON_GAIN * moon).toFixed(3));
     };
 
     const tickHands = () => {
@@ -489,18 +501,28 @@ export default function BoardFx() {
     const norm = (v: number, d: number) => Math.round((v / d) * 10000) / 10000;
 
     /* ---------------- 粉 ---------------- */
-    type P = { x: number; y: number; vx: number; vy: number; a: number; r: number };
+    // clap＝黒板消しをはたいて舞った粉（落ちずにふわっと漂い、光の当たる所でだけ見える）
+    type P = { x: number; y: number; vx: number; vy: number; a: number; r: number; clap?: boolean };
     let parts: P[] = [];
     let raf = 0;
     const loop = () => {
       dust.clearRect(0, 0, W, H);
-      parts = parts.filter((p) => p.a > 0.02 && p.y < H);
+      parts = parts.filter((p) => p.a > 0.02 && p.y < H && (!p.clap || p.y > -12));
+      // 懐中電灯の位置は1コマに1回だけ読む（粒ごとに style を読まない）
+      if (state.dark > 0.5) {
+        flashX = parseFloat(room.style.getPropertyValue("--fx"));
+        flashY = parseFloat(room.style.getPropertyValue("--fy"));
+      }
       for (const p of parts) {
-        p.vy += 0.09;
+        if (p.clap) {
+          // 重さの代わりに浮く力、空気の抵抗で止まる
+          p.vx *= 0.96;
+          p.vy = (p.vy - 0.01) * 0.96;
+        } else p.vy += 0.09;
         p.x += p.vx;
         p.y += p.vy;
-        p.a *= 0.975;
-        dust.fillStyle = `rgba(240,240,232,${p.a})`;
+        p.a *= p.clap ? 0.985 : 0.975;
+        dust.fillStyle = `rgba(240,240,232,${p.clap ? p.a * lightAt(p.x, p.y) : p.a})`;
         dust.fillRect(p.x, p.y, p.r, p.r);
       }
       raf = parts.length ? requestAnimationFrame(loop) : 0;
@@ -510,6 +532,27 @@ export default function BoardFx() {
       for (let i = 0; i < n; i++)
         parts.push({ x: x + (Math.random() - 0.5) * spread, y: y + (Math.random() - 0.3) * SH * 0.6, vx: (Math.random() - 0.5) * 0.6, vy: Math.random() * 0.6, a: 0.5 + Math.random() * 0.4, r: 1 + Math.random() * 1.6 });
       if (!raf) raf = requestAnimationFrame(loop);
+    };
+    // はたいた粉が光って見える強さ（黒板の座標で）：窓の光の筋の中・蛍光灯・消灯中は懐中電灯の円の中だけ
+    let roomOff = { x: 0, y: 0, w: 1, h: 1 };
+    let flashX = NaN;
+    let flashY = NaN;
+    const lightAt = (x: number, y: number) => {
+      const rx = x + roomOff.x;
+      const ry = y + roomOff.y;
+      if (state.dark > 0.5) {
+        // 懐中電灯をまだ動かしていなければ、CSS の既定（50% 45%）の位置
+        const dx = rx - (Number.isFinite(flashX) ? flashX : roomOff.w * 0.5);
+        const dy = ry - (Number.isFinite(flashY) ? flashY : roomOff.h * 0.45);
+        return dx * dx + dy * dy < 8100 ? 1 : 0.05;
+      }
+      // .kb-sunlight の clip-path と同じ4点（上辺から下辺へ、左右の端を線形に寄せる）
+      const u = ((state.sunAz - 110) / 150) * 0.6;
+      const t = ry / roomOff.h;
+      const left = (u - 0.1 - 0.2 * t) * roomOff.w;
+      const right = (u + 0.34 - 0.2 * t) * roomOff.w;
+      const beam = rx > left && rx < right ? state.sun * (1 - state.dark) * (1 - 0.3 * state.lit) : 0.08;
+      return Math.min(1, beam + (state.lit ? 0.25 : 0));
     };
 
     /* ---------------- にじみ：こすった方向へ、チョークの粉が伸びて広がる（どの文字・落書きにも効く） ---------------- */
@@ -563,11 +606,42 @@ export default function BoardFx() {
     };
 
     /* ---------------- 消す ---------------- */
+    // 黒板消しの汚れ（0＝まっさら、1＝真っ白）。効き方はこすり始めの汚れで決め、ひと続きのこすりの途中では変えない
+    // （まっさらな端末の最初のひとこすりは、汚れの仕組みが無いときと同じ消え方）
+    let load = 0;
+    try {
+      const v = parseFloat(localStorage.getItem(eraserKey()) || "0");
+      if (Number.isFinite(v)) load = Math.min(1, Math.max(0, v));
+    } catch {}
+    let rubLoad = load;
+    let savedLoad = load;
+    let shownLoad = 0;
+    const saveLoad = () => {
+      if (load === savedLoad) return;
+      savedLoad = load;
+      try {
+        localStorage.setItem(eraserKey(), load.toFixed(4));
+      } catch {}
+    };
+    // 見た目（粉で白くなった面）は、0.05 変わるごとに書く
+    const showLoad = (force = false) => {
+      if (load === shownLoad || (!force && Math.abs(load - shownLoad) < 0.05)) return;
+      shownLoad = load;
+      eraser.style.setProperty("--load", load.toFixed(3));
+    };
+    showLoad(true);
+
     let eraseStroke: Stroke | null = null;
     const eraseSeg = (x0: number, y0: number, x1: number, y1: number, clip?: Item) => {
       const d = Math.hypot(x1 - x0, y1 - y0);
       const n = Math.max(1, Math.ceil(d / 4));
-      const rub = rubStrength(x1 - x0, y1 - y0, d / n);
+      const rub = rubStrength(x1 - x0, y1 - y0, d / n, rubLoad > 0 ? Math.min(LOAD_KEEP_MAX, RUB_KEEP + 0.3 * rubLoad) : RUB_KEEP);
+      const smudge = rubLoad > 0 ? SMUDGE * (1 + 1.3 * rubLoad) : SMUDGE;
+      if (!clip) {
+        // 人がこすった分だけ汚れる（見えない手の黒板消しは汚れない）
+        load = Math.min(1, load + d * LOAD_PER_PX);
+        showLoad();
+      }
       const run = () => {
         for (let i = 1; i <= n; i++) {
           const x = x0 + ((x1 - x0) * i) / n;
@@ -579,14 +653,14 @@ export default function BoardFx() {
             if (i % 3 === 0 && d > 0.5) {
               const ux = (x1 - x0) / d;
               const uy = (y1 - y0) / d;
-              smudgeAt(chalkC, chalk, dpr, x, y, ux * 10, uy * 10, SMUDGE);
-              smudgeAt(doodleC, doodle, dpr, x, y, ux * 10, uy * 10, SMUDGE);
+              smudgeAt(chalkC, chalk, dpr, x, y, ux * 10, uy * 10, smudge);
+              smudgeAt(doodleC, doodle, dpr, x, y, ux * 10, uy * 10, smudge);
             }
             stampAt(chalk, x, y, 1, rub);
             stampAt(doodle, x, y, 1, rub);
           }
           // 見えない手の書き直しのときは拭き跡をごく薄く（日付の地を白くしない）
-          hazeAt(x, y, clip ? 0.005 : 0.018);
+          hazeAt(x, y, clip ? 0.005 : 0.018 * (1 + rubLoad));
           if (i % 3 === 0) emit(x, y);
           for (const it of items)
             if (!it.dirty && x > it.x - SW / 2 && x < it.x + it.w + SW / 2 && y > it.y - SH / 2 && y < it.y + it.h + SH / 2) it.dirty = true;
@@ -613,7 +687,13 @@ export default function BoardFx() {
       restOf.set(el, rest);
       return rest;
     };
+    // 叩いたときのはね（WAAPI）。持ち上げたら止める（はねの途中で手の位置から外れないように）
+    let clapAnim: Animation | null = null;
     const hold = (el: HTMLElement, x: number, y: number, angle: number) => {
+      if (clapAnim && el === eraser) {
+        clapAnim.cancel();
+        clapAnim = null;
+      }
       const rest = restOf.get(el) || measureRest(el);
       el.classList.remove("is-moving");
       el.classList.add("is-held");
@@ -624,7 +704,6 @@ export default function BoardFx() {
       el.classList.remove("is-held");
       el.style.transform = "";
     };
-    let lastPointerType = "mouse";
     const selectTool = (next: Tool) => {
       if (tool.kind === "chalk" && tool.el !== next.el) {
         putBack(tool.el);
@@ -633,6 +712,28 @@ export default function BoardFx() {
       tool = next;
       board.classList.toggle("is-drawing", next.kind === "chalk");
       if (next.kind === "chalk") next.el.classList.add("is-picked");
+    };
+    // 黒板消しを続けて2回押す＝叩いて粉を落とす（汚れが半分ほどに減る）。舞った粉は光の中でだけ見える
+    let lastEraserDown = -1e9;
+    const clap = () => {
+      const before = load;
+      load *= 0.45;
+      showLoad(true);
+      saveLoad();
+      if (reduce) return;
+      // 測り直す（スマホの粉受けは画面の下に貼り付いて動くので、覚えた位置は古いことがある）
+      const rest = measureRest(eraser);
+      const b = board.getBoundingClientRect();
+      const r = room.getBoundingClientRect();
+      roomOff = { x: b.left - r.left, y: b.top - r.top, w: r.width || 1, h: r.height || 1 };
+      // 汚れていたぶんだけ舞う（まっさらなら何も出ない）
+      for (let i = Math.round(60 * before); i > 0; i--)
+        parts.push({ x: rest.x + (Math.random() - 0.5) * 50, y: rest.y - Math.random() * 6, vx: -0.3 + Math.random() * 0.4, vy: -1.2 - Math.random() * 1.2, a: 0.5 + Math.random() * 0.4, r: 1 + Math.random() * 1.4, clap: true });
+      if (parts.length && !raf) raf = requestAnimationFrame(loop);
+      clapAnim = eraser.animate(
+        [{ transform: "translateY(0)" }, { transform: "translateY(-6px)" }, { transform: "translateY(0)" }, { transform: "translateY(-3px)" }, { transform: "translateY(0)" }],
+        { duration: 260, easing: "ease-out" },
+      );
     };
 
     /* ---------------- 書き直し（rewrite）／焼き付き（burn） ---------------- */
@@ -805,6 +906,7 @@ export default function BoardFx() {
       window.clearTimeout(idleTimer);
       capture(e);
       measureRest(eraser);
+      rubLoad = load;
       if (strokes.some((st) => st.t === "c")) eraseStroke = { t: "e", p: [norm(last.x, W), norm(last.y, W)] };
     };
     const endTouch = (e?: PointerEvent) => {
@@ -820,6 +922,8 @@ export default function BoardFx() {
       if (active === "rub") {
         putBack(eraser);
         scheduleReturn();
+        showLoad(true);
+        saveLoad();
         if (eraseStroke && eraseStroke.p.length > 2) {
           strokes.push(eraseStroke);
           saveDoodle();
@@ -845,7 +949,6 @@ export default function BoardFx() {
     let panY = 0;
     const avgY = () => [...touchY.values()].reduce((a, b) => a + b, 0) / Math.max(1, touchY.size);
     const onDown = (e: PointerEvent) => {
-      lastPointerType = e.pointerType;
       lastUser = performance.now();
       ghostToken++;
       if (e.pointerType === "touch") {
@@ -876,10 +979,22 @@ export default function BoardFx() {
       if (toolEl) {
         e.preventDefault();
         lastUser = performance.now();
-        if (toolEl.dataset.tool === "chalk") selectTool({ kind: "chalk", el: toolEl, color: toolEl.dataset.color || "#f2f0e6" });
-        else selectTool({ kind: "eraser", el: eraser });
+        if (toolEl.dataset.tool === "chalk") {
+          selectTool({ kind: "chalk", el: toolEl, color: toolEl.dataset.color || "#f2f0e6" });
+          lastEraserDown = -1e9;
+        } else {
+          // 1回目は今どおり持つ（持ち替え）、続けての2回目で叩く
+          selectTool({ kind: "eraser", el: eraser });
+          const t = performance.now();
+          if (t - lastEraserDown < 350 && tool.kind === "eraser") {
+            clap();
+            lastEraserDown = -1e9; // 3回目は新しい1回目
+          } else lastEraserDown = t;
+        }
         return;
       }
+      // 黒板に触れたら、黒板消しの「続けて2回」は数え直し
+      lastEraserDown = -1e9;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (busy) {
         // 見えない手が書いている途中に触った：残りを一気に書き切って、すぐ触れるようにする
@@ -996,7 +1111,9 @@ export default function BoardFx() {
     };
     // 文字も落書きも無い所を探す（縮めた写しでインクの量を数える）
     const probe = document.createElement("canvas");
-    const freeSpot = (w: number, h: number): { x: number; y: number } | null => {
+    // 見えない手の気まぐれは、その分の時刻で決まる（同じ時刻に見ている人には同じ落書き）
+    const minuteRng = (salt: number) => rng(Math.floor(now() / 60000) * 31 + salt);
+    const freeSpot = (w: number, h: number, pick: number): { x: number; y: number } | null => {
       const k = 1 / 8;
       probe.width = Math.max(1, Math.round(W * k));
       probe.height = Math.max(1, Math.round(H * k));
@@ -1020,15 +1137,16 @@ export default function BoardFx() {
       const b = board.getBoundingClientRect();
       const vis = cands.filter((c) => b.top + c.y > 100 && b.top + c.y + h < window.innerHeight - 60);
       const pool = vis.length ? vis : cands;
-      return pool[Math.floor(Math.random() * pool.length)];
+      return pool[Math.floor(pick * pool.length)];
     };
     const ghostDraw = async (token: number) => {
       const defs = site.ghostDoodles;
       if (!defs.length) return;
-      const def = defs[Math.floor(Math.random() * defs.length)];
-      const w = 70 + Math.random() * 50;
+      const r = minuteRng(1);
+      const def = defs[Math.floor(r() * defs.length)];
+      const w = 70 + r() * 50;
       const h = w / (def.aspect || 1);
-      const spot = freeSpot(w, h);
+      const spot = freeSpot(w, h, r());
       if (!spot) return;
       const stick = board.querySelector<HTMLElement>('[data-tool="chalk"]');
       const color = stick?.dataset.color || "#f2f0e6";
@@ -1124,12 +1242,12 @@ export default function BoardFx() {
       ghostBusy = true;
       const token = ++ghostToken;
       try {
-        if (ghostMarks.length >= 2 || (ghostMarks.length && Math.random() < 0.45)) await ghostErase(token);
+        if (ghostMarks.length >= 2 || (ghostMarks.length && minuteRng(2)() < 0.45)) await ghostErase(token);
         else await ghostDraw(token);
       } finally {
         ghostBusy = false;
         // 次の気配まで、8〜22秒あける（描いた落書きはしばらく残る）
-        lastUser = performance.now() - GHOST_IDLE_MS + 8000 + Math.random() * 14000;
+        lastUser = performance.now() - GHOST_IDLE_MS + 8000 + minuteRng(3)() * 14000;
       }
     };
     intervals.push(window.setInterval(ghostTick, 3000));
@@ -1322,6 +1440,7 @@ export default function BoardFx() {
     window.addEventListener(ARRIVE_EVENT, onArrive);
     window.addEventListener(DEPART_EVENT, onDepart);
     window.addEventListener("pagehide", flushDoodle);
+    window.addEventListener("pagehide", saveLoad);
     // 端末の時計を、配信元の時刻で1回だけ補正する（?t= のときはしない・lib/now が共有）
     window.addEventListener(CLOCK_EVENT, onClock);
     syncWithServer();
@@ -1347,6 +1466,7 @@ export default function BoardFx() {
       window.clearTimeout(idleTimer);
       window.clearTimeout(rto);
       flushDoodle();
+      saveLoad();
       cancelAnimationFrame(raf);
       cancelAnimationFrame(moteRaf);
       ro.disconnect();
@@ -1355,6 +1475,7 @@ export default function BoardFx() {
       window.removeEventListener(ARRIVE_EVENT, onArrive);
       window.removeEventListener(DEPART_EVENT, onDepart);
       window.removeEventListener("pagehide", flushDoodle);
+      window.removeEventListener("pagehide", saveLoad);
       window.removeEventListener(CLOCK_EVENT, onClock);
       board.removeEventListener("pointerdown", onDown);
       room.removeEventListener("pointermove", onMove);

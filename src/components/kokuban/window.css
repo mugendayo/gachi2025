@@ -1,0 +1,211 @@
+/* ========================= 窓（教室と教室の後ろの間） =========================
+   外の空は時刻の光（--sun・--warm）で、JS が来たら --sky（空の明るさ）で塗る。
+   夜に蛍光灯が点いていると鏡（--mirror）、消灯すると外と月。曇りは canvas.kb-fog（JS が鏡の手前に差し込む＝ガラスの内側の面）。
+   門の内なので橙と明朝は使わない。人影は描かない。 */
+/* .kb-place の padding より確実に勝つよう、2つのクラスで書く（CSS の読み込み順に頼らない） */
+.kb-place.kb-window {
+  /* JS が来るまでの既定：空の明るさは時刻の光、鏡は「灯りが点いていて空が暗い」ほど濃い（JS が来たら同じ式で上書きする）。
+     夜空を少し明るくする --moon は世界（BoardFx）が書く値をそのまま使う（窓では持たない） */
+  --sky: var(--sun);
+  --mirror: calc(var(--lit, 0) * (1 - var(--sky)) * 0.85);
+  display: grid;
+  place-items: center;
+  min-height: 55svh;
+  padding-block: clamp(20px, 5vh, 40px);
+  overflow: hidden;
+  background:
+    linear-gradient(to bottom, transparent 86%, rgba(0, 0, 0, 0.12)),
+    color-mix(in oklab, #12161b, #dcd4c2 calc(var(--amb) * 100%));
+  transition: background-color 1.2s ease;
+}
+
+.kb-glass {
+  position: relative;
+  isolation: isolate;
+  /* 外枠の影（10px）まで区画の中に収める（360px 幅の画面で切れないように） */
+  width: min(92vw, 100% - 20px, 640px);
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 10px color-mix(in oklab, #1a1d20, #b9b6ad calc(var(--amb) * 100%)),
+    0 14px 26px rgba(0, 0, 0, 0.35);
+  touch-action: pan-y pinch-zoom;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+/* 外の空：上は夜の紺から昼の青へ、地平線は夕焼けのばら色へ寄せる（月が高いと夜空が少し明るい） */
+.kb-wsky {
+  --wtop: color-mix(
+    in oklab,
+    color-mix(in oklab, #0b1020, #26324c calc(var(--moon) * 100%)),
+    #6f9fd8 calc(var(--sky) * 100%)
+  );
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--wtop) 0%,
+    color-mix(in oklab, var(--wtop), #d9a3a6 calc(var(--warm) * 60%)) 78%
+  );
+}
+/* 山の稜線（汎用の仮〔本人〕が描くなら SVG 1本に差し替える） */
+.kb-ridge {
+  position: absolute;
+  inset: auto 0 0;
+  height: 34%;
+  z-index: 1;
+  background: color-mix(in oklab, #05070a, #3d4a45 calc(var(--amb) * 70%));
+  clip-path: polygon(
+    0 46%, 8% 38%, 15% 42%, 24% 24%, 31% 30%, 38% 18%, 46% 28%, 55% 34%,
+    63% 22%, 71% 30%, 79% 26%, 87% 40%, 94% 34%, 100% 42%, 100% 100%, 0 100%
+  );
+}
+/* 月（JS が位置と欠けを描く。稜線の後ろに沈む） */
+.kb-moon-cv {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  z-index: 0;
+  width: 7.5%;
+  height: auto;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  filter: blur(calc(var(--wfog, 0) * 3px));
+}
+
+/* 曇り（64×40 をぼかして引き伸ばす）。鏡より手前＝ガラスの内側の面 */
+.kb-glass canvas.kb-fog {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+/* 鏡：夜に蛍光灯が点いていると、外より部屋が映る。寄せると指の所だけ外が透ける */
+.kb-wmirror {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* 地と蛍光灯の棒だけを --mirror で濃くする（テレビのにじみは消灯中も見えるよう別に持つ） */
+.kb-wmirror::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent 40%),
+    linear-gradient(to bottom, #3c3d3b 0%, #2c2d2c 62%, #1f201f 100%);
+  opacity: var(--mirror, 0);
+  transition: opacity 0.6s ease;
+}
+.kb-wbar {
+  position: absolute;
+  left: 14%;
+  width: 46%;
+  height: 2.4%;
+  border-radius: 2px;
+  background: rgb(246, 250, 252);
+  box-shadow: 0 0 10px 2px rgba(225, 238, 250, 0.55);
+  opacity: var(--mirror, 0);
+  transform: perspective(400px) rotateX(38deg);
+  transition: opacity 0.6s ease;
+}
+.kb-wbar:nth-child(1) {
+  top: 12%;
+}
+.kb-wbar:nth-child(2) {
+  top: 26%;
+  left: 22%;
+  width: 40%;
+}
+.kb-window[data-peek] .kb-wmirror {
+  -webkit-mask-image: radial-gradient(circle 72px at var(--wx) var(--wy), transparent 0 55%, #000 100%);
+  mask-image: radial-gradient(circle 72px at var(--wx) var(--wy), transparent 0 55%, #000 100%);
+}
+
+/* 教室の後ろのテレビの、小さな青いにじみ（点いている帯だけ・空が暗いほど見える） */
+.kb-tvglint {
+  position: absolute;
+  right: 9%;
+  bottom: 12%;
+  width: 16%;
+  height: 13%;
+  border-radius: 40%;
+  background: radial-gradient(closest-side, rgba(120, 165, 255, 0.95), rgba(70, 110, 230, 0.4) 55%, transparent);
+  filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.kb-world:is([data-scene="junbi"], [data-scene="shoto"]) .kb-tvglint {
+  opacity: calc(0.22 * (1 - var(--sky, 1)));
+  animation: kb-wglint 3.1s steps(5) infinite;
+}
+@keyframes kb-wglint {
+  0% { filter: blur(6px) brightness(1); }
+  20% { filter: blur(6px) brightness(0.7); }
+  40% { filter: blur(7px) brightness(1.15); }
+  60% { filter: blur(6px) brightness(0.85); }
+  80% { filter: blur(6px) brightness(1.05); }
+  100% { filter: blur(6px) brightness(1); }
+}
+
+/* 枠：外枠・中桟（縦）・横桟・クレセント錠 */
+.kb-wframe {
+  --frame: color-mix(in oklab, #1d2023, #c7c9c6 calc(var(--amb) * 100%));
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border: 7px solid var(--frame);
+  /* 中桟（縦）：二枚の引き違い窓の合わせ目 */
+  background: linear-gradient(
+    to right,
+    transparent calc(50% - 5px),
+    var(--frame) calc(50% - 5px) calc(50% + 5px),
+    rgba(0, 0, 0, 0.22) calc(50% + 5px) calc(50% + 7px),
+    transparent calc(50% + 7px)
+  );
+}
+/* 横桟 */
+.kb-wframe::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(64% - 3px);
+  height: 6px;
+  background: var(--frame);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+/* クレセント錠（合わせ目の中ほど） */
+.kb-wframe::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 9px);
+  top: calc(44% - 5px);
+  width: 18px;
+  height: 10px;
+  border-radius: 9px 9px 3px 3px;
+  background: color-mix(in oklab, #24272a, #a9aca8 calc(var(--amb) * 100%));
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-world:not([data-motion-forced]) .kb-tvglint {
+    animation: none;
+  }
+  .kb-world:not([data-motion-forced]) :is(.kb-window, .kb-wbar, .kb-tvglint),
+  .kb-world:not([data-motion-forced]) .kb-wmirror::before {
+    transition: none;
+  }
+}

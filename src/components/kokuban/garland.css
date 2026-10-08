@@ -1,0 +1,81 @@
+/* ========================= 輪飾り（教室の後ろの天井から垂れる紙の鎖）と、床の短冊の束 ========================= */
+
+/* 縦スクロールはそのまま、横に始めた指だけ鎖を掴むために JS へ渡す（床のもちものは onClick なので影響しない） */
+.kb-back {
+  touch-action: pan-y pinch-zoom;
+}
+/* 天井の帯（鎖が垂れる高さ）の分だけ、テレビから下を下げる */
+.kb-back:has(.kb-garland) {
+  padding-top: calc(clamp(48px, 10vh, 96px) + clamp(56px, 10svh, 110px));
+}
+/* テレビ（z-index 1）より後ろ＝鎖はテレビの裏を通る */
+.kb-garland {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: clamp(150px, 26svh, 260px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 床に置いた短冊の束。一番上の1枚＝次にできる輪の色（JS が --strip に書く） */
+.kb-strips {
+  position: absolute;
+  left: 6%;
+  bottom: clamp(48px, 10vh, 96px);
+  /* 床のもちもの（.kb-back-floor・z-index 1・後ろの兄弟）の箱が、狭い画面では束に重なる。押せるように一段上へ */
+  z-index: 2;
+  width: 48px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 1px;
+  background: #f1efe8;
+  /* 下に重なった色紙4枚（ずれて端だけ見える） */
+  box-shadow:
+    2px 3px 0 0 #7cc6e6,
+    -2px 5px 0 0 #f2d14a,
+    3px 8px 0 0 #a9cf4a,
+    -1px 11px 0 0 #3d6fc0,
+    0 14px 8px rgba(0, 0, 0, 0.25);
+  transform: rotate(-4deg);
+  /* 部屋の明るさに合わせて暗くする（鎖と同じ割合） */
+  filter: brightness(calc(0.35 + 0.65 * var(--amb, 1)));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.kb-strips::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1px;
+  background: var(--strip, #d8423a);
+  transform-origin: 0% 50%;
+}
+.kb-strips:focus {
+  outline: none;
+}
+/* 押したとき：一番上の1枚が丸まって持っていかれる */
+.kb-strips.is-curl::before {
+  animation: kb-strip-curl 300ms ease-out;
+}
+@keyframes kb-strip-curl {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+  55% {
+    transform: perspective(90px) rotateY(-70deg) translate(4px, -8px) scaleY(0.55);
+    opacity: 0.4;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kb-world:not([data-motion-forced]) .kb-strips.is-curl::before {
+    animation: none;
+  }
+}
