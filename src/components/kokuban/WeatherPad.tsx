@@ -3,11 +3,17 @@
 // 窓台に置いた端末。取りに行くのは窓に近づいてから（初回の読み込みでは取らない）。取れるまで・取れないときは画面が消えたまま。
 // 取れた観測は窓の曇りの計算にも渡す（setObservation）。sessionStorage に10分ためて、見えている間は10分ごとに取り直す。
 // 操作（タップ）は受けない。動きは無い（rAF を使わない）。
-import { useEffect, useState } from "react";
+// 端末の絵（site.assets.tablet）があれば、CSS のベゼルの代わりに絵を使い、表示は絵の画面の内側に収める。
+// 窓の絵があるときは、WindowSide がこれをガラスの子として置く（絵の窓台に立てかけた位置・weatherPad.css）。
+import { useEffect, useState, type CSSProperties } from "react";
 import type { WeatherObs } from "@/lib/weather";
+import { site } from "@/data/site";
 import { ARRIVE_EVENT, now } from "@/lib/now";
 import { clockConfig, clockCore, debugAllowed } from "@/lib/worldClock";
 import "./weatherPad.css";
+
+const TABLET = site.assets.tablet;
+const TABLET_STYLE = TABLET ? ({ "--art": `url(${TABLET})` } as CSSProperties) : undefined;
 
 const WORD: Record<WeatherObs["kind"], string> = { hare: "晴れ", kumori: "くもり", ame: "雨", yuki: "雪" };
 
@@ -195,7 +201,12 @@ export default function WeatherPad() {
 
   return (
     <div className="kb-wpad">
-      <div className="kb-tab" data-kind={obs?.kind} data-night={night ? "" : undefined}>
+      <div
+        className={`kb-tab${TABLET ? " has-art" : ""}`}
+        style={TABLET_STYLE}
+        data-kind={obs?.kind}
+        data-night={night ? "" : undefined}
+      >
         <div className="kb-tscreen">
           {obs && (
             <>

@@ -67,8 +67,8 @@ html.kb-garland-grabbing * {
     -1px 11px 0 0 #3d6fc0,
     0 14px 8px rgba(0, 0, 0, 0.25);
   transform: rotate(-4deg);
-  /* 部屋の明るさに合わせて暗くする（鎖と同じ割合） */
-  filter: brightness(calc(0.35 + 0.65 * var(--amb, 1)));
+  /* 部屋の明るさに合わせて暗くする（鎖と同じ割合＝garlandSim の TONE_FLOOR） */
+  filter: brightness(calc(0.55 + 0.45 * var(--amb, 1)));
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -101,6 +101,49 @@ html.kb-garland-grabbing * {
     opacity: 1;
   }
 }
+
+/* 絵が入ったとき：お菓子の箱のふたに入った色とりどりの短冊・はさみ・のり（site.assets.stripsTray）。
+   床に置いた物として、今の場所（左寄り）に。スマホ 390px で幅約117px・PC で最大172px */
+.kb-strips.has-art {
+  width: clamp(112px, 30vw, 172px);
+  height: auto;
+  aspect-ratio: 800 / 550;
+  border-radius: 0;
+  background: var(--art) center / contain no-repeat;
+  box-shadow: none;
+  transform: none;
+  filter: brightness(calc(0.55 + 0.45 * var(--amb, 1))) drop-shadow(0 4px 4px rgba(0, 0, 0, 0.28));
+}
+/* 次に輪になる色（--strip）の小さな紙片。ふだんは見えず、押したときだけ箱の中からふわっと上がって消える */
+.kb-strips.has-art::before {
+  inset: auto;
+  left: 47%;
+  top: 30%;
+  width: 6%;
+  height: 22%;
+  border-radius: 1px;
+  opacity: 0;
+  /* 箱の中の短冊と同じ傾き（上が左へ約18°） */
+  transform: rotate(-18deg);
+  transform-origin: 50% 100%;
+}
+.kb-strips.has-art.is-curl::before {
+  animation: kb-strip-lift 320ms ease-out;
+}
+@keyframes kb-strip-lift {
+  0% {
+    transform: translateY(6px) rotate(-18deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-3px, -18px) rotate(-28deg);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kb-world:not([data-motion-forced]) .kb-strips.is-curl::before {
     animation: none;

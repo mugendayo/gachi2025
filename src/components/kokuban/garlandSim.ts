@@ -5,6 +5,7 @@
 //   尾の先はページのどこへでも引っ張っていける。ページの左右の端まで持っていくとそこにくっつき、そこから新しい尾が続く。
 //   くっついた点を長押しすると外れる。くっついた点は端末に残る。
 //   尾とくっついた鎖は、ページ全体を覆う固定の canvas に、いま画面に入っている所だけ描く（節点はページ座標で持つ）。
+//   [data-occlude] の付いた部品（テレビの箱など）の四角の中は描かない＝鎖はその部品の奥を通って見える。
 // 物理は掴んでいる間と揺れている間だけ回す。文字も数も出さない。
 import { CLOCK_EVENT, now } from "@/lib/now";
 import { GARLAND_KEY, ringColor, sharedTarget, streamColor } from "@/lib/prep";
@@ -50,6 +51,23 @@ const SCROLL_MAX = 18;
 const FLOOR_FRICTION = 0.4;
 /** 保存する自分の輪の数の上限（壊れた値を読まないための目安。実用上は無制限） */
 const MINE_CAP = 100000;
+/** 輪の大きさ（輪の間隔 P＝画面の幅の 1/72・5〜6.4px）。輪の縦の外径はおよそ 1.86P＝スマホ（390px）で約10px・PC で約12px */
+const P_RATIO = 72;
+const P_MIN = 5;
+const P_MAX = 6.4;
+/** 暗い部屋での色の沈め方：明るさの下限（--amb が0でもこれだけ残す）と、灰青へ寄せる量（--dark が1のとき） */
+const TONE_FLOOR = 0.55;
+const TONE_NIGHT = 0.2;
+/** 輪の外径（P に対する割合）。正面の輪＝幅1.5P×縦1.86P（縦が鎖の向き）／横向きの輪＝幅0.3P×縦1.44P */
+const FRONT_W = 1.5;
+const FRONT_H = 1.86;
+const SIDE_W = 0.3;
+const SIDE_H = 1.44;
+/** 色を掛けた輪の絵は、画面の画素の何倍の細かさで作っておくか（回して縮めて描くときのギザギザを抑える） */
+const ART_SS = 2;
+/** 正面の輪の紙の帯を太らせる量（P に対する割合・帯の内側と外側へ。外径は変えない）。
+ *  絵の帯は外径の約8%（右側はさらに細い）しかなく、縦10px前後に縮めると片側が1px未満になって輪が「C」の字にかすれるため */
+const FRONT_BOLD = 0.05;
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const empty = (): Saved => ({ v: 2, n: 0, pre: [], hooks: [] });
@@ -157,6 +175,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   let dark = 0;
   let lightKey = "";
   const shade = new Map<string, string>();
+  /** 色（tone の結果）ごとの、色を掛けた輪の絵 [正面, 横向き] */
+  const tinted = new Map<string, [HTMLCanvasElement, HTMLCanvasElement]>();
   const readLight = () => {
     if (world) {
       const cs = getComputedStyle(world);
@@ -172,13 +192,15 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     if (key === lightKey) return false;
     lightKey = key;
     shade.clear();
+    // 色が変わったので、色を掛けた輪の絵も作り直す（古い色の絵を溜めない）
+    tinted.clear();
     return true;
   };
   const tone = (hex: string) => {
     let c = shade.get(hex);
     if (c) return c;
     const n = parseInt(hex.slice(1), 16);
-    const f = 0.35 + 0.65 * Math.min(1, Math.max(0, amb));
+    const f = TONE_FLOOR + (1 - TONE_FLOOR) * Math.min(1, Math.max(0, amb));
     let r = ((n >> 16) & 255) * f;
     let g = ((n >> 8) & 255) * f;
     let b = (n & 255) * f;
@@ -188,13 +210,115 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       g += (0xe9 - g) * 0.12;
       b += (0xff - b) * 0.12;
     }
-    const d = 0.5 * Math.min(1, Math.max(0, dark));
+    const d = TONE_NIGHT * Math.min(1, Math.max(0, dark));
     r += (60 - r) * d;
     g += (70 - g) * d;
     b += (100 - b) * d;
     c = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
     shade.set(hex, c);
     return c;
+  };
+
+  /* ---------- 輪の絵（白い紙の輪に色を掛ける） ---------- */
+  // site.assets の ringFront（正面の輪）・ringSide（横向きの輪）が両方読めたら絵で描く。空・読めないあいだは線と四角で描く。
+  // 白い絵を今の輪の大きさに縮めた下絵を1回作り、色ごとに「下絵×色（陰影は残す）・形は下絵のまま」の絵を1回だけ作って覚える。
+  // 毎コマの描画は drawImage だけ。
+  let gone = false;
+  const artSrc: [string, string] = [site.assets.ringFront, site.assets.ringSide];
+  const artImg: (HTMLImageElement | null)[] = [null, null];
+  let artReady = false;
+  /** 下絵 [正面, 横向き] と、それを作ったときの大きさ（P と画素の細かさ） */
+  let base: [HTMLCanvasElement, HTMLCanvasElement] | null = null;
+  let baseKey = "";
+  if (artSrc[0] && artSrc[1]) {
+    let left = 2;
+    artSrc.forEach((src, i) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => {
+        artImg[i] = img;
+        if (--left === 0 && !gone) {
+          artReady = true;
+          draw();
+        }
+      };
+      img.src = src;
+    });
+  }
+  const makeCanvas = (w: number, h: number) => {
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.ceil(w));
+    cv.height = Math.max(1, Math.ceil(h));
+    return cv;
+  };
+  /** 白い絵を、描く大きさ（の ART_SS 倍）に縮めた下絵。大きく縮めるときは半分ずつ縮めてにじみを残さない */
+  const shrink = (img: HTMLImageElement, w: number, h: number) => {
+    let src: CanvasImageSource = img;
+    let sw = img.naturalWidth;
+    let sh = img.naturalHeight;
+    while (sw / 2 > w && sh / 2 > h) {
+      const half = makeCanvas(sw / 2, sh / 2);
+      const hc = half.getContext("2d");
+      if (!hc) break;
+      hc.imageSmoothingQuality = "high";
+      hc.drawImage(src, 0, 0, half.width, half.height);
+      src = half;
+      sw = half.width;
+      sh = half.height;
+    }
+    const out = makeCanvas(w, h);
+    const oc = out.getContext("2d");
+    if (oc) {
+      oc.imageSmoothingQuality = "high";
+      oc.drawImage(src, 0, 0, out.width, out.height);
+    }
+    return out;
+  };
+  /** 縮めた下絵を上下左右斜めに k だけずらして8回＋中央に重ね、紙の帯を k ずつ太らせる（外径は w×h のまま） */
+  const bold = (img: HTMLImageElement, w: number, h: number, k: number) => {
+    const inner = shrink(img, w - 2 * k, h - 2 * k);
+    const out = makeCanvas(w, h);
+    const oc = out.getContext("2d");
+    if (!oc) return inner;
+    for (const dx of [-k, 0, k]) for (const dy of [-k, 0, k]) oc.drawImage(inner, k + dx, k + dy);
+    return out;
+  };
+  /** 下絵を、いまの輪の大きさに合わせて用意する（P か画素の細かさが変わったときだけ作り直す）。絵で描けるなら true。
+   *  鎖を描くたびに1回だけ呼ぶ（輪ごとには呼ばない） */
+  const artOn = () => {
+    if (!artReady || !artImg[0] || !artImg[1]) return false;
+    const s = Math.max(dpr, pd) * ART_SS;
+    const key = `${P}|${s}`;
+    if (!base || key !== baseKey) {
+      baseKey = key;
+      base = [
+        bold(artImg[0], FRONT_W * P * s, FRONT_H * P * s, FRONT_BOLD * P * s),
+        shrink(artImg[1], SIDE_W * P * s, SIDE_H * P * s),
+      ];
+      tinted.clear();
+    }
+    return true;
+  };
+  /** 色 col を掛けた輪の絵 [正面, 横向き]。artOn() が true のときだけ呼ぶ */
+  const ringArt = (col: string) => {
+    let t = tinted.get(col);
+    if (t || !base) return t || null;
+    const tint = (b: HTMLCanvasElement) => {
+      const cv = makeCanvas(b.width, b.height);
+      const c2 = cv.getContext("2d");
+      if (!c2) return b;
+      c2.drawImage(b, 0, 0);
+      // 白い紙の陰影を残したまま色を乗せ、形（透けている所）は下絵に戻す
+      c2.globalCompositeOperation = "multiply";
+      c2.fillStyle = col;
+      c2.fillRect(0, 0, cv.width, cv.height);
+      c2.globalCompositeOperation = "destination-in";
+      c2.drawImage(b, 0, 0);
+      return cv;
+    };
+    t = [tint(base[0]), tint(base[1])];
+    tinted.set(col, t);
+    return t;
   };
 
   /* ---------- 鎖の組み立て ---------- */
@@ -275,7 +399,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   /** 共有の輪を、スパン×層の順に天井のフックへ掛けていく。渡しきれない残りは尾（自分の側）へ回す */
   const buildRoom = () => {
     drapes = [];
-    P = Math.min(12, Math.max(6, W / 60));
+    P = Math.min(P_MAX, Math.max(P_MIN, W / P_RATIO));
     const nh = W < 700 ? 4 : 5;
     // 両端のフックは部屋の角（輪が半分に切れないよう、輪1つ分弱だけ内側）
     const inset = P * 0.8;
@@ -312,6 +436,25 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     }
     freeShared = N - used;
     freeFirst = used;
+    freeX = openHook(hx, freeX);
+  };
+  /** 尾を垂らすフックが、教室の後ろの手前の部品（テレビ）の真上なら、真上でないいちばん近いフックに替える。
+   *  そのままだと尾が部品の奥に隠れ、床の短冊で足した輪も見えず、尾の先も掴めない（両端のフックは部品の外） */
+  const openHook = (hx: number[], x: number) => {
+    const cb = canvas.getBoundingClientRect();
+    if (!cb.width) return x;
+    const rs = occluders(false, section);
+    const hidden = (h: number) => rs.some((r) => r.bottom > cb.top + HOOK_Y && cb.left + h > r.left - P && cb.left + h < r.right + P);
+    if (!hidden(x)) return x;
+    let best = x;
+    let bd = Infinity;
+    for (const h of hx) {
+      if (!hidden(h) && Math.abs(h - x) < bd) {
+        bd = Math.abs(h - x);
+        best = h;
+      }
+    }
+    return best;
   };
   const colorsShared = (from: number, k: number) => Array.from({ length: k }, (_, i) => ringColor(from + i));
 
@@ -588,6 +731,11 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     const rx = P * 0.62;
     const ry = P * 0.8;
     const pad = P * PER_NODE * 2;
+    // 絵で描くときの大きさ（f＝正面の輪・s＝横向きの輪）
+    const fw = { f: P * FRONT_W, s: P * SIDE_W };
+    const fh = { f: P * FRONT_H, s: P * SIDE_H };
+    const useArt = artOn();
+    let drew = false;
     // 横向きの輪（奇数番）を先に、正面の輪（偶数番）をその上に
     for (const odd of [1, 0])
       for (const c of list) {
@@ -615,22 +763,32 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
           const x = q.x - ox;
           const y = q.y - oy;
           const col = tone(c.rings[r]);
-          if (odd) {
+          const art = useArt ? ringArt(col) : null;
+          if (art) {
+            // 絵の縦を鎖の向きに合わせて回す（回す角＝鎖の向き − 90°）
+            const cos = Math.sin(q.a);
+            const sin = -Math.cos(q.a);
+            c2.setTransform(d * cos, d * sin, -d * sin, d * cos, d * x, d * y);
+            if (odd) c2.drawImage(art[1], -fw.s / 2, -fh.s / 2, fw.s, fh.s);
+            else c2.drawImage(art[0], -fw.f / 2, -fh.f / 2, fw.f, fh.f);
+            drew = true;
+          } else if (odd) {
             c2.fillStyle = col;
             const cos = Math.cos(q.a);
             const sin = Math.sin(q.a);
             c2.setTransform(d * cos, d * sin, -d * sin, d * cos, d * x, d * y);
-            c2.fillRect(-P * 0.72, -P * 0.18, P * 1.44, P * 0.36);
+            c2.fillRect(-P * 0.72, -P * 0.15, P * 1.44, P * 0.3);
             c2.setTransform(d, 0, 0, d, 0, 0);
           } else {
             c2.strokeStyle = col;
-            c2.lineWidth = P * 0.32;
+            c2.lineWidth = P * 0.26;
             c2.beginPath();
             c2.ellipse(x, y, rx, ry, q.a - Math.PI / 2, 0, Math.PI * 2);
             c2.stroke();
           }
         }
       }
+    if (drew) c2.setTransform(d, 0, 0, d, 0, 0);
   };
   const drawRoom = () => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -659,6 +817,20 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       pctx.arc(p.x - sx - r * 0.25, p.y - sy - r * 0.25, r * 0.35, 0, Math.PI * 2);
       pctx.fill();
     }
+    // 手前にある部品（[data-occlude]）の四角を抜く＝鎖はその奥を通る。四角は描くたびに1回だけ読む。
+    // clip ではなく描いたあとに消す（四角どうしが重なっても抜けたままになる）。角丸は無視
+    for (const r of occluders(true)) pctx.clearRect(r.left, r.top, r.width, r.height);
+  };
+  /** 手前の部品の四角（画面座標）。inView＝画面に入っているものだけ・root＝その中の部品だけ */
+  const occluders = (inView: boolean, root: ParentNode = document) => {
+    const out: DOMRect[] = [];
+    root.querySelectorAll<HTMLElement>("[data-occlude]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      if (inView && !(r.bottom > 0 && r.top < VH && r.right > 0 && r.left < VW)) return;
+      out.push(r);
+    });
+    return out;
   };
   const draw = () => {
     drawRoom();
@@ -1337,6 +1509,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     };
 
   return () => {
+    gone = true;
     if (rafId) cancelAnimationFrame(rafId);
     if (pageRaf) cancelAnimationFrame(pageRaf);
     rafId = 0;

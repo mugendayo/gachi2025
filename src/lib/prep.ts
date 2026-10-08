@@ -1,7 +1,8 @@
 // 輪飾りの長さと色（保存しない純関数）。
 // 長さ：解禁の次の日から会期の前の日まで、毎晩の「文化祭準備」の時間だけ伸びる（時刻が同じなら全員同じ長さ）。
 // 会期中は変えない。最終日の「片付け」の間に、まっすぐ短くなっていく。
-// 色：色紙の袋（14色×20枚）から、好かれている色ほど先に取り出す。終盤は残った茶や灰が多くなる。
+// 色：色紙の袋（14色×40枚）から、好かれている色ほど先に取り出す。最大の240輪でも袋の半分も使わないので、
+//     最後まで色とりどり（終盤に地味な色が少し混じる程度）。
 import { site } from "@/data/site";
 import { clockConfig, clockCore, type Phase } from "@/lib/worldClock";
 
@@ -94,8 +95,12 @@ export const PAPER: [string, number][] = [
   ["#2a2a2c", 1], // 黒
   ["#283a6a", 2], // 紺
 ];
+/** 自分の輪の袋（14色×20枚）。足し続けるので、減ったら袋を足す */
 const PER_COLOR = 20;
 const BAG = PAPER.length * PER_COLOR;
+/** 共有の輪の袋（14色×40枚＝560枚）。最大240輪では半分も使わない＝袋の底の茶・灰・黒ばかりの所まで行かない */
+const SHARED_PER_COLOR = 40;
+const SHARED_BAG = PAPER.length * SHARED_PER_COLOR;
 
 function mulberry32(seed: number) {
   let s = seed >>> 0;
@@ -114,9 +119,9 @@ function bag(n: number): string[] {
   let out = bags.get(n);
   if (out) return out;
   const r = mulberry32(site.year + n);
-  const left = PAPER.map(() => PER_COLOR);
+  const left = PAPER.map(() => SHARED_PER_COLOR);
   out = [];
-  for (let k = 0; k < BAG; k++) {
+  for (let k = 0; k < SHARED_BAG; k++) {
     let sum = 0;
     for (let c = 0; c < PAPER.length; c++) sum += PAPER[c][1] * left[c];
     let x = r() * sum;
@@ -134,7 +139,7 @@ function bag(n: number): string[] {
 }
 
 /** i 番目の輪の色（袋が空になったら次の袋へ） */
-export const ringColor = (i: number) => bag(Math.floor(i / BAG))[((i % BAG) + BAG) % BAG];
+export const ringColor = (i: number) => bag(Math.floor(i / SHARED_BAG))[((i % SHARED_BAG) + SHARED_BAG) % SHARED_BAG];
 
 /** 自分の輪（その端末で足した輪）を保存する鍵 */
 export const GARLAND_KEY = `gbf_${site.year}_garland_v2`;

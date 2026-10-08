@@ -1,0 +1,310 @@
+/* ========================= 黒板の第3弾：落書きの訂正・黒板消しクリーナー・書きなおす札 =========================
+   Classroom が読む。kokuban.css より先に読まれるので、上書きするところは kokuban.css より詳しいセレクタにする。
+   門の内なので橙と明朝は使わない。 */
+
+/* ---------- 誰かの落書き：去年の落書き（横線で消して矢印で訂正）と、今年のコンセプト（丸で囲んで補足） ----------
+   位置と大きさは .kb-doodle のまま（PC＝右下・スマホ＝最下段の下）。中を3段に組む：
+   1段目＝去年の落書き／2段目＝左に補足・右に訂正／3段目＝今年のコンセプト（右寄せ・丸のゆとり付き）。
+   横線・矢印・丸は BoardFx が字の位置から canvas に描くので、ここは字の置き場所だけ。
+   字の色は .kb-board.is-canvas [data-chalk]（canvas が準備できたら透明）より弱いセレクタで付ける */
+.kb-board .kb-notes {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  column-gap: 0.4em;
+}
+/* スマホ：画面の下に貼り付く粉受けに丸が隠れないよう、下にゆとり */
+@media (max-width: 899px) {
+  .kb-board .kb-notes {
+    margin-bottom: 22px;
+  }
+}
+.kb-notes span.kb-note-old {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+  font-size: 0.6em;
+  color: var(--chalk);
+}
+.kb-notes span.kb-note-this {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+  margin: 0.8em 0 0.1em 0.3em;
+  font-size: 0.56em;
+  color: var(--chalk);
+}
+.kb-notes span.kb-note-fix {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  margin: 1.3em 0.6em 0.1em 0;
+  font-size: 0.62em;
+  color: var(--chalk-y);
+}
+.kb-notes span.kb-note-concept {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  justify-self: end;
+  /* 丸が字の外にはみ出す分のゆとり */
+  margin: 0.8em 0.5em 0.35em 0;
+}
+@media (min-width: 900px) {
+  .kb-notes span.kb-note-old {
+    font-size: 0.5em;
+  }
+  .kb-notes span.kb-note-this {
+    font-size: 0.46em;
+  }
+  .kb-notes span.kb-note-fix {
+    font-size: 0.5em;
+  }
+}
+
+/* 最下段の「ガチ文化祭！」：kokuban.css の色指定が canvas 準備後の透明より強く、本物の文字が残っていた
+   （こすっても canvas の下から同じ字が見えて、何度こすっても消えなかった）。canvas が準備できたらほかの字と同じく透明に */
+.kb-board.is-canvas .kb-finale [data-chalk].kb-finale-word {
+  color: transparent;
+  text-shadow: none;
+}
+
+/* ---------- 黒板消しクリーナー（粉受けの右端の電動の箱） ----------
+   絵（site.assets.cleaner）が空のあいだは、クリーム色の箱に吸い込み口の黒い溝と電源ランプ */
+.kb-board .kb-cleaner {
+  position: absolute;
+  z-index: 6;
+  right: 12px;
+  bottom: 3px;
+  width: 92px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px 6px 3px 3px;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.35), transparent 45%),
+    linear-gradient(#efe7d2, #d6caac);
+  box-shadow:
+    inset 0 -4px 0 rgba(90, 70, 40, 0.18),
+    0 3px 5px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transform-origin: 50% 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+/* 吸い込み口 */
+.kb-board .kb-cleaner::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 5px;
+  height: 6px;
+  border-radius: 3px;
+  background: #1b1a17;
+  box-shadow:
+    inset 0 2px 2px rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+/* 指で押しやすい当たり判定（黒板消しの当たり判定とは重ならない） */
+.kb-board .kb-cleaner::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px -8px;
+}
+.kb-cleaner-lamp {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3e8a4c;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.kb-cleaner.is-running .kb-cleaner-lamp {
+  background: #8ff09d;
+  box-shadow: 0 0 6px 1px rgba(143, 240, 157, 0.9);
+}
+.kb-cleaner.is-running {
+  animation: kb-cleaner-buzz 0.8s linear;
+}
+@keyframes kb-cleaner-buzz {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  10%,
+  50% {
+    transform: translate(-1px, 0.5px) rotate(-0.6deg);
+  }
+  20%,
+  60% {
+    transform: translate(1px, -0.5px) rotate(0.6deg);
+  }
+  30%,
+  70% {
+    transform: translate(-0.8px, 0) rotate(-0.4deg);
+  }
+  40%,
+  80% {
+    transform: translate(0.8px, 0.4px) rotate(0.4deg);
+  }
+  90% {
+    transform: translate(-0.4px, 0) rotate(0);
+  }
+}
+/* 絵が入ったら、仮の箱を絵に置き換える */
+.kb-board .kb-cleaner.has-art {
+  background: var(--art) center bottom / contain no-repeat;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.4));
+}
+.kb-board .kb-cleaner.has-art::before {
+  display: none;
+}
+/* PC：黒板消しの置き場所を、クリーナーの当たり判定と重ならない所まで左へ */
+.kb-board .kb-ledge .kb-eraser {
+  right: max(12%, 124px);
+}
+
+/* スマホ：画面の下に貼り付く粉受けの右端。クリーナーの分、黒板消しとチョークを少し左へ寄せる */
+@media (max-width: 899px) {
+  .kb-board .kb-ledge .kb-cleaner {
+    right: 4px;
+    bottom: 5px;
+    width: 50px;
+    height: 26px;
+  }
+  .kb-board .kb-ledge .kb-cleaner::before {
+    top: 4px;
+    height: 5px;
+  }
+  .kb-board .kb-ledge .kb-cleaner::after {
+    inset: -14px -4px -10px -6px;
+  }
+  .kb-board .kb-ledge .kb-cleaner-lamp {
+    right: 6px;
+    bottom: 5px;
+    width: 4px;
+    height: 4px;
+  }
+  .kb-board .kb-ledge .kb-eraser {
+    right: 62px;
+    width: 72px;
+  }
+  .kb-board .kb-ledge .kb-eraser.has-art {
+    width: 74px;
+  }
+  .kb-board .kb-ledge .kb-eraser::after {
+    inset: -16px -2px -12px -10px;
+  }
+  .kb-board .kb-ledge .kb-chalk-w {
+    left: 6%;
+  }
+  .kb-board .kb-ledge .kb-chalk-y {
+    left: calc(6% + 68px);
+  }
+  .kb-board .kb-ledge .kb-chalk-r {
+    left: calc(6% + 124px);
+  }
+  .kb-board .kb-ledge .kb-chalk-y.has-art {
+    left: calc(6% + 66px);
+  }
+  .kb-board .kb-ledge .kb-chalk-r.has-art {
+    left: calc(6% + 132px);
+  }
+}
+
+/* ---------- 書きなおす札（黒板の木枠の上の縁に、丸い磁石で留めた白いマグネットの札） ----------
+   板書の字（右上の日付）に重ならないよう、木枠の上に半分かかる高さで、右寄りに貼る */
+.kb-board .kb-reset {
+  position: absolute;
+  z-index: 7;
+  top: -13px;
+  right: clamp(96px, 24%, 340px);
+  padding: 5px 11px 5px 24px;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(175deg, #fdfcf7, #eceae0);
+  color: #1d1c1a;
+  font: 700 13px / 1.3 var(--font-print);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.15),
+    0 3px 6px rgba(0, 0, 0, 0.32);
+  transform: rotate(-2.5deg);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* 丸い磁石 */
+.kb-board .kb-reset::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f6a3a3 0 18%, #d23a3a 45%, #8f1d22 100%);
+  box-shadow: 0 1.5px 2px rgba(0, 0, 0, 0.45);
+}
+/* 指で押しやすい当たり判定（下は控えめに：すぐ下の日付をこすろうとした指で、黒板が書き直されないように） */
+.kb-board .kb-reset::after {
+  content: "";
+  position: absolute;
+  inset: -8px -6px -3px;
+}
+.kb-board .kb-reset:active {
+  transform: rotate(-2.5deg) translateY(1px);
+}
+.kb-board .kb-reset[aria-busy="true"] {
+  cursor: progress;
+}
+.kb-board .kb-reset:focus-visible {
+  outline: 2px solid #f2f0e6;
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .kb-board .kb-reset:hover {
+    transform: rotate(-1.5deg) translateY(-1px);
+  }
+}
+/* スマホ：壁の掛け軸の真下を避けて、右の角寄りに（右上の日付は木枠より十分下にあるので重ならない） */
+@media (max-width: 899px) {
+  .kb-board .kb-reset {
+    top: -10px;
+    right: 18px;
+    padding: 4px 10px 4px 22px;
+  }
+}
+@media (min-width: 900px) {
+  .kb-board .kb-reset {
+    top: -14px;
+    font-size: 14px;
+    padding: 6px 13px 6px 26px;
+  }
+}
+/* 壁の空いた所は押せないようにする（木枠の上の縁にかかった札に、指が届くように）。時計・掛け軸はそのまま */
+.kb-room > .kb-wall {
+  pointer-events: none;
+}
+.kb-room > .kb-wall > * {
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-world:not([data-motion-forced]) .kb-cleaner.is-running {
+    animation: none;
+  }
+  .kb-world:not([data-motion-forced]) .kb-board .kb-reset {
+    transition: none;
+  }
+}

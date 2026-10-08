@@ -4,8 +4,12 @@
 // ただし自分の輪がある端末では、ページのどこかに鎖が掛かっているので、一度でもページを動かしたら読み込む。
 // 文字は置かない。数も出さない。
 import { useEffect, useRef } from "react";
+import { site } from "@/data/site";
 import { GARLAND_KEY } from "@/lib/prep";
 import "./garland.css";
+
+/** 床の短冊の箱の絵（site.assets.stripsTray）。空なら CSS で描いた仮の束 */
+const TRAY: string = site.assets.stripsTray;
 
 /** この端末で輪を足したことがあるか（保存の中身を軽く見るだけ） */
 const hasMine = () => {
@@ -69,7 +73,14 @@ export default function Garland() {
   return (
     <>
       <canvas ref={canvasRef} className="kb-garland" aria-hidden />
-      <button ref={stripsRef} type="button" className="kb-strips" aria-hidden="true" tabIndex={-1} />
+      <button
+        ref={stripsRef}
+        type="button"
+        className={`kb-strips${TRAY ? " has-art" : ""}`}
+        style={TRAY ? ({ "--art": `url(${TRAY})` } as React.CSSProperties) : undefined}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
     </>
   );
 }

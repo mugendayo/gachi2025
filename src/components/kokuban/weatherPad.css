@@ -1,6 +1,6 @@
 /* ========================= 窓台のタブレット（下市町のいまの天気） =========================
    窓の下の窓台に置いた端末。窓台は部屋の明るさ（--amb）で暗くなるが、画面は暗くしない＝夜は画面だけが明るく見える。
-   ガラス（.kb-glass）の下に並べるので、ガラスの触る範囲には重ならない。操作は受けない。
+   ガラス（.kb-glass）の下に並べる（窓の絵があるときは絵の窓台に立てかけてガラスに少し重なるが、触っても奥のガラスに届く）。操作は受けない。
    門の内なので橙と明朝は使わない。数字は等幅寄りの書体。 */
 
 /* 窓とタブレットを上下にくっつけて、区画の中ほどに置く（子が窓だけのときは今までと同じ位置） */
@@ -12,7 +12,7 @@
 .kb-wpad {
   --sill: color-mix(in oklab, #1a1d20, #b9b6ad calc(var(--amb, 1) * 100%));
   /* 端末の幅。% だと使う場所（角丸・内側の余白）ごとに基準が変わるので、画面の幅から出す（390px で 118px・PC で 156px） */
-  --tw: clamp(118px, 18vw, 156px);
+  --tw: clamp(100px, 18vw, 156px);
   grid-row: 2;
   grid-column: 1;
   position: relative;
@@ -165,4 +165,58 @@
   font-size: 9cqw;
   line-height: 1.15;
   white-space: nowrap;
+}
+
+/* ========== 端末の絵（site.assets.tablet）があるとき ==========
+   青いラバーケースのタブレットの絵（public/kokuban/tablet.webp・640×423）。CSS のベゼルと角丸の代わりに使う。
+   表示は絵の画面（assetGeometry.json の tablet.screen：左 6.6% 上 7.48% 幅 86.73% 高 84.06%）の内側の、
+   黒いガラスの面（絵を測ると 左 10.3% 右 10% 上 11.6% 下 12%。その外は灰色の縁）にぴったり重ねる。
+   ケースは部屋の明るさで暗くなるが、画面は暗くしない（夜は画面だけ明るい） */
+.kb-tab.has-art {
+  position: relative;
+  aspect-ratio: 640 / 423;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.kb-tab.has-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--art) 0 0 / 100% 100% no-repeat;
+  filter: brightness(calc(0.3 + 0.7 * var(--amb, 1))) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.4));
+}
+.kb-tab.has-art .kb-tscreen {
+  position: absolute;
+  left: 10.3%;
+  right: 10%;
+  top: 11.6%;
+  bottom: 12%;
+  height: auto;
+  border-radius: calc(var(--tw) * 0.018);
+  /* 暗い部屋では画面の光が周りににじむ */
+  box-shadow: 0 0 calc(var(--tw) * 0.28) rgba(140, 180, 240, calc(0.4 * (1 - var(--amb, 1))));
+}
+
+/* ========== 窓の絵があるとき：絵の窓台に立てかける ==========
+   WindowSide がこの端末を .kb-glass（絵のガラスの範囲）の子として置く＝寄せると窓と一緒に寄る。
+   位置はガラスの範囲に対する %：右端は絵の x 88% あたり（右下のガラスの右寄り）、
+   下端は絵の y 95.8%（窓台の上の面・絵の 93.7〜96.4%）。CSS の窓台は描かない。
+   ガラスの上に重なる所も触れない（pointer-events: none のまま。押してもその奥のガラスに届く） */
+.kb-glass > .kb-wpad {
+  position: absolute;
+  z-index: 3;
+  right: 5.2%;
+  bottom: -9.05%;
+  width: var(--tw);
+  margin: 0;
+  padding: 0;
+  display: block;
+  grid-row: auto;
+  grid-column: auto;
+}
+.kb-glass > .kb-wpad::before,
+.kb-glass > .kb-wpad::after {
+  content: none;
 }

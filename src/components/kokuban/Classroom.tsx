@@ -4,11 +4,16 @@ import { site } from "@/data/site";
 import { boardTextScript, buildTimeBoardText } from "@/lib/worldClock";
 import BoardFx from "./BoardFx";
 import { HandSymbol } from "./Signboard";
+import "./board2.css";
 
 /** チョーク（粉受けに置いてある色。拾うと黒板に書ける） */
 // 黒板・粉受け・道具の絵（site.assets が空のあいだは CSS と canvas で描いた仮のもの）
 const A = site.assets;
 const artStyle = (url: string) => (url ? ({ "--art": `url(${url})` } as React.CSSProperties) : undefined);
+
+/** 落書きの傾き（CSS の rotate と、canvas に写すときの data-rot を同じ値にする） */
+const tilt = (deg: number) => ({ "data-rot": String(deg), style: { transform: `rotate(${deg}deg)` } });
+const N = site.boardNotes;
 
 const CHALKS = [
   { key: "w", color: "#f2f0e6", name: "白いチョーク", art: A.chalkW },
@@ -126,12 +131,28 @@ export default function Classroom() {
             </p>
           ))}
 
-        {/* 誰かの落書き（今年のコンセプト） */}
-        <p className="kb-doodle">
-          <span data-chalk="doodle" data-rot="-8">
+        {/* 誰かの落書き：去年の落書き（横線で消して、矢印で訂正）と、今年のコンセプト（丸で囲んで補足）。
+            字はほかの板書と同じく canvas に写し、横線・矢印・丸は BoardFx が字の位置から描く（どれもこすると消える） */}
+        <div className="kb-doodle kb-notes">
+          {N.lastYear && (
+            <span className="kb-note-old" data-chalk="note-old" {...tilt(-3)}>
+              {N.lastYear}
+            </span>
+          )}
+          {N.lastYearFix && (
+            <span className="kb-note-fix" data-chalk="note-fix" {...tilt(5)}>
+              {N.lastYearFix}
+            </span>
+          )}
+          <span className="kb-note-concept" data-chalk="doodle" {...tilt(-8)}>
             {site.concept}
           </span>
-        </p>
+          {N.thisYear && (
+            <span className="kb-note-this" data-chalk="note-this" {...tilt(4)}>
+              {N.thisYear}
+            </span>
+          )}
+        </div>
 
         {/* 粉受け（チョークと黒板消し）。スマホでは黒板が画面にある間、画面の下に貼り付く。
             指・マウスで使う道具なので、キーボードと読み上げの対象からは外す（読み上げの正本は黒板の文字） */}
@@ -160,7 +181,24 @@ export default function Classroom() {
             aria-hidden="true"
             tabIndex={-1}
           />
+          {/* 黒板消しクリーナー（粉受けの右端の機械）。黒板消しを持ったまま上まで来るか、押すと、黒板消しが入ってきれいになる */}
+          <button
+            type="button"
+            className={`kb-cleaner${A.cleaner ? " has-art" : ""}`}
+            style={artStyle(A.cleaner)}
+            data-tool="cleaner"
+            aria-label="黒板消しクリーナー"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            {!A.cleaner && <i className="kb-cleaner-lamp" />}
+          </button>
         </div>
+
+        {/* 書きなおす札（黒板の木枠に磁石で留めた札）。押すと、見えない手が黒板を拭いて最初の板書を書き直す。自分の落書きも消える */}
+        <button type="button" className="kb-reset">
+          {site.boardReset}
+        </button>
       </div>
 
       {/* 手形の形（ページに1つ。use で使い回す） */}

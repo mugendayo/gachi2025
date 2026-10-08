@@ -1,16 +1,26 @@
 "use client";
-// 教室の後ろのブラウン管。右の操作パネルのボタン（1・2・3）でチャンネル（site.tv）を変え、つまみで音量を変える。
+// 教室の後ろのブラウン管。右の操作パネルのボタン（1・2・3）でチャンネル（site.tv）を変え、つまみで音量を変え、丸いボタンで電源を入れ切りする。
 // 帯ごとの既定の見た目：点いている（選ばれたチャンネルの静止画）＝昼・文化祭準備・消灯／電源オフ＝朝・超新星祭・夕方／砂嵐＝深夜・明け方。
-// ボタンを押したら帯に関係なく点けて再生する（押した人の操作が優先）。動画のIDが空のチャンネルは砂嵐（音なし）。
+// ボタンを押したら帯に関係なく、押した人の操作のとおりに映す（電源も帯の既定より優先。保存しないので読み込み直すと既定に戻る）。
+// チャンネルのボタン＝点けて再生。電源ボタン＝切る（止めて外し、画面が横一本の光に縮んで消える）／点ける（静止画。勝手に再生しない）。
+// 動画も src も空のチャンネルは砂嵐（音なし）。src（自前の動画）があれば YouTube を使わない。
+// YouTube の埋め込みは、流れている間だけ見せ、その上には何も重ねない（ガラス・走査線も外す）。止まったら外して静止画に戻す。
 // 最初は動画を読み込まない：静止画は近づいてから、再生の仕組み（tvPlayer と YouTube の API）は押してから読む。
 import { useCallback, useEffect, useRef, useState } from "react";
 import { site } from "@/data/site";
 import { debugAllowed } from "@/lib/worldClock";
-import type { TvPlayer, TvProbe } from "./tvPlayer";
+import type { TvPhase, TvPlayer, TvProbe, TvSource } from "./tvPlayer";
 
-type Mode = "idle" | "play" | "snow";
+/**
+ * idle＝帯の既定のまま／on＝電源を入れた（静止画）／off＝電源を切った／
+ * play＝押した〜流れ始める前（砂嵐・埋め込みは見せない）／live＝流れている／snow＝空のチャンネル・読み込めない
+ */
+type Mode = "idle" | "on" | "off" | "play" | "live" | "snow";
 const VOL_KEY = "kb-tv-vol";
 const VOL_DEFAULT = 60;
+
+/** テレビの絵（site.assets.tv）。空なら CSS で描いた仮の箱 */
+const TV_ART: string = site.assets.tv;
 
 const thumbOf = (id: string) => (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "");
 const clampVol = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
@@ -21,6 +31,7 @@ const loadMod = () => (modPromise ??= import(/* webpackChunkName: "tvPlayer" */ 
 export default function BackTv() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const ytRef = useRef<HTMLDivElement | null>(null);
+  const offRef = useRef<HTMLElement | null>(null);
   const ctrlRef = useRef<TvPlayer | null>(null);
   const visibleRef = useRef(false);
   const pressSeq = useRef(0);
@@ -29,8 +40,17 @@ export default function BackTv() {
   const [volume, setVolumeState] = useState(VOL_DEFAULT);
   const volRef = useRef(VOL_DEFAULT);
   const [near, setNear] = useState(false);
-  const stateRef = useRef({ channel, mode, near });
-  stateRef.current = { channel, mode, near };
+  // 検分用：チャンネルの src を差し替える（本人が動画ファイルを置く前に試す）
+  const [srcOver, setSrcOver] = useState<Record<number, string>>({});
+  const stateRef = useRef({ channel, mode, near, srcOver });
+  stateRef.current = { channel, mode, near, srcOver };
+
+  /** i 番のチャンネル（src は検分の差し替えを優先） */
+  const chOf = useCallback((i: number): (TvSource & { key: string }) | null => {
+    const c = site.tv[i];
+    if (!c) return null;
+    return { key: c.key, youtubeId: c.youtubeId, src: stateRef.current.srcOver[i] ?? c.src };
+  }, []);
 
   // 音量は前に合わせた値を覚えておく（その人の端末だけ）
   useEffect(() => {
@@ -70,40 +90,79 @@ export default function BackTv() {
     };
   }, []);
 
+  /** 再生側の知らせ：流れ始めたら見せる／止まったら静止画へ（電源を切ったあとなどは聞かない） */
+  const onPhase = useCallback((p: TvPhase) => {
+    const m = stateRef.current.mode;
+    if (m !== "play" && m !== "live") return;
+    setMode(p === "live" ? "live" : p === "loading" ? "play" : "on");
+  }, []);
+
   const ensureCtrl = useCallback(async () => {
     if (ctrlRef.current) return ctrlRef.current;
     const m = await loadMod();
     if (!ctrlRef.current && ytRef.current) {
-      ctrlRef.current = m.createTvPlayer(ytRef.current, { volume: volRef.current, onFail: () => setMode("snow") });
+      ctrlRef.current = m.createTvPlayer(ytRef.current, {
+        volume: volRef.current,
+        onPhase,
+        onFail: () => setMode("snow"),
+      });
       ctrlRef.current.setVisible(visibleRef.current);
     }
     return ctrlRef.current;
-  }, []);
+  }, [onPhase]);
 
-  /** チャンネルのボタン */
+  /** チャンネルのボタン（点けて再生） */
   const press = useCallback(
     (i: number) => {
-      const ch = site.tv[i];
+      const ch = chOf(i);
       if (!ch) return;
+      const s = stateRef.current;
+      // 流れているチャンネルをもう一度押しても、そのまま
+      if (i === s.channel && s.mode === "live") return;
       const seq = ++pressSeq.current;
       setChannel(i);
-      if (!ch.youtubeId) {
+      if (!ch.youtubeId && !ch.src) {
         setMode("snow");
         ctrlRef.current?.stop();
         return;
       }
       setMode("play");
+      stateRef.current = { ...s, channel: i, mode: "play" };
+      // 仕組みがもう用意できていれば、押した操作の中でそのまま流す（端末が「押して流した」と見なし、音ありで流れやすい）
+      if (ctrlRef.current) {
+        ctrlRef.current.play(ch);
+        return;
+      }
       ensureCtrl()
         .then((c) => {
-          // 読み込みを待つ間に別のボタン（砂嵐など）が押されていたら、古い方は流さない
-          if (seq === pressSeq.current) c?.play(ch.youtubeId);
+          // 読み込みを待つ間に別のボタン（砂嵐・電源など）が押されていたら、古い方は流さない
+          if (seq === pressSeq.current) c?.play(ch);
         })
         .catch(() => {
           if (seq === pressSeq.current) setMode("snow");
         });
     },
-    [ensureCtrl],
+    [chOf, ensureCtrl],
   );
+
+  /** 電源ボタン：点いていれば切る、切れていれば点ける（静止画まで。再生はチャンネルのボタンで） */
+  const power = useCallback(() => {
+    const s = stateRef.current;
+    // 帯の既定のままなら、いま画面が「電源オフ」に見えているかで決める（帯の見分けは CSS だけが持つ）
+    const isOn =
+      s.mode === "idle" ? !offRef.current || getComputedStyle(offRef.current).display === "none" : s.mode !== "off";
+    ++pressSeq.current;
+    if (isOn) {
+      ctrlRef.current?.stop();
+      setMode("off");
+      stateRef.current = { ...s, mode: "off" };
+      return;
+    }
+    const ch = chOf(s.channel);
+    const next: Mode = ch && (ch.youtubeId || ch.src) ? "on" : "snow";
+    setMode(next);
+    stateRef.current = { ...s, mode: next };
+  }, [chOf]);
 
   const changeVolume = useCallback((v: number) => {
     const nv = clampVol(v);
@@ -150,40 +209,73 @@ export default function BackTv() {
     e.preventDefault();
   };
 
-  // 検分用（手元と Preview だけ）：window.__kbTv.state() で今の状態、press(n)（1〜3）・volume(v) で操作
+  // 検分用（手元と Preview だけ）：window.__kbTv.state() で今の状態、press(n)（1〜3）・volume(v)・power() で操作。
+  // pause()＝外から一時停止されたときと同じ（埋め込みが外れて静止画に戻るか）。
+  // useSrc(n, url)＝n 番のチャンネルに自前の動画を差し込む（"" で YouTube に戻す・null で site.tv のまま）
   useEffect(() => {
     if (!debugAllowed()) return;
     const w = window as unknown as { __kbTv?: unknown };
     w.__kbTv = {
       state: () => {
         const s = stateRef.current;
-        const ch = site.tv[s.channel];
+        const ch = chOf(s.channel);
         const p: Partial<TvProbe> = ctrlRef.current?.probe() ?? {};
         return {
           channel: s.channel + 1,
           key: ch?.key,
           youtubeId: ch?.youtubeId,
+          chSrc: ch?.src,
           mode: s.mode,
           near: s.near,
           knob: volRef.current,
           apiLoaded: !!document.querySelector('script[src="https://www.youtube.com/iframe_api"]'),
+          glassShown: (() => {
+            const g = rootRef.current?.querySelector<HTMLElement>(".kb-tv-glass");
+            return !!g && getComputedStyle(g).display !== "none";
+          })(),
           ...p,
         };
       },
       press: (n: number) => press(n - 1),
       volume: (v: number) => changeVolume(v),
+      power: () => power(),
+      pause: () => ctrlRef.current?.debugPause(),
+      useSrc: (n: number, url: string | null) => {
+        const i = n - 1;
+        const s = stateRef.current;
+        if (i === s.channel && (s.mode === "play" || s.mode === "live")) {
+          ++pressSeq.current;
+          ctrlRef.current?.stop();
+          setMode("on");
+        }
+        setSrcOver((o) => {
+          const next = { ...o };
+          if (url === null) delete next[i];
+          else next[i] = url;
+          stateRef.current = { ...stateRef.current, srcOver: next };
+          return next;
+        });
+      },
     };
     return () => {
       delete w.__kbTv;
     };
-  }, [press, changeVolume]);
+  }, [chOf, press, power, changeVolume]);
 
-  const id = site.tv[channel]?.youtubeId ?? "";
-  const thumb = near ? thumbOf(id) : "";
+  const cur = site.tv[channel];
+  const id = cur?.youtubeId ?? "";
+  const src = srcOver[channel] ?? cur?.src ?? "";
+  const thumb = near && !src ? thumbOf(id) : "";
 
   return (
-    <div ref={rootRef} className="kb-tv" data-tv={mode}>
-      <div className="kb-tv-body">
+    <div ref={rootRef} className="kb-tv" data-tv={mode} data-tv-kind={src ? "video" : "yt"}>
+      {/* data-occlude＝輪飾りの鎖はこの箱の中を描かない（テレビの裏を通る） */}
+      {/* 絵があるときは箱の地が絵になり、画面とボタンは絵の画面・右の面に合わせて置く（kokuban.css の .kb-tv-body.has-art） */}
+      <div
+        className={`kb-tv-body${TV_ART ? " has-art" : ""}`}
+        style={TV_ART ? ({ "--art": `url(${TV_ART})` } as React.CSSProperties) : undefined}
+        data-occlude=""
+      >
         <div className="kb-tv-screen" aria-hidden>
           {thumb && (
             <>
@@ -191,9 +283,13 @@ export default function BackTv() {
               <img key={`${thumb}-g`} className="kb-tv-thumb kb-tv-ghost" src={thumb} alt="" decoding="async" referrerPolicy="no-referrer" />
             </>
           )}
+          {/* 自前の動画の静止画は、その動画の始まりの1コマ（YouTube を使わない） */}
+          {near && src && (
+            <video key={src} className="kb-tv-thumb" src={`${src}#t=0.5`} preload="metadata" muted playsInline tabIndex={-1} />
+          )}
           <div ref={ytRef} className="kb-tv-yt" />
           <i className="kb-tv-snow" />
-          <i className="kb-tv-off" />
+          <i ref={offRef} className="kb-tv-off" />
           <i className="kb-tv-glass" />
         </div>
         <div className="kb-tv-panel">
@@ -219,14 +315,18 @@ export default function BackTv() {
               <button
                 key={c.key}
                 type="button"
-                aria-pressed={mode !== "idle" && channel === i}
+                aria-pressed={mode !== "idle" && mode !== "off" && channel === i}
                 onClick={() => press(i)}
               >
                 {i + 1}
               </button>
             ))}
           </div>
-          <b className="kb-tv-led" aria-hidden />
+          {/* 電源：丸い押しボタンと、切れている間に灯る小さな赤いランプ */}
+          <div className="kb-tv-pow">
+            <b className="kb-tv-led" aria-hidden />
+            <button type="button" aria-label="電源" onClick={power} />
+          </div>
         </div>
       </div>
       <div className="kb-tv-stand" aria-hidden />

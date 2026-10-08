@@ -61,16 +61,21 @@ const hashStr = (str: string) => {
 /**
  * その夜の日付から決まる、窓の外側の手形の置き場所（ガラスの中の %）。
  * 看板の handLayout と同じ型。中桟（縦）と横桟とクレセント錠を避け、重なりすぎない。
+ * 避ける範囲は窓の絵（window.webp）の採寸をガラスの中の % に直したもの：
+ * 合わせ目 x 48.0〜52.0（絵の 48.4〜51.8%）・横桟 y 51.7〜56.6（絵の 49.7〜53.6%）・クレセント錠 x 47〜52 y 48〜60。
+ * 手形の大きさ（幅 7.5%・高さはおよそ 14%）の半分ほどの余白を足して避ける。CSS の仮の枠も同じ高さに横桟を置く。
+ * 右下のガラスには置かない（窓台のタブレットが手前に立つので、狭い画面では手形が隠れて数が合わなくなる）。
  */
 export function windowHandLayout(night: string) {
   const r = seeded(hashStr("window:" + night));
   const out: { x: number; y: number; rot: number; scale: number }[] = [];
   let guard = 0;
-  while (out.length < 9 && guard++ < 600) {
+  while (out.length < 9 && guard++ < 2000) {
     const x = 8 + r() * 84;
     const y = 10 + r() * 78;
-    if (x > 44 && x < 56) continue; // 中桟とクレセント錠
-    if (y > 57 && y < 71) continue; // 横桟
+    if (x > 42.5 && x < 57.5) continue; // 中桟（合わせ目）とクレセント錠
+    if (y > 43 && y < 65) continue; // 横桟
+    if (x > 50 && y > 50) continue; // 右下のガラス（タブレットの陰）
     if (out.some((p) => Math.hypot(p.x - x, (p.y - y) * 0.62) < 12)) continue; // 重なりすぎない
     out.push({ x, y, rot: -32 + r() * 64, scale: 0.86 + r() * 0.3 });
   }

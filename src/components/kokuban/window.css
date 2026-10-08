@@ -244,28 +244,78 @@
     transparent calc(50% + 7px)
   );
 }
-/* 横桟 */
+/* 横桟（窓の絵と同じ高さ＝手形の置き場の除外範囲と揃える） */
 .kb-wframe::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(64% - 3px);
+  top: calc(54% - 3px);
   height: 6px;
   background: var(--frame);
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 }
-/* クレセント錠（合わせ目の中ほど） */
+/* クレセント錠（合わせ目の、横桟の高さ） */
 .kb-wframe::after {
   content: "";
   position: absolute;
   left: calc(50% - 9px);
-  top: calc(44% - 5px);
+  top: calc(54% - 12px);
   width: 18px;
   height: 10px;
   border-radius: 9px 9px 3px 3px;
   background: color-mix(in oklab, #24272a, #a9aca8 calc(var(--amb) * 100%));
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== 窓の絵（site.assets.windowFrame）があるとき ==========
+   アルミサッシの引き違い窓と白い木の窓台の絵（public/kokuban/window.webp・1600×1047）。数値は src/data/assetGeometry.json の採寸。
+   .kb-wbox＝絵の箱（絵と同じ縦横比）。.kb-glass＝絵のガラスの範囲（4枚のガラスの外接：左 7.71% 上 8.07% 幅 84.72% 高 80.45%）。
+   空・鏡・手形・曇り・拭いた跡はガラスの範囲に描き、枠の絵をその上に重ねる（ガラスの穴は透過なので下が見える）。
+   指で拭く・息・寄せるの座標は .kb-glass の大きさで数えるので、絵の枠の上を触っても拭かない。
+   枠の絵はガラスの子：はみ出して描くため .kb-glass は切り抜かない（曇りのぼかしのにじみは、不透明な枠の下に隠れる） */
+.kb-window.has-art .kb-wbox {
+  position: relative;
+  /* 今の窓（ガラス＋外枠 10px ずつ）と同じ幅 */
+  width: min(92vw + 20px, 100%, 660px);
+  aspect-ratio: 1600 / 1047;
+}
+.kb-window.has-art .kb-glass {
+  position: absolute;
+  left: 7.71%;
+  top: 8.07%;
+  width: 84.72%;
+  height: 80.45%;
+  aspect-ratio: auto;
+  overflow: visible;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* 枠の絵：ガラスの範囲から見て、絵全体の位置（左 -7.71/84.72・上 -8.07/80.45・幅 100/84.72・高 100/80.45） */
+.kb-wframe.has-art {
+  inset: auto;
+  left: -9.1006%;
+  top: -10.0311%;
+  width: 118.0359%;
+  height: 124.3008%;
+  border: 0;
+  background: var(--art) 0 0 / 100% 100% no-repeat;
+  /* 部屋の明るさで暗くなる（今の CSS の枠と同じくらいの暗さまで） */
+  filter: brightness(calc(0.18 + 0.82 * var(--amb, 1)));
+}
+.kb-wframe.has-art::before,
+.kb-wframe.has-art::after {
+  content: none;
+}
+/* 曇りのぼかしはガラスの範囲で切る（.kb-glass を切り抜かない代わり。clip-path はぼかしの後に効く） */
+.kb-window.has-art .kb-glass canvas.kb-fog {
+  clip-path: inset(0);
+}
+/* テレビのにじみは左下のガラスに映す（右下は窓台のタブレットが手前に立つので隠れる） */
+.kb-window.has-art .kb-tvglint {
+  right: auto;
+  left: 24%;
+  bottom: 14%;
 }
 
 @media (prefers-reduced-motion: reduce) {
