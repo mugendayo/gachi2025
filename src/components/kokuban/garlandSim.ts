@@ -1,7 +1,9 @@
 // 輪飾りの鎖（遅延チャンク）。
 // 共有の輪：教室の後ろの天井のフックに掛けて垂らす。準備の時間だけ伸びる（同じ時刻なら全員同じ長さ）。
 //   長さが変わるのは、教室の後ろが画面の外にある間だけ（見ている前では伸び縮みしない）。天井の canvas に描く（テレビの裏を通る）。
-// 自分の輪：共有の輪の尾の先につながる。床の短冊の束を押すと、尾の先に1つ足される。数の上限はない。
+// 自分の輪：共有の輪の続き。床の短冊の束を押すと1つ足される。数の上限はない。
+//   まず共有の輪と同じ並べ方で天井のフックの間に渡していく（押すたびに天井の鎖が伸びる。渡している途中は先の数個が垂れる）。
+//   右のフックの真下が手前の部品（テレビ）で隠れないスパンまで渡しきったら、その先はそのフックから尾として垂れる。
 //   尾の先はページのどこへでも引っ張っていける。ページの左右の端まで持っていくとそこにくっつき、そこから新しい尾が続く。
 //   くっついた点を長押しすると外れる。くっついた点は端末に残る。
 //   尾とくっついた鎖は、ページ全体を覆う固定の canvas に、いま画面に入っている所だけ描く（節点はページ座標で持つ）。
@@ -40,6 +42,10 @@ const STILL_STEPS = 15;
 const CALM_AFTER_MS = 3000;
 const CALM_DAMP = 0.94;
 const HOOK_Y = 8;
+/** 天井の層の数（上の層ほど長く垂れる） */
+const LAYERS = 40;
+/** 天井へ渡している途中の鎖の、先の垂れている輪の数（ここが尾の先＝掴める） */
+const LEAD = 5;
 /** ページの左右の端からこの幅に入るとくっつく */
 const EDGE = 16;
 /** くっついた点を外す長押し */
@@ -145,10 +151,12 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   let segs: Chain[] = [];
   /** segs[i] の終わりの点（くっついている点） */
   let active: Hook[] = [];
-  /** 共有の輪のうち、天井に渡しきれずに尾へ回った数と、その最初の番号。尾の付け根（canvas の中の x） */
-  let freeShared = 0;
-  let freeFirst = 0;
+  /** 尾の最初の輪の通しの番号（共有の輪から数えて。それより前は天井に渡してある）。尾の付け根（canvas の中の x） */
+  let tailFirst = 0;
   let freeX = 0;
+  /** 自分の輪が天井に入れる数と、いま天井に入っている数 */
+  let ceilCap = 0;
+  let ceilMine = 0;
   /** ページの床と左右の壁（ページ座標）。長い尾は床に積もり、ページの外へは出ない（先端を掴めなくならないように） */
   let floorY = Infinity;
   let wallL = -Infinity;
@@ -396,55 +404,108 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     return { nodes, rest, rings, first, pg: true };
   };
 
-  /** 共有の輪を、スパン×層の順に天井のフックへ掛けていく。渡しきれない残りは尾（自分の側）へ回す */
-  const buildRoom = () => {
-    drapes = [];
+  /** 天井のフックの位置と、i 番目のスパン（層ごとに左から右へ。上の層ほど長く垂れる）の左右のフックと輪の数 */
+  const plan = () => {
     P = Math.min(P_MAX, Math.max(P_MIN, W / P_RATIO));
     const nh = W < 700 ? 4 : 5;
     // 両端のフックは部屋の角（輪が半分に切れないよう、輪1つ分弱だけ内側）
     const inset = P * 0.8;
     const S = (W - 2 * inset) / (nh - 1);
     const hx = Array.from({ length: nh }, (_, i) => inset + S * i);
-    const N = shown;
-    let used = 0;
-    freeX = hx[0];
-    let done = W <= 0;
-    for (let layer = 0; layer < 40 && used < N && !done; layer++) {
-      const k = Math.max(2, Math.round((S * (1.15 + 0.38 * layer)) / P));
-      for (let s = 0; s < nh - 1 && used < N; s++) {
-        const left = N - used;
-        if (left >= k) {
-          drapes.push(drape(hx[s], HOOK_Y, hx[s + 1], HOOK_Y, k, used, colorsShared(used, k)));
-          used += k;
-          freeX = hx[s + 1];
-          continue;
-        }
-        // 途中のスパン＝左のフックから垂れる尾。
-        // 尾が天井の帯の下に出るほど長いときだけ、右のフックまで渡して残りを右から垂らす（伸びている先端を見えるところに置く）
-        const drop = H - HOOK_Y - P * 1.2;
-        const len = left * P;
-        const span = Math.max(S * 1.05, len - drop);
-        if (len > drop && span <= len - 2 * P) {
-          const ka = Math.round(span / P);
-          drapes.push(drape(hx[s], HOOK_Y, hx[s + 1], HOOK_Y, ka, used, colorsShared(used, ka)));
-          used += ka;
-          freeX = hx[s + 1];
-        } else freeX = hx[s];
-        done = true;
-        break;
-      }
+    const span = (i: number) => {
+      const layer = Math.floor(i / (nh - 1));
+      const s = i % (nh - 1);
+      return { a: hx[s], b: hx[s + 1], k: Math.max(2, Math.round((S * (1.15 + 0.38 * layer)) / P)) };
+    };
+    return { hx, span, spans: (nh - 1) * LAYERS };
+  };
+  /** いまの天井の並べ方（buildRoom で決め直す） */
+  let roomPlan: ReturnType<typeof plan> | null = null;
+  /** 共有の輪に続けて自分の輪を、スパン×層の順に天井のフックへ渡していく。
+   *  自分の輪が天井に入るのは、共有の輪が止まっているスパンから、右のフックが手前の部品（テレビ）に隠れないスパンの終わりまで
+   *  （そこまで渡しきったら、その先は見えるフックから尾として垂れ、ページ全体へ引っ張っていける）。
+   *  くっついた点があるときは、その点を作ったときに天井にあった数のまま（それより後の輪はくっついた点の先へ続く） */
+  const buildRoom = () => {
+    drapes = [];
+    roomPlan = plan();
+    const { span, spans } = roomPlan;
+    const hid = hiddenTest();
+    // 自分の輪が天井に入れる数（共有の輪が止まっているスパンの終わり。右のフックが隠れているなら次のスパンへ延ばす）
+    let from = 0;
+    let i = 0;
+    while (i < spans && from + span(i).k <= shown) from += span(i++).k;
+    let end = from;
+    for (; i < spans; i++) {
+      const sp = span(i);
+      end += sp.k;
+      if (!hid(sp.b)) break;
     }
-    freeShared = N - used;
-    freeFirst = used;
-    freeX = openHook(hx, freeX);
+    ceilCap = W <= 0 ? 0 : Math.max(0, end - shown);
+    ceilMine = wantMine();
+    const r = lay(shown + ceilMine, true);
+    tailFirst = r.used;
+    freeX = r.x;
+  };
+  /** 通しで N 輪を天井に渡したときの、天井に渡した数（それより後は尾）と尾の付け根（canvas の中の x）。make のときは鎖も作る */
+  const lay = (N: number, make: boolean) => {
+    if (!roomPlan) return { used: 0, x: 0 };
+    const { hx, span, spans } = roomPlan;
+    let used = 0;
+    let x = hx[0];
+    let lead = false;
+    for (let j = 0; j < spans && used < N && W > 0; j++) {
+      const { a, b, k } = span(j);
+      const left = N - used;
+      if (left >= k) {
+        if (make) drapes.push(drape(a, HOOK_Y, b, HOOK_Y, k, used, colorsSeq(used, k)));
+        used += k;
+        x = b;
+        continue;
+      }
+      // 途中のスパン：天井に沿って左のフックから右へ渡していく途中。渡した所の先から、最後の数個が垂れている
+      // （押すたびに渡した所が右へ伸びる。渡した部分は同じ層の渡しきった鎖と同じたるみの割合）
+      const t = Math.min(LEAD, left, k - left);
+      const on = left - t;
+      x = a + ((b - a) * on) / k;
+      if (make && on > 0) drapes.push(drape(a, HOOK_Y, x, HOOK_Y, on, used, colorsSeq(used, on)));
+      used += on;
+      lead = true;
+      break;
+    }
+    // 垂れている数個は短いので天井の帯の中に収まる。長い尾を垂らすときだけ、手前の部品に隠れないフックへ替える
+    if (!lead) x = openHook(hx, x);
+    return { used, x };
+  };
+  /** 自分の輪のうち天井に入れる数。くっついた点があれば、そこへ届くいちばん手前の点を作ったときの数を超えない
+   *  （届かない点＝画面の大きさや前の版の並べ方で作った点は buildMine でも使わないので、天井を止めない） */
+  const wantMine = () => {
+    const base = Math.min(mine.n, ceilCap);
+    if (!roomPlan || W <= 0 || !mine.hooks.length) return base;
+    const cb = canvas.getBoundingClientRect();
+    const list = places();
+    const bd = bounds();
+    for (const h of mine.hooks) {
+      const m = Math.min(base, h.n);
+      const r = lay(shown + m, false);
+      // buildMine と同じ見方：その点までの輪が2つ以上あり、鎖の長さで届くか
+      const k = shown + h.n - r.used;
+      if (k < 2 || h.n > mine.n) continue;
+      const p = hookPos(h, list, bd);
+      if (p && Math.hypot(p.x - (cb.left + window.scrollX + r.x), p.y - (cb.top + window.scrollY + HOOK_Y)) <= k * P * 1.15) return m;
+    }
+    return base;
+  };
+  /** ページ座標の点 x（canvas の中の x）から真下へ垂らすと、手前の部品（テレビ）の奥に隠れるか */
+  const hiddenTest = () => {
+    const cb = canvas.getBoundingClientRect();
+    if (!cb.width) return () => false;
+    const rs = occluders(false, section);
+    return (h: number) => rs.some((r) => r.bottom > cb.top + HOOK_Y && cb.left + h > r.left - P && cb.left + h < r.right + P);
   };
   /** 尾を垂らすフックが、教室の後ろの手前の部品（テレビ）の真上なら、真上でないいちばん近いフックに替える。
    *  そのままだと尾が部品の奥に隠れ、床の短冊で足した輪も見えず、尾の先も掴めない（両端のフックは部品の外） */
   const openHook = (hx: number[], x: number) => {
-    const cb = canvas.getBoundingClientRect();
-    if (!cb.width) return x;
-    const rs = occluders(false, section);
-    const hidden = (h: number) => rs.some((r) => r.bottom > cb.top + HOOK_Y && cb.left + h > r.left - P && cb.left + h < r.right + P);
+    const hidden = hiddenTest();
     if (!hidden(x)) return x;
     let best = x;
     let bd = Infinity;
@@ -456,7 +517,9 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     }
     return best;
   };
-  const colorsShared = (from: number, k: number) => Array.from({ length: k }, (_, i) => ringColor(from + i));
+  /** 通しの q 番目の輪の色（共有の輪の続きに自分の輪） */
+  const seqColor = (q: number) => (q < shown ? ringColor(q) : mineColor(q - shown));
+  const colorsSeq = (from: number, k: number) => Array.from({ length: k }, (_, i) => seqColor(from + i));
 
   /* ---------- ページ座標の物差し ---------- */
   const bounds = () => {
@@ -520,13 +583,14 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     const cb = canvas.getBoundingClientRect();
     let ax = cb.left + window.scrollX + freeX;
     let ay = cb.top + window.scrollY + HOOK_Y;
-    const R = freeShared + mine.n;
-    const color = (q: number) => (q < freeShared ? ringColor(freeFirst + q) : mineColor(q - freeShared));
+    // 尾の輪：通しの番号 tailFirst から最後の自分の輪まで（q＝尾の中の番号）
+    const R = shown + mine.n - tailFirst;
+    const color = (q: number) => seqColor(tailFirst + q);
     const list = places();
     const bd = bounds();
     let from = 0;
     for (const h of mine.hooks) {
-      const idx = freeShared + h.n;
+      const idx = shown + h.n - tailFirst;
       const k = idx - from;
       if (k < 2 || idx > R) continue;
       const p = hookPos(h, list, bd);
@@ -539,7 +603,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         p.x,
         p.y,
         k,
-        freeFirst + from,
+        tailFirst + from,
         Array.from({ length: k }, (_, q) => color(from + q)),
       );
       d.pg = true;
@@ -549,7 +613,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       ay = p.y;
       from = idx;
     }
-    segs.push(hang(ax, ay, R - from, freeFirst + from, Array.from({ length: R - from }, (_, q) => color(from + q))));
+    segs.push(hang(ax, ay, R - from, tailFirst + from, Array.from({ length: R - from }, (_, q) => color(from + q))));
   };
   const tail = (): Chain | undefined => segs[segs.length - 1];
   const tipOf = (c: Chain | undefined) => (c && c.rings.length && c.nodes.length > 1 ? c.nodes[c.nodes.length - 1] : null);
@@ -687,10 +751,15 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     solve(list, n);
     freeze(list);
   };
+  /** 作り直す前に、古い鎖の節点への掴みを離す。くっつけた・外した直後の「離すまで」の印（done）は節点を持たないので残す
+   *  （残さないと、長押しで外して天井ごと作り直したとき、指を離したあとのクリックが下の部品へ届き、指のスクロールも止まらない） */
+  const dropGrab = () => {
+    if (grab?.kind !== "done") endGrab();
+  };
   /** 作り直して、静止形まで解く */
   const rebuild = () => {
     // 古い鎖の節点を掴んだまま残さない
-    endGrab();
+    dropGrab();
     buildRoom();
     buildMine();
     const list = all();
@@ -699,8 +768,10 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     moving = false;
     still = 0;
   };
+  /** 自分の側だけ作り直す（天井に入る自分の輪の数が変わるときは、天井ごと作り直す） */
   const rebuildMine = () => {
-    endGrab();
+    if (wantMine() !== ceilMine) return rebuild();
+    dropGrab();
     buildMine();
     solve(segs, 120);
     freeze(segs);
@@ -1088,6 +1159,13 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     mine = load();
     mine.hooks = mine.hooks.filter((o) => !(o.n === h.n && o.key === h.key && Math.abs(o.fy - h.fy) < 1e-6 && Math.abs(o.fx - h.fx) < 1e-6));
     save(mine);
+    // いちばん手前の点を外して、天井にまだ渡せる輪が出てきたときは、天井ごと作り直す（その先は垂れる）
+    if (wantMine() !== ceilMine) {
+      rebuild();
+      draw();
+      swing();
+      return;
+    }
     if (reduce) {
       solve(segs, 120);
       freeze(segs);
@@ -1316,7 +1394,17 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     }
     let c = tail();
     if (!c) return;
-    if (count > 8) {
+    // 足したあとに天井に入る自分の輪の数が変わるか（天井に渡している途中か）
+    const prev = mine.n;
+    mine.n = Math.min(MINE_CAP, mine.n + count);
+    const reroom = wantMine() !== ceilMine;
+    mine.n = prev;
+    if (reroom) {
+      // 天井に渡している途中：天井ごと作り直す（渡した所が右へ伸びる。渡しきった分は尾へ）
+      mine.n = Math.min(MINE_CAP, mine.n + count);
+      save(mine);
+      rebuild();
+    } else if (count > 8) {
       // まとめて足すとき（検分用）は、尾の先に寄せて差し込まず組み立て直す
       mine.n = Math.min(MINE_CAP, mine.n + count);
       save(mine);
@@ -1457,6 +1545,11 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     shown: number;
     mine: string[];
     mineCount: number;
+    /** 天井の鎖の輪の数（共有＋天井に入った自分の輪。渡している途中の先の垂れている数個も含む） */
+    ceiling: number;
+    /** 自分の輪が天井に入っている数と、入れる数 */
+    ceilingMine: number;
+    ceilingCap: number;
     hooks: { saved: Hook; x: number; y: number }[];
     savedHooks: Hook[];
     tip: { x: number; y: number } | null;
@@ -1479,6 +1572,15 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       },
       get mineCount() {
         return mine.n;
+      },
+      get ceiling() {
+        return shown + ceilMine;
+      },
+      get ceilingMine() {
+        return ceilMine;
+      },
+      get ceilingCap() {
+        return ceilCap;
       },
       get hooks() {
         return active.map((h, i) => {

@@ -72,8 +72,8 @@ export function prepProgress(nowMs: number): number {
   return Math.min(1, done / PREP_TOTAL);
 }
 
-/** 共有の輪の数（最大240。解禁直後の昼は6個＝机の上の作りかけ） */
-export const sharedCount = (p: number, phase: Phase) => (p <= 0 && phase !== "eve" ? 0 : 6 + Math.round(p * 234));
+/** 共有の輪の数（最大240。解禁前と解禁直後の昼は6個＝作りかけ。片付けが終わったあと・会期後は0） */
+export const sharedCount = (p: number, phase: Phase) => (p <= 0 && (phase === "live" || phase === "after") ? 0 : 6 + Math.round(p * 234));
 
 /** いまの時刻の、共有の輪の数 */
 export const sharedTarget = (nowMs: number) => sharedCount(prepProgress(nowMs), clockCore(nowMs, clockConfig).phase);

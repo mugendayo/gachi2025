@@ -507,7 +507,7 @@
   position: absolute;
   inset: -12px -6px -10px;
 }
-/* 黒板消しの汚れ：こするほど粉で白くなる（--load＝0〜1 を JS が書く。叩くと薄くなる） */
+/* 黒板消しの汚れ：こするほど粉で白くなる（--load＝0〜1 を JS が書く。クリーナーに入れると落ちる） */
 .kb-eraser {
   --load: 0;
 }
@@ -1587,6 +1587,9 @@
   }
   .kb-ledge {
     position: sticky;
+    /* 黒板の上の端が画面の下に来たとき、粉受けが木枠の上の書きなおす札（z-index 7）に重なる。
+       道具を押したつもりで札を押して黒板が書き直されないよう、粉受けを札より手前に */
+    z-index: 8;
     bottom: env(safe-area-inset-bottom, 0px);
     height: 22px;
     margin: auto calc(-1 * clamp(20px, 4.5vw, 52px)) -14px;

@@ -1,12 +1,14 @@
 "use client";
 // 窓の近くのタブレット：下市町のいまの気温・天気・湿度（気象庁の公開データ）。
-// 窓台に置いた端末。取りに行くのは窓に近づいてから（初回の読み込みでは取らない）。取れるまで・取れないときは画面が消えたまま。
+// 窓台に置いた端末。取りに行くのは窓に近づいてから（初回の読み込みでは取らない）。
+// 画面はいつも点いている。取れるまで・取れないときは地名と「--°」「--%」の空欄を出し、取れたら埋める。時刻は出さない。
 // 取れた観測は窓の曇りの計算にも渡す（setObservation）。sessionStorage に10分ためて、見えている間は10分ごとに取り直す。
+// 取れなかったときは 30秒・60秒・120秒…（上限10分）で取り直し、タブを開き直したときにも取り直す。
 // 操作（タップ）は受けない。動きは無い（rAF を使わない）。
 // 端末の絵（site.assets.tablet）があれば、CSS のベゼルの代わりに絵を使い、表示は絵の画面の内側に収める。
 // 窓の絵があるときは、WindowSide がこれをガラスの子として置く（絵の窓台に立てかけた位置・weatherPad.css）。
 import { useEffect, useState, type CSSProperties } from "react";
-import type { WeatherObs } from "@/lib/weather";
+import type { FailMode, WeatherObs } from "@/lib/weather";
 import { site } from "@/data/site";
 import { ARRIVE_EVENT, now } from "@/lib/now";
 import { clockConfig, clockCore, debugAllowed } from "@/lib/worldClock";
@@ -15,12 +17,12 @@ import "./weatherPad.css";
 const TABLET = site.assets.tablet;
 const TABLET_STYLE = TABLET ? ({ "--art": `url(${TABLET})` } as CSSProperties) : undefined;
 
-const WORD: Record<WeatherObs["kind"], string> = { hare: "晴れ", kumori: "くもり", ame: "雨", yuki: "雪" };
+const WORD: Record<NonNullable<WeatherObs["kind"]>, string> = { hare: "晴れ", kumori: "くもり", ame: "雨", yuki: "雪" };
 
 /** 雲の形（雨・雪のときは上へずらして下に粒を描く） */
 const CLOUD = "M6.5 17h11a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 7.3 8.6 4.25 4.25 0 0 0 6.5 17z";
 
-function Icon({ kind, night }: { kind: WeatherObs["kind"]; night: boolean }) {
+function Icon({ kind, night }: { kind: NonNullable<WeatherObs["kind"]>; night: boolean }) {
   if (kind === "hare" && night)
     return (
       <svg className="kb-ticon" viewBox="0 0 24 24" aria-hidden>
@@ -64,6 +66,10 @@ type Probe = {
   set: (o: Partial<WeatherObs>) => void;
   clear: () => void;
   refresh: () => void;
+  /** わざと失敗させる（"all"＝全部・"point"＝いまの地点ファイルだけ「まだ無い」失敗・""＝戻す）。続けて refresh() で取り直す */
+  fail: (m: FailMode) => Promise<void>;
+  /** 続けて失敗した回数・次に取り直すまでの ms・最後に読めた地点ファイル */
+  state: () => { failures: number; nextInMs: number; file: string };
   climate: () => Promise<unknown>;
 };
 
@@ -75,11 +81,14 @@ export default function WeatherPad() {
     if (!sec) return;
     let disposed = false;
     let mod: typeof import("@/lib/weather") | null = null;
-    let lastFetch = -Infinity; // 最後に取りに行った時刻（Date.now）。失敗しても10分は取り直さない
+    let lastFetch = -Infinity; // 最後に取りに行った時刻（Date.now）
+    let failures = 0; // 続けて失敗した回数（成功で0に戻す）
     let busy = false;
     let inView = false;
     let timer = 0;
     let begun = false;
+    /** 前に取りに行ってから、次に取り直すまでの間 */
+    const wait = () => (mod ? (failures ? mod.retryMs(failures) : mod.REFRESH_MS) : Infinity);
 
     const apply = (o: WeatherObs | null) => {
       if (disposed || !mod) return;
@@ -93,19 +102,27 @@ export default function WeatherPad() {
       mod
         .fetchWeather()
         .then((o) => {
-          // 失敗したら前の値のまま
+          // 失敗したら前の値（無ければ空欄）のまま、間をあけて取り直す
           if (o && mod) {
+            failures = 0;
             mod.writeCache(o);
             apply(o);
-          }
+          } else failures++;
         })
         .finally(() => {
           busy = false;
+          plan();
         });
     };
-    /** 見えていて、前に取ってから10分たっていれば取り直す */
+    /** 見えていて、前に取ってから決まった間がたっていれば取り直す */
     const check = () => {
-      if (mod && inView && !document.hidden && Date.now() - lastFetch >= mod.REFRESH_MS) refresh();
+      if (mod && inView && !document.hidden && Date.now() - lastFetch >= wait()) refresh();
+    };
+    /** 次に取り直す時刻に、見回りを1回置く */
+    const plan = () => {
+      window.clearTimeout(timer);
+      if (disposed || !mod) return;
+      timer = window.setTimeout(check, Math.max(1000, lastFetch + wait() - Date.now()));
     };
 
     const begin = () => {
@@ -122,7 +139,7 @@ export default function WeatherPad() {
           if (Date.now() - c.o.at < 3 * 3600000) apply(c.o);
         }
         check();
-        timer = window.setInterval(check, 60000);
+        plan();
       });
     };
 
@@ -140,9 +157,16 @@ export default function WeatherPad() {
     const seen = new IntersectionObserver((en) => {
       inView = en[en.length - 1].isIntersecting;
       check();
+      plan();
     });
     seen.observe(sec);
-    const onVis = () => check();
+    // タブを開き直したとき：取れていないなら（すぐ前に試したのでなければ）待たずに取り直す
+    const onVis = () => {
+      if (document.hidden) return;
+      if (failures && Date.now() - lastFetch >= 5000) lastFetch = -Infinity;
+      check();
+      plan();
+    };
     document.addEventListener("visibilitychange", onVis);
 
     // 読み込んだ直後の最初の画面では取らない。窓が見えているか、一度スクロールしたか、門をくぐって教室に着いたあとから見張る
@@ -177,6 +201,15 @@ export default function WeatherPad() {
           if (mod) refresh();
           else begin();
         },
+        fail: (m) =>
+          import("@/lib/weather").then((x) => {
+            x.setFailMode(m);
+          }),
+        state: () => ({
+          failures,
+          nextInMs: Math.max(0, Math.round(lastFetch + wait() - Date.now())) || 0,
+          file: mod?.getLastFile() ?? "",
+        }),
         climate: () =>
           import("@/lib/climate").then((c) => {
             const t = now();
@@ -188,7 +221,7 @@ export default function WeatherPad() {
       disposed = true;
       near.disconnect();
       seen.disconnect();
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("scroll", arm);
       window.removeEventListener(ARRIVE_EVENT, arm);
@@ -204,28 +237,24 @@ export default function WeatherPad() {
       <div
         className={`kb-tab${TABLET ? " has-art" : ""}`}
         style={TABLET_STYLE}
-        data-kind={obs?.kind}
+        data-kind={obs?.kind ?? "none"}
         data-night={night ? "" : undefined}
       >
         <div className="kb-tscreen">
-          {obs && (
-            <>
-              <div className="kb-trow">
-                <span className="kb-tplace">下市町</span>
-                <span className="kb-tsrc">気象庁（五條）</span>
-              </div>
-              <div className="kb-tmain">
-                <span className="kb-ttemp">{obs.tempC.toFixed(1)}°</span>
-                <Icon kind={obs.kind} night={night} />
-              </div>
-              <div className="kb-tsub">
-                <span>{WORD[obs.kind]}</span>
-                <span>
-                  湿度 <span className="kb-tnum">{Math.round(obs.rh)}%</span>
-                </span>
-              </div>
-            </>
-          )}
+          <div className="kb-trow">
+            <span className="kb-tplace">下市町</span>
+            <span className="kb-tsrc">気象庁（五條）</span>
+          </div>
+          <div className="kb-tmain">
+            <span className="kb-ttemp">{obs ? obs.tempC.toFixed(1) : "--"}°</span>
+            {obs?.kind && <Icon kind={obs.kind} night={night} />}
+          </div>
+          <div className="kb-tsub">
+            <span>{obs?.kind ? WORD[obs.kind] : "--"}</span>
+            <span>
+              湿度 <span className="kb-tnum">{obs ? Math.round(obs.rh) : "--"}%</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

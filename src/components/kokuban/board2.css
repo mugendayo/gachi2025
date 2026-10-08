@@ -13,10 +13,11 @@
   align-items: end;
   column-gap: 0.4em;
 }
-/* スマホ：画面の下に貼り付く粉受けに丸が隠れないよう、下にゆとり */
+/* スマホ：最後の書き込みと、画面の下に貼り付く粉受けのあいだに、何も書いていない黒板を広めに残す
+   （落書きをする余地・粉が落ちていく余地。粉受けの右端のクリーナーに丸が隠れない） */
 @media (max-width: 899px) {
   .kb-board .kb-notes {
-    margin-bottom: 22px;
+    margin-bottom: 122px;
   }
 }
 .kb-notes span.kb-note-old {
@@ -69,14 +70,20 @@
 }
 
 /* ---------- 黒板消しクリーナー（粉受けの右端の電動の箱） ----------
+   幅は黒板消しの 1.35 倍（絵の縦横比 480:236 のまま）。--kb-e＝黒板消しの幅、--kb-c＝クリーナーの幅（.kb-ledge に置く）。
    絵（site.assets.cleaner）が空のあいだは、クリーム色の箱に吸い込み口の黒い溝と電源ランプ */
+.kb-board .kb-ledge {
+  --kb-e: 78px;
+  --kb-c: calc(var(--kb-e) * 1.35);
+}
 .kb-board .kb-cleaner {
   position: absolute;
   z-index: 6;
   right: 12px;
-  bottom: 3px;
-  width: 92px;
-  height: 32px;
+  bottom: 2px;
+  width: var(--kb-c);
+  height: auto;
+  aspect-ratio: 480 / 236;
   padding: 0;
   border: 0;
   border-radius: 6px 6px 3px 3px;
@@ -95,10 +102,10 @@
 .kb-board .kb-cleaner::before {
   content: "";
   position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 5px;
-  height: 6px;
+  left: 10%;
+  right: 10%;
+  top: 6%;
+  height: 12%;
   border-radius: 3px;
   background: #1b1a17;
   box-shadow:
@@ -111,19 +118,42 @@
   position: absolute;
   inset: -10px -6px -8px;
 }
+/* 電源ランプ：絵の赤いランプの上に重ねる（絵の中のランプの位置＝左から 81%・上から 61%）。
+   ふだんは消えていて絵のランプが見える。黒板消しが汚れているあいだ（.is-blinking）ゆっくり点滅し、動いている間は点きっぱなし */
 .kb-cleaner-lamp {
   position: absolute;
-  right: 9px;
-  bottom: 7px;
-  width: 5px;
-  height: 5px;
+  left: 81.2%;
+  top: 61%;
+  width: max(5px, 3.8%);
+  aspect-ratio: 1;
   border-radius: 50%;
-  background: #3e8a4c;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 40% 35%, #ffd2c8 0 15%, #ff3b26 55%, #b3140a 100%);
+  box-shadow:
+    0 0 5px 2px rgba(255, 70, 40, 0.9),
+    0 0 14px 5px rgba(255, 60, 30, 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+.kb-cleaner:not(.has-art) .kb-cleaner-lamp {
+  opacity: 0.45;
+}
+.kb-cleaner.is-blinking .kb-cleaner-lamp {
+  animation: kb-cleaner-lamp 1.8s ease-in-out infinite;
 }
 .kb-cleaner.is-running .kb-cleaner-lamp {
-  background: #8ff09d;
-  box-shadow: 0 0 6px 1px rgba(143, 240, 157, 0.9);
+  animation: none;
+  opacity: 1;
+}
+@keyframes kb-cleaner-lamp {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  40%,
+  60% {
+    opacity: 1;
+  }
 }
 .kb-cleaner.is-running {
   animation: kb-cleaner-buzz 0.8s linear;
@@ -163,56 +193,60 @@
 .kb-board .kb-cleaner.has-art::before {
   display: none;
 }
-/* PC：黒板消しの置き場所を、クリーナーの当たり判定と重ならない所まで左へ */
-.kb-board .kb-ledge .kb-eraser {
-  right: max(12%, 124px);
+/* PC：黒板消しは --kb-e の幅で、クリーナーの当たり判定と重ならない所まで左へ */
+.kb-board .kb-ledge .kb-eraser,
+.kb-board .kb-ledge .kb-eraser.has-art {
+  width: var(--kb-e);
+  right: max(12%, calc(12px + var(--kb-c) + 34px));
 }
 
-/* スマホ：画面の下に貼り付く粉受けの右端。クリーナーの分、黒板消しとチョークを少し左へ寄せる */
+/* スマホ：画面の下に貼り付く粉受けに、チョーク3本・黒板消し・クリーナーを横一列に並べる
+   （チョークは左から詰め、黒板消しは中ほど、クリーナーは右端）。幅は粉受けの幅に合わせて伸び縮みし、
+   当たり判定は隣と重ならない（390px でも 360px でも）。タブレットでは上限の大きさで止まる */
 @media (max-width: 899px) {
-  .kb-board .kb-ledge .kb-cleaner {
-    right: 4px;
-    bottom: 5px;
-    width: 50px;
-    height: 26px;
+  .kb-board .kb-ledge {
+    --kb-c: min(25%, 116px);
+    --kb-e: calc(var(--kb-c) / 1.35);
+    /* 黒板消しとクリーナーの間・チョークの間・左の余白・チョーク3本の幅 */
+    --kb-g: min(5%, 26px);
+    --kb-cg: min(4%, 18px);
+    --kb-c0: min(3%, 14px);
+    --kb-cw: min(12.5%, 54px);
+    --kb-cy: min(10.5%, 46px);
+    --kb-cr: min(11%, 48px);
   }
-  .kb-board .kb-ledge .kb-cleaner::before {
-    top: 4px;
-    height: 5px;
+  .kb-board .kb-ledge .kb-cleaner {
+    right: 1.5%;
+    bottom: 5px;
   }
   .kb-board .kb-ledge .kb-cleaner::after {
-    inset: -14px -4px -10px -6px;
+    inset: -12px -4px -10px -7px;
   }
-  .kb-board .kb-ledge .kb-cleaner-lamp {
-    right: 6px;
-    bottom: 5px;
-    width: 4px;
-    height: 4px;
-  }
-  .kb-board .kb-ledge .kb-eraser {
-    right: 62px;
-    width: 72px;
-  }
+  .kb-board .kb-ledge .kb-eraser,
   .kb-board .kb-ledge .kb-eraser.has-art {
-    width: 74px;
+    right: calc(1.5% + var(--kb-c) + var(--kb-g));
+    width: var(--kb-e);
   }
   .kb-board .kb-ledge .kb-eraser::after {
-    inset: -16px -2px -12px -10px;
+    inset: -16px -6px -12px -7px;
   }
-  .kb-board .kb-ledge .kb-chalk-w {
-    left: 6%;
+  .kb-board .kb-ledge .kb-chalk::after {
+    inset: -20px -5px -14px;
   }
-  .kb-board .kb-ledge .kb-chalk-y {
-    left: calc(6% + 68px);
+  .kb-board .kb-ledge .kb-chalk-w,
+  .kb-board .kb-ledge .kb-chalk-w.has-art {
+    left: var(--kb-c0);
+    width: var(--kb-cw);
   }
-  .kb-board .kb-ledge .kb-chalk-r {
-    left: calc(6% + 124px);
-  }
+  .kb-board .kb-ledge .kb-chalk-y,
   .kb-board .kb-ledge .kb-chalk-y.has-art {
-    left: calc(6% + 66px);
+    left: calc(var(--kb-c0) + var(--kb-cw) + var(--kb-cg));
+    width: var(--kb-cy);
   }
+  .kb-board .kb-ledge .kb-chalk-r,
   .kb-board .kb-ledge .kb-chalk-r.has-art {
-    left: calc(6% + 132px);
+    left: calc(var(--kb-c0) + var(--kb-cw) + var(--kb-cy) + var(--kb-cg) * 2);
+    width: var(--kb-cr);
   }
 }
 
@@ -303,6 +337,11 @@
 @media (prefers-reduced-motion: reduce) {
   .kb-world:not([data-motion-forced]) .kb-cleaner.is-running {
     animation: none;
+  }
+  /* 動きを減らす設定：汚れているあいだのランプは点滅させず、点けたまま */
+  .kb-world:not([data-motion-forced]) .kb-cleaner.is-blinking .kb-cleaner-lamp {
+    animation: none;
+    opacity: 1;
   }
   .kb-world:not([data-motion-forced]) .kb-board .kb-reset {
     transition: none;

@@ -131,7 +131,7 @@ export function dewPoint(t: number, rh: number): number {
 function outside(nowMs: number, cfg: ClockConfig, tMin: number): [number, number, number] {
   const o = getObservation();
   // 雲があると空へ熱が逃げにくい（くもり・雨・雪の夜はガラスがあまり冷えない）
-  if (o && !isOverridden() && Math.abs(nowMs - o.at) <= OBS_FRESH_MS) return [o.tempC, dewPoint(o.tempC, o.rh), o.kind === "hare" ? 1 : o.kind === "kumori" ? 0.4 : 0.2];
+  if (o && !isOverridden() && Math.abs(nowMs - o.at) <= OBS_FRESH_MS) return [o.tempC, dewPoint(o.tempC, o.rh), o.kind === "hare" ? 1 : o.kind === "kumori" ? 0.4 : o.kind ? 0.2 : 0.6];
   return [outsideTemp(nowMs, cfg), tMin - 1, 1];
 }
 

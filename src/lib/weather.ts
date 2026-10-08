@@ -2,6 +2,7 @@
 // 窓の近くのタブレットに出し、窓の曇りの計算（climate.ts）にも同じ値を渡す。取れないときは平年値のまま。
 // 同じ時刻なら全員が同じ値を見る（乱数を使わない）。
 // 取りに行くのは3つだけ：最新の観測時刻（latest_time.txt）・五條の3時間ぶんの観測（point）・奈良県の予報（forecast）。
+// 地点のファイルは3時間ごとに新しく作られ、できる前（0時すぎなど）は読めないので、そのときは1つ前の3時間のファイルを読む。
 // 全国の観測ファイル（map・数百KB）は重いので使わない。
 
 export type WeatherObs = {
@@ -14,7 +15,8 @@ export type WeatherObs = {
   /** 直近10分の降水（mm） */
   precip10m: number;
   /** 天気のおおまかな種類 */
-  kind: "hare" | "kumori" | "ame" | "yuki";
+  /** 天気のおおまかな種類（予報が取れず雨も降っていないときは null＝気温と湿度だけ出す） */
+  kind: "hare" | "kumori" | "ame" | "yuki" | null;
 };
 
 /** 新しい観測が届いたときに投げる（窓の曇りを計算し直す合図） */
@@ -42,6 +44,8 @@ const JST = 9 * 3600000;
 const CACHE_KEY = "gbf_2026_weather_v1";
 /** ためておく長さ・見えている間に取り直す間隔 */
 export const REFRESH_MS = 10 * 60000;
+/** 取れなかったときに取り直すまでの間（n 回続けて失敗したら 30秒・60秒・120秒…と倍にする。上限は REFRESH_MS） */
+export const retryMs = (n: number) => Math.min(REFRESH_MS, 30000 * 2 ** Math.max(0, n - 1));
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -106,35 +110,68 @@ export function pickWeatherCode(json: Forecast, atMs: number): string | undefine
   return area.weatherCodes[i];
 }
 
-/** 観測と予報を合わせる：降水10分が 0 より多ければ雨（予報が雪なら雪のまま）。予報が取れず降ってもいなければ、天気が分からないので null */
+/** 観測と予報を合わせる：降水10分が 0 より多ければ雨（予報が雪なら雪のまま）。予報が取れず降ってもいなければ、天気の種類だけ null（気温と湿度は出す） */
 export function combine(p: { at: number; tempC: number; rh: number; precip10m: number }, code: string | undefined): WeatherObs | null {
   let kind = codeToKind(code);
   if (p.precip10m > 0 && kind !== "yuki") kind = "ame";
-  if (!kind) return null;
-  return { at: p.at, tempC: p.tempC, rh: Math.min(100, Math.max(0, p.rh)), precip10m: p.precip10m, kind };
+  // 予報が取れなくても、気温と湿度は出す（天気の語だけ空欄）
+  return { at: p.at, tempC: p.tempC, rh: Math.min(100, Math.max(0, p.rh)), precip10m: p.precip10m, kind: kind || null };
 }
 
-const getJson = (url: string) =>
-  fetch(url).then((r) => {
-    if (!r.ok) throw new Error(String(r.status));
-    return r.json();
-  });
+/** 検分用：わざと失敗させる（"all"＝全部の取得が失敗／"point"＝いまの3時間の地点ファイルだけ、まだ無いときと同じ失敗にする）。ふだんは "" */
+export type FailMode = "" | "all" | "point";
+let failMode: FailMode = "";
+export const setFailMode = (m: FailMode) => {
+  failMode = m;
+};
+/** 最後に読めた地点ファイルの名前（検分用） */
+let lastFile = "";
+export const getLastFile = () => lastFile;
 
-/** 気象庁から取る（3つだけ）。失敗したら null */
+const get = (url: string) => {
+  if (failMode === "all") return Promise.reject(new TypeError("forced"));
+  return fetch(url).then((r) => {
+    if (!r.ok) throw new Error(String(r.status));
+    return r;
+  });
+};
+const getJson = (url: string) => get(url).then((r) => r.json());
+
+/** 地点の3時間ぶんのファイルを読む。まだ無い・中身がそろっていないときは1つ前の3時間のファイルを読む。どちらも無ければ null。
+ *  まだ無いファイルの 404 には、許可の見出し（Access-Control-Allow-Origin）が付かないことがある（実際に確かめた）。
+ *  そのときブラウザでは 404 ではなく通信の失敗に見えるので、いまのファイルは失敗の種類を問わず前のファイルへ回す */
+async function readPoint(latest: number) {
+  for (const back of [0, 1]) {
+    const name = pointFileName(latest - back * 3 * 3600000);
+    let json: Record<string, PointRow>;
+    try {
+      // 検分用の "point"：見出しの無い 404 と同じく、通信の失敗として返す
+      if (failMode === "point" && back === 0) throw new TypeError("forced 404");
+      json = await getJson(`${BASE}/amedas/data/point/${POINT}/${name}.json`);
+    } catch (e) {
+      if (back === 0) continue;
+      throw e;
+    }
+    const p = parsePoint(json, latest);
+    if (p) {
+      lastFile = name;
+      return p;
+    }
+  }
+  return null;
+}
+
+/** 気象庁から取る（最新の観測時刻・地点・予報）。失敗したら null */
 export async function fetchWeather(): Promise<WeatherObs | null> {
   try {
-    const txt = await fetch(`${BASE}/amedas/data/latest_time.txt`).then((r) => {
-      if (!r.ok) throw new Error(String(r.status));
-      return r.text();
-    });
+    const txt = await get(`${BASE}/amedas/data/latest_time.txt`).then((r) => r.text());
     const latest = Date.parse(txt.trim());
     if (!Number.isFinite(latest)) return null;
-    const [pt, fc] = await Promise.all([
-      getJson(`${BASE}/amedas/data/point/${POINT}/${pointFileName(latest)}.json`),
+    const [p, fc] = await Promise.all([
+      readPoint(latest),
       // 予報が取れなくても観測だけで出す
       getJson(`${BASE}/forecast/data/forecast/${PREF}.json`).catch(() => null),
     ]);
-    const p = parsePoint(pt, latest);
     if (!p) return null;
     return combine(p, fc ? pickWeatherCode(fc, p.at) : undefined);
   } catch {

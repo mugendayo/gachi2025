@@ -191,7 +191,8 @@ export default function Classroom() {
             aria-hidden="true"
             tabIndex={-1}
           >
-            {!A.cleaner && <i className="kb-cleaner-lamp" />}
+            {/* 電源ランプ（絵のときは絵のランプの上に重なり、黒板消しが汚れているあいだ点滅する） */}
+            <i className="kb-cleaner-lamp" />
           </button>
         </div>
 
