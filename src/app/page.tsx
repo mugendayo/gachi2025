@@ -1,12 +1,12 @@
 // トップ＝入口（動画・魔法陣）→ 教室の黒板。黒板の日付と「あと◯日」は実際の今日、光は日本時間の実時刻で変わる。
-// 並び＝校舎の空間（教室 → 教室の後ろ → 廊下 → 職員室 → 舞台 → 学校の外の箱 → 最下部）。
+// 並び＝校舎の空間（教室 → 窓 → 教室の後ろ → 職員室 → 舞台 → 学校の外の箱 → 最下部）。
 // 公式バーとフッター（定番規格）は layout 側。ここはその内側だけ。
 import { site } from "@/data/site";
 import { bootScript } from "@/lib/worldClock";
 import Entry from "@/components/entry/Entry";
 import Classroom from "@/components/kokuban/Classroom";
 import WindowSide from "@/components/kokuban/WindowSide";
-import { BackOfRoom, Corridor, Staffroom, Stage } from "@/components/kokuban/Places";
+import { BackOfRoom, Staffroom, Stage } from "@/components/kokuban/Places";
 import Outside from "@/components/outside/Outside";
 import BottomZone from "@/components/BottomZone";
 import RewardSection from "@/components/RewardSection";
@@ -65,7 +65,6 @@ export default function Page() {
         <Classroom />
         <WindowSide />
         <BackOfRoom />
-        <Corridor />
         <Staffroom />
         <Stage />
       </div>

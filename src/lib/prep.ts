@@ -135,3 +135,41 @@ function bag(n: number): string[] {
 
 /** i 番目の輪の色（袋が空になったら次の袋へ） */
 export const ringColor = (i: number) => bag(Math.floor(i / BAG))[((i % BAG) + BAG) % BAG];
+
+/** 自分の輪（その端末で足した輪）を保存する鍵 */
+export const GARLAND_KEY = `gbf_${site.year}_garland_v2`;
+
+/** 自分の輪の色の列：同じ色紙の袋から取り出し、残りが100枚を切ったら新しい袋（14色×20枚）を足して混ぜる。
+ *  袋の終わりの茶や灰ばかりの所が続かない（どこを20個とっても色が偏らない）。番号が同じなら全員同じ色 */
+const REFILL_BELOW = 100;
+const stream: number[] = [];
+let streamLeft: number[] = [];
+let streamTotal = 0;
+let streamRand: (() => number) | null = null;
+export function streamColor(i: number): string {
+  const n = Math.max(0, Math.floor(i));
+  if (!streamRand) {
+    streamRand = mulberry32(site.year * 7919 + 1);
+    streamLeft = PAPER.map(() => PER_COLOR);
+    streamTotal = BAG;
+  }
+  while (stream.length <= n) {
+    if (streamTotal < REFILL_BELOW) {
+      for (let c = 0; c < streamLeft.length; c++) streamLeft[c] += PER_COLOR;
+      streamTotal += BAG;
+    }
+    let sum = 0;
+    for (let c = 0; c < PAPER.length; c++) sum += PAPER[c][1] * streamLeft[c];
+    let x = streamRand() * sum;
+    let pick = 0;
+    for (let c = 0; c < PAPER.length; c++) {
+      x -= PAPER[c][1] * streamLeft[c];
+      if (streamLeft[c] > 0) pick = c;
+      if (x < 0 && streamLeft[c] > 0) break;
+    }
+    streamLeft[pick]--;
+    streamTotal--;
+    stream.push(pick);
+  }
+  return PAPER[stream[n]][0];
+}

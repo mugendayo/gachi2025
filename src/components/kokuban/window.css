@@ -36,6 +36,31 @@
   user-select: none;
   -webkit-user-select: none;
   cursor: grab;
+  /* 寄せる（長押し）：押した点に向かって少し拡大する（--wox・--woy は JS が押した点を書く） */
+  transform-origin: var(--wox, 50%) var(--woy, 50%);
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.kb-window[data-lean] .kb-glass {
+  transform: scale(1.08);
+}
+/* 寄せている間、まわりが少し暗くなる（部屋の光が遮られる）。中心は押した点 */
+.kb-place.kb-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--vx, 50%) var(--vy, 50%),
+    transparent 0 22%,
+    rgba(0, 0, 0, 0.16) 48%,
+    rgba(0, 0, 0, 0.42) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.kb-place.kb-window[data-lean]::after {
+  opacity: 1;
 }
 
 /* 外の空：上は夜の紺から昼の青へ、地平線は夕焼けのばら色へ寄せる（月が高いと夜空が少し明るい） */
@@ -89,6 +114,49 @@
   height: 100%;
   filter: blur(5px);
   pointer-events: none;
+}
+
+/* 消灯〜夜明け前の曇りは青く、少し光って見える */
+.kb-window[data-bluefog] .kb-glass canvas.kb-fog {
+  filter: blur(5px) drop-shadow(0 0 5px rgba(60, 96, 210, 0.35));
+}
+
+/* 拭いた跡（指の脂の筋と水滴）。曇っていなくても薄く見え、日が当たる昼はやや目立つ */
+.kb-glass canvas.kb-wtrace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: calc(0.6 + 0.4 * var(--sky, 1));
+}
+
+/* ガラスの外側の青い手形（数は data-hands・置き場所が決まってから出す）。外から押された形なので曇りの奥にある */
+.kb-whands {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.kb-whp {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7.5%;
+  aspect-ratio: 100 / 120;
+  fill: #1d3fbf;
+  filter: drop-shadow(0 0 3px rgba(70, 110, 255, 0.5));
+  opacity: 0;
+}
+.kb-world[data-hands="1"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 1),
+.kb-world[data-hands="2"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 2),
+.kb-world[data-hands="3"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 3),
+.kb-world[data-hands="4"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 4),
+.kb-world[data-hands="5"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 5),
+.kb-world[data-hands="6"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 6),
+.kb-world[data-hands="7"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 7),
+.kb-world[data-hands="8"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 8),
+.kb-world[data-hands="9"] .kb-window[data-hl] .kb-whp:nth-of-type(-n + 9) {
+  opacity: 0.82;
 }
 
 /* 鏡：夜に蛍光灯が点いていると、外より部屋が映る。寄せると指の所だけ外が透ける */
@@ -204,8 +272,16 @@
   .kb-world:not([data-motion-forced]) .kb-tvglint {
     animation: none;
   }
-  .kb-world:not([data-motion-forced]) :is(.kb-window, .kb-wbar, .kb-tvglint),
-  .kb-world:not([data-motion-forced]) .kb-wmirror::before {
+  .kb-world:not([data-motion-forced]) :is(.kb-window, .kb-wbar, .kb-tvglint, .kb-glass),
+  .kb-world:not([data-motion-forced]) .kb-wmirror::before,
+  .kb-world:not([data-motion-forced]) .kb-window::after {
     transition: none;
+  }
+  /* 寄せない・まわりも暗くしない（JS も付けないが、念のため） */
+  .kb-world:not([data-motion-forced]) .kb-window[data-lean] .kb-glass {
+    transform: none;
+  }
+  .kb-world:not([data-motion-forced]) .kb-place.kb-window[data-lean]::after {
+    opacity: 0;
   }
 }

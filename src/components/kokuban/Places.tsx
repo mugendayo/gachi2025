@@ -1,14 +1,13 @@
 // 黒板の下に続く校舎（スクロール＝空間）。1画面に1か所。
-// 教室の後ろ → 廊下 → 職員室 → 体育館の舞台 → 学校の外（ゲームの箱の裏）。
+// 教室の後ろ → 職員室 → 体育館の舞台 → 学校の外（ゲームの箱の裏）。
 import { site } from "@/data/site";
 import { teachers, thumbOf } from "@/data/teachers";
 import FloorItem from "@/components/FloorItem";
 import { JoinButton } from "@/components/JoinGate";
 import BackTv from "./BackTv";
 import Garland from "./Garland";
-import { SignBack } from "./Signboard";
 
-/* ---------- 教室の後ろ：去年の記録が流れるテレビと、乗ってきたタイムマシン ---------- */
+/* ---------- 教室の後ろ：チャンネルを変えられるテレビと輪飾り ---------- */
 export function BackOfRoom() {
   return (
     <section className="kb-place kb-back" aria-label="教室の後ろ">
@@ -19,56 +18,8 @@ export function BackOfRoom() {
       </div>
       <Garland />
       <BackTv />
-      {/* 昼の準備中の看板（表を壁に向けてある） */}
-      <SignBack />
       <div className="kb-back-floor">
         <FloorItem id="armwash" size={96} tilt={-10} />
-      </div>
-    </section>
-  );
-}
-
-/* ---------- 廊下：掲示板の業務連絡（Discord と同じ文面） ---------- */
-export function Corridor() {
-  const n = site.notice;
-  return (
-    <section className="kb-place kb-corridor" aria-label="廊下">
-      <div className="kb-cork">
-        <article className="kb-paper">
-          <i className="kb-pin kb-pin-l" aria-hidden />
-          <i className="kb-pin kb-pin-r" aria-hidden />
-          <p className="kb-paper-tags">{n.tags.map((t) => `【${t}】`).join("")}</p>
-          <h2 className="kb-paper-title">{n.title}</h2>
-          <p className="kb-paper-meta">
-            {n.to}
-            <span>{n.from}</span>
-          </p>
-          <p className="kb-paper-lead">{n.lead}</p>
-          <h3>■ 経緯</h3>
-          <p>校内で次の報告が複数件ありました。</p>
-          <ul className="kb-paper-reports">
-            {n.reports.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-          <p className="kb-paper-small">{n.reportsNote}</p>
-          <h3>■ 遵守事項</h3>
-          <ol className="kb-paper-rules">
-            {n.rules.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ol>
-          <h3>■ 補足</h3>
-          <ul className="kb-paper-notes">
-            {n.notes.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-          <p className="kb-paper-closing">{n.closing}</p>
-          <p className="kb-paper-struck">{n.struck}</p>
-          <i className="kb-paper-redact" aria-hidden />
-          <p className="kb-paper-end">以上です。</p>
-        </article>
       </div>
     </section>
   );

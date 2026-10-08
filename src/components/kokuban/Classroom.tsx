@@ -3,7 +3,7 @@
 import { site } from "@/data/site";
 import { boardTextScript, buildTimeBoardText } from "@/lib/worldClock";
 import BoardFx from "./BoardFx";
-import { HandSymbol, SignFront } from "./Signboard";
+import { HandSymbol } from "./Signboard";
 
 /** チョーク（粉受けに置いてある色。拾うと黒板に書ける） */
 // 黒板・粉受け・道具の絵（site.assets が空のあいだは CSS と canvas で描いた仮のもの）
@@ -77,7 +77,7 @@ export default function Classroom() {
       <div
         className={`kb-board${A.board ? " has-art" : ""}`}
         id="kb-board"
-        style={A.board ? ({ "--art": `url(${A.board})` } as React.CSSProperties) : undefined}
+        style={A.board ? ({ "--art": `url(${A.board})`, ...(A.boardTall ? { "--art-tall": `url(${A.boardTall})` } : {}) } as React.CSSProperties) : undefined}
       >
         <div className="kb-head">
           {/* 本番までの実際の日数と今日の日付（直後のスクリプトが描画前に書き込む。React は中身を照合しない） */}
@@ -163,8 +163,7 @@ export default function Classroom() {
         </div>
       </div>
 
-      {/* 準備中の看板（夜は黒板の下に表向き） */}
-      <SignFront />
+      {/* 手形の形（ページに1つ。use で使い回す） */}
       <HandSymbol />
 
       <div className="kb-night" aria-hidden />

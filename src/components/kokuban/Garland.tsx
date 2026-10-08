@@ -1,9 +1,21 @@
 "use client";
 // 教室の後ろの輪飾り（殻）。天井から垂れる紙の鎖の canvas と、床の短冊の束だけを置く。
 // 鎖の計算と描画（garlandSim）は、ページを動かして教室の後ろに近づいてから読み込む（最初の画面の重さに入れない）。
+// ただし自分の輪がある端末では、ページのどこかに鎖が掛かっているので、一度でもページを動かしたら読み込む。
 // 文字は置かない。数も出さない。
 import { useEffect, useRef } from "react";
+import { GARLAND_KEY } from "@/lib/prep";
 import "./garland.css";
+
+/** この端末で輪を足したことがあるか（保存の中身を軽く見るだけ） */
+const hasMine = () => {
+  try {
+    const raw = localStorage.getItem(GARLAND_KEY) || localStorage.getItem(GARLAND_KEY.replace(/_v2$/, "_v1")) || "";
+    return /"n":[1-9]|"c":"#/.test(raw);
+  } catch {
+    return false;
+  }
+};
 
 export default function Garland() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -21,8 +33,9 @@ export default function Garland() {
     // 教室の真下にあるので、開いた直後から「近い」ことがある。一度でもページを動かすまでは読み込まない
     let scrolled = window.scrollY > 0;
     let loading = false;
+    const mine = hasMine();
     const load = () => {
-      if (loading || !near || !scrolled) return;
+      if (loading || !(near || mine) || !scrolled) return;
       loading = true;
       io.disconnect();
       window.removeEventListener("scroll", onScroll);

@@ -1,18 +1,12 @@
-"use client";
-// 準備中の看板（業務連絡「準備中の看板に、青い手形が増えている」と同じ物）。
-// 夜（文化祭準備〜明け方）は黒板の下に表向きで立てかけてあり、青い手形が付いている。
-// 手形は文化祭準備の始まりに1つ、毎正時に1つ増え、2時の9つで止まる（数は data-hands・CSS で出し分け。数字は出さない）。
-// 配置はその夜の日付で決まり、同じ夜は誰が見ても同じ。増える瞬間は見せない（音も動きもなく増えている）。
-// 朝になると看板は教室の後ろへ移され、表を壁に向けて立てかけてある（裏のベニヤだけが見える）。
-import { useEffect, useState } from "react";
-import { site } from "@/data/site";
-import { clockConfig, clockCore } from "@/lib/worldClock";
-import { CLOCK_EVENT, now } from "@/lib/now";
+// 手形の部品（看板は外した。形と置き方だけ残し、ほかの場所から使う）。
+// 手形の数は #kb-world の data-hands（文化祭準備の始まりに1つ、毎正時に1つ増え、2時の9つで止まる。BoardFx が書く）。
+// 置き場所はその夜の日付で決まり、同じ夜は誰が見ても同じ。
 
+/** 帯が変わったときに BoardFx が送るイベント（detail: scene・handNight） */
 export const SCENE_EVENT = "kb:scene";
 
-/** その夜の日付から決まる手形の置き場所（看板の中の %）。看板の字の帯（中央の横長）を避ける */
-function handLayout(night: string) {
+/** その夜の日付から決まる手形の置き場所（置く面の中の %）。中央の横長の帯は空けておく */
+export function handLayout(night: string) {
   let s = 0;
   for (let i = 0; i < night.length; i++) s = (Math.imul(s, 31) + night.charCodeAt(i)) >>> 0;
   const r = () => {
@@ -27,7 +21,7 @@ function handLayout(night: string) {
   while (out.length < 9 && guard++ < 400) {
     const x = 6 + r() * 82;
     const y = 4 + r() * 76;
-    if (y > 34 && y < 58 && x > 18 && x < 78) continue; // 看板の字の帯
+    if (y > 34 && y < 58 && x > 18 && x < 78) continue; // 中央の横長の帯
     if (out.some((p) => Math.hypot(p.x - x, (p.y - y) * 0.55) < 11)) continue; // 重なりすぎない
     out.push({ x, y, rot: -40 + r() * 80, scale: 0.82 + r() * 0.3 });
   }
@@ -49,56 +43,5 @@ export function HandSymbol() {
         <rect x="58" y="94" width="4" height="16" rx="2" />
       </symbol>
     </svg>
-  );
-}
-
-/** 夜の看板（黒板の下に表向き） */
-export function SignFront() {
-  const [night, setNight] = useState<string | null>(null);
-  useEffect(() => {
-    const sync = () => setNight(clockCore(now(), clockConfig).handNight);
-    sync();
-    const onScene = (e: Event) => setNight((e as CustomEvent).detail?.handNight ?? clockCore(now(), clockConfig).handNight);
-    window.addEventListener(SCENE_EVENT, onScene);
-    window.addEventListener(CLOCK_EVENT, sync);
-    return () => {
-      window.removeEventListener(SCENE_EVENT, onScene);
-      window.removeEventListener(CLOCK_EVENT, sync);
-    };
-  }, []);
-  const hands = night ? handLayout(night) : [];
-  return (
-    <div className="kb-sign kb-sign-front" aria-hidden>
-      <div className="kb-sign-board">
-        <i className="kb-sign-paint kb-sign-paint-a" />
-        <i className="kb-sign-paint kb-sign-paint-b" />
-        <i className="kb-sign-sketch" />
-        {site.signboard.front && <p className="kb-sign-text">{site.signboard.front}</p>}
-        {hands.map((h, i) => (
-          <svg
-            key={i}
-            className="kb-hp"
-            viewBox="0 0 100 120"
-            style={{ left: `${h.x}%`, top: `${h.y}%`, transform: `translate(-50%,-50%) rotate(${h.rot}deg) scale(${h.scale})` }}
-          >
-            <use href="#kb-hand" />
-          </svg>
-        ))}
-      </div>
-      <div className="kb-sign-paper" />
-    </div>
-  );
-}
-
-/** 昼の看板（教室の後ろで、表を壁に向けて立てかけてある＝裏のベニヤ） */
-export function SignBack() {
-  return (
-    <div className="kb-sign kb-sign-back" aria-hidden>
-      <div className="kb-sign-board">
-        <i className="kb-sign-brace kb-sign-brace-a" />
-        <i className="kb-sign-brace kb-sign-brace-b" />
-        {site.signboard.back && <p className="kb-sign-text kb-sign-text-back">{site.signboard.back}</p>}
-      </div>
-    </div>
   );
 }

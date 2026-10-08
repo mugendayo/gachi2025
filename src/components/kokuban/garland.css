@@ -19,8 +19,35 @@
   pointer-events: none;
 }
 
+/* 自分の輪の尾とくっついた鎖：ページ全体を覆う固定の canvas（押せない。公式バー z-90・持ち物 z-80 より下、ページの部品より上）。
+   大きさは JS が画面に合わせて書く */
+.kb-garland-page {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+/* マウスを尾の先・くっついた点に重ねたとき／引っ張っている間・長押しの間の手の形（文字の選択と端末のメニューも止める） */
+html.kb-garland-grab,
+html.kb-garland-grab * {
+  cursor: grab !important;
+}
+html.kb-garland-grabbing,
+html.kb-garland-grabbing * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
 /* 床に置いた短冊の束。一番上の1枚＝次にできる輪の色（JS が --strip に書く） */
 .kb-strips {
+  /* 押し続けて輪を足すので、長押しのメニューや文字選択を出さない */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
   position: absolute;
   left: 6%;
   bottom: clamp(48px, 10vh, 96px);

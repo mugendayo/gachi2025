@@ -2,6 +2,8 @@
 // 曇る時刻は決めていない。人が集まって息で湿った空気が、外で冷えたガラスに触れたときにだけ曇る＝物理の結果に任せる。
 // 同じ時刻なら全員が同じ曇りを見る（乱数を使わない）。
 import { clockCore, type ClockConfig, type ClockState } from "@/lib/worldClock";
+import { isOverridden } from "@/lib/now";
+import { getObservation } from "@/lib/weather";
 
 /**
  * 平年の最低・最高気温（℃）を2点。[日付, 最低, 最高]。間の日は線形に結ぶ。
@@ -115,15 +117,31 @@ const RISE_MIN = 60; // 在室中に湿り気が上がる速さ（分）
 const HALF_LIFE_MIN = 360; // 人が帰ったあと湿り気が抜ける半減期（分）。窓を閉め切った夜の教室なので、ゆっくり抜ける
 const SKY_COOL = 3; // 晴れた夜、ガラスの外側が空へ熱を逃がして気温より冷える分（℃）。日が昇ると無くなる
 const TD_GAIN = 9; // 在室で上がる露点の上限（℃）
+const OBS_FRESH_MS = 90 * 60000; // 観測をそのまま使ってよい古さ
+
+/** 露点（Magnus 式）。気温 t（℃）と湿度 rh（%）から */
+export function dewPoint(t: number, rh: number): number {
+  const b = 17.62;
+  const c = 243.12;
+  const g = Math.log(Math.min(100, Math.max(1, rh)) / 100) + (b * t) / (c + t);
+  return (c * g) / (b - g);
+}
+
+/** 外の気温と露点：新しい観測（いまとの差が90分以内）があって ?t= で時刻を上書きしていなければ観測から、それ以外は平年値から */
+function outside(nowMs: number, cfg: ClockConfig, tMin: number): [number, number, number] {
+  const o = getObservation();
+  // 雲があると空へ熱が逃げにくい（くもり・雨・雪の夜はガラスがあまり冷えない）
+  if (o && !isOverridden() && Math.abs(nowMs - o.at) <= OBS_FRESH_MS) return [o.tempC, dewPoint(o.tempC, o.rh), o.kind === "hare" ? 1 : o.kind === "kumori" ? 0.4 : 0.2];
+  return [outsideTemp(nowMs, cfg), tMin - 1, 1];
+}
 
 /** いまの外・教室・ガラスの温度と、窓の曇りの濃さ */
 export function climateAt(nowMs: number, s: ClockState, cfg: ClockConfig): Climate {
   if (!CLIMATE) return { tOut: NaN, tIn: NaN, tdIn: NaN, tGlass: NaN, fog: 0 };
   const [tMin, tMax] = normals(dayStartOf(nowMs));
-  const tOut = outsideTemp(nowMs, cfg);
-  const tdOut = tMin - 1;
+  const [tOut, tdOut, clear] = outside(nowMs, cfg, tMin);
 
-  // 湿り気：準備の行の間に上がり、終わったら半減期3時間で抜ける（直前の行の始まり・終わりから閉じた式で出す）
+  // 湿り気：準備の行の間に上がり、終わったら半減期6時間で抜ける（直前の行の始まり・終わりから閉じた式で出す）
   const p = lastPrep(nowMs, cfg);
   let dTd = 0;
   let inRoom = false;
@@ -136,11 +154,12 @@ export function climateAt(nowMs: number, s: ClockState, cfg: ClockConfig): Clima
       dTd = peak * Math.pow(0.5, (nowMs - p[1]) / 60000 / HALF_LIFE_MIN);
     }
   }
-  const tdIn = tdOut + dTd;
   const tIn = (tMin + tMax) / 2 + 5 + (inRoom ? 2 : 0);
+  // 露点は室温を超えない（外が雨で湿度100%の観測のときに起きうる。平年値では届かない）
+  const tdIn = Math.min(tdOut + dTd, tIn - 0.5);
   // 一枚ガラスの内側の面：外の気温に近い。夜は空へ熱を逃がした分だけ外側が冷える（放射冷却）
   const night = clamp((10 - s.sunAlt) / 12);
-  const tFace = tOut - SKY_COOL * night;
+  const tFace = tOut - SKY_COOL * night * clear;
   const tGlass = tFace + 0.25 * (tIn - tFace);
 
   // 日が窓に当たっているとガラスが温まって曇らない（窓は南向きの仮定・.kb-sunlight と同じ）

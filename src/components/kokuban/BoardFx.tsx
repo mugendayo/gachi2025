@@ -533,7 +533,7 @@ export default function BoardFx() {
         parts.push({ x: x + (Math.random() - 0.5) * spread, y: y + (Math.random() - 0.3) * SH * 0.6, vx: (Math.random() - 0.5) * 0.6, vy: Math.random() * 0.6, a: 0.5 + Math.random() * 0.4, r: 1 + Math.random() * 1.6 });
       if (!raf) raf = requestAnimationFrame(loop);
     };
-    // はたいた粉が光って見える強さ（黒板の座標で）：窓の光の筋の中・蛍光灯・消灯中は懐中電灯の円の中だけ
+    // はたいた粉の明るさ（黒板の座標で）：どこでも見える。窓の光の筋の中・蛍光灯の下・消灯中の懐中電灯の円の中では、さらに光る
     let roomOff = { x: 0, y: 0, w: 1, h: 1 };
     let flashX = NaN;
     let flashY = NaN;
@@ -544,15 +544,15 @@ export default function BoardFx() {
         // 懐中電灯をまだ動かしていなければ、CSS の既定（50% 45%）の位置
         const dx = rx - (Number.isFinite(flashX) ? flashX : roomOff.w * 0.5);
         const dy = ry - (Number.isFinite(flashY) ? flashY : roomOff.h * 0.45);
-        return dx * dx + dy * dy < 8100 ? 1 : 0.05;
+        return dx * dx + dy * dy < 8100 ? 1 : 0.45;
       }
       // .kb-sunlight の clip-path と同じ4点（上辺から下辺へ、左右の端を線形に寄せる）
       const u = ((state.sunAz - 110) / 150) * 0.6;
       const t = ry / roomOff.h;
       const left = (u - 0.1 - 0.2 * t) * roomOff.w;
       const right = (u + 0.34 - 0.2 * t) * roomOff.w;
-      const beam = rx > left && rx < right ? state.sun * (1 - state.dark) * (1 - 0.3 * state.lit) : 0.08;
-      return Math.min(1, beam + (state.lit ? 0.25 : 0));
+      const beam = rx > left && rx < right ? state.sun * (1 - state.dark) * (1 - 0.3 * state.lit) : 0;
+      return Math.min(1, 0.6 + 0.4 * beam + (state.lit ? 0.2 : 0));
     };
 
     /* ---------------- にじみ：こすった方向へ、チョークの粉が伸びて広がる（どの文字・落書きにも効く） ---------------- */
@@ -608,10 +608,15 @@ export default function BoardFx() {
     /* ---------------- 消す ---------------- */
     // 黒板消しの汚れ（0＝まっさら、1＝真っ白）。効き方はこすり始めの汚れで決め、ひと続きのこすりの途中では変えない
     // （まっさらな端末の最初のひとこすりは、汚れの仕組みが無いときと同じ消え方）
+    // 保存は「汚れ|保存した時刻」。置いておくと粉は自然に落ちる（30分で半分）＝叩き方を知らなくても、いつか元に戻る
     let load = 0;
     try {
-      const v = parseFloat(localStorage.getItem(eraserKey()) || "0");
-      if (Number.isFinite(v)) load = Math.min(1, Math.max(0, v));
+      const [lv, tv] = (localStorage.getItem(eraserKey()) || "0").split("|");
+      const v = parseFloat(lv);
+      const at = parseFloat(tv);
+      const away = Number.isFinite(at) ? Math.max(0, Date.now() - at) : 0;
+      if (Number.isFinite(v)) load = Math.min(1, Math.max(0, v)) * Math.pow(0.5, away / 1800000);
+      if (load < 0.02) load = 0;
     } catch {}
     let rubLoad = load;
     let savedLoad = load;
@@ -620,7 +625,7 @@ export default function BoardFx() {
       if (load === savedLoad) return;
       savedLoad = load;
       try {
-        localStorage.setItem(eraserKey(), load.toFixed(4));
+        localStorage.setItem(eraserKey(), `${load.toFixed(4)}|${Date.now()}`);
       } catch {}
     };
     // 見た目（粉で白くなった面）は、0.05 変わるごとに書く
@@ -726,8 +731,8 @@ export default function BoardFx() {
       const b = board.getBoundingClientRect();
       const r = room.getBoundingClientRect();
       roomOff = { x: b.left - r.left, y: b.top - r.top, w: r.width || 1, h: r.height || 1 };
-      // 汚れていたぶんだけ舞う（まっさらなら何も出ない）
-      for (let i = Math.round(60 * before); i > 0; i--)
+      // 叩けば必ず粉が舞う（汚れていたほど多く）
+      for (let i = 22 + Math.round(48 * before); i > 0; i--)
         parts.push({ x: rest.x + (Math.random() - 0.5) * 50, y: rest.y - Math.random() * 6, vx: -0.3 + Math.random() * 0.4, vy: -1.2 - Math.random() * 1.2, a: 0.5 + Math.random() * 0.4, r: 1 + Math.random() * 1.4, clap: true });
       if (parts.length && !raf) raf = requestAnimationFrame(loop);
       clapAnim = eraser.animate(

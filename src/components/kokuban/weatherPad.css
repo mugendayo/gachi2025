@@ -1,0 +1,168 @@
+/* ========================= 窓台のタブレット（下市町のいまの天気） =========================
+   窓の下の窓台に置いた端末。窓台は部屋の明るさ（--amb）で暗くなるが、画面は暗くしない＝夜は画面だけが明るく見える。
+   ガラス（.kb-glass）の下に並べるので、ガラスの触る範囲には重ならない。操作は受けない。
+   門の内なので橙と明朝は使わない。数字は等幅寄りの書体。 */
+
+/* 窓とタブレットを上下にくっつけて、区画の中ほどに置く（子が窓だけのときは今までと同じ位置） */
+.kb-place.kb-window:has(> .kb-wpad) {
+  align-content: center;
+}
+
+/* 窓台：ガラスと同じ幅。外枠（10px）の真下から手前へ奥行きのある面として描く */
+.kb-wpad {
+  --sill: color-mix(in oklab, #1a1d20, #b9b6ad calc(var(--amb, 1) * 100%));
+  /* 端末の幅。% だと使う場所（角丸・内側の余白）ごとに基準が変わるので、画面の幅から出す（390px で 118px・PC で 156px） */
+  --tw: clamp(118px, 18vw, 156px);
+  grid-row: 2;
+  grid-column: 1;
+  position: relative;
+  isolation: isolate;
+  width: min(92vw, 100% - 20px, 640px);
+  margin-top: 10px;
+  padding: 6px clamp(8px, 4%, 30px) 9px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* 窓台の上の面（奥＝ガラス側ほど影で暗い）。外枠の幅まで左右へ伸ばす */
+.kb-wpad::before {
+  content: "";
+  position: absolute;
+  inset: 0 -10px 5px;
+  z-index: -1;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--sill), #000 34%),
+    color-mix(in oklab, var(--sill), #fff 6%) 100%
+  );
+}
+/* 窓台の手前の縁と、その下の影 */
+.kb-wpad::after {
+  content: "";
+  position: absolute;
+  inset: auto -10px 0;
+  height: 5px;
+  z-index: -1;
+  background: color-mix(in oklab, var(--sill), #000 28%);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* 端末：薄い黒いベゼルと角丸。少し後ろへ傾けて立てかけてある */
+.kb-tab {
+  --scr: linear-gradient(160deg, #07090c, #101318);
+  width: var(--tw);
+  aspect-ratio: 4 / 3;
+  box-sizing: border-box;
+  padding: calc(var(--tw) * 0.045);
+  border-radius: calc(var(--tw) * 0.085);
+  background: #0c0e11;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 5px 8px rgba(0, 0, 0, 0.38),
+    /* 暗い部屋では画面の光が周りににじむ */
+    0 0 calc(var(--tw) * 0.28) rgba(140, 180, 240, calc(0.4 * (1 - var(--amb, 1))));
+  transform: perspective(600px) rotateX(8deg);
+  transform-origin: 50% 100%;
+}
+
+/* 画面：天気と昼夜で地の色を変える（部屋の明るさには左右されない） */
+.kb-tab[data-kind="hare"] {
+  --scr: linear-gradient(160deg, #3d7cc2, #8cbbe6);
+}
+.kb-tab[data-kind="kumori"] {
+  --scr: linear-gradient(160deg, #5b6979, #a1acb8);
+}
+.kb-tab[data-kind="ame"] {
+  --scr: linear-gradient(160deg, #34404d, #64717e);
+}
+.kb-tab[data-kind="yuki"] {
+  --scr: linear-gradient(160deg, #7b8aa1, #c7d1de);
+}
+.kb-tab[data-night][data-kind="hare"] {
+  --scr: linear-gradient(160deg, #0e192f, #263659);
+}
+.kb-tab[data-night][data-kind="kumori"] {
+  --scr: linear-gradient(160deg, #1b212a, #39424e);
+}
+.kb-tab[data-night][data-kind="ame"] {
+  --scr: linear-gradient(160deg, #131920, #2c3641);
+}
+.kb-tab[data-night][data-kind="yuki"] {
+  --scr: linear-gradient(160deg, #283141, #536078);
+}
+
+.kb-tscreen {
+  container-type: inline-size;
+  position: relative;
+  box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  /* 自分の大きさ（cqw）は自分の余白には使えないので、端末の幅から出す */
+  padding: calc(var(--tw) * 0.045) calc(var(--tw) * 0.065) calc(var(--tw) * 0.05);
+  border-radius: calc(var(--tw) * 0.03);
+  background: var(--scr);
+  color: #fff;
+  font-family: var(--font-print, sans-serif);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+/* 画面のガラスの照り返し */
+.kb-tscreen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.1) 0 32%, transparent 32%);
+  pointer-events: none;
+}
+
+.kb-trow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4cqw;
+  white-space: nowrap;
+}
+.kb-tplace {
+  font-size: 10cqw;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.kb-tsrc {
+  font-size: 6cqw;
+  line-height: 1;
+  opacity: 0.72;
+}
+.kb-tmain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3cqw;
+  min-height: 0;
+}
+.kb-ttemp,
+.kb-tnum {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+.kb-ttemp {
+  font-size: 21cqw;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+.kb-ticon {
+  flex: none;
+  width: 25cqw;
+  height: 25cqw;
+}
+.kb-tsub {
+  display: flex;
+  gap: 5cqw;
+  font-size: 9cqw;
+  line-height: 1.15;
+  white-space: nowrap;
+}
