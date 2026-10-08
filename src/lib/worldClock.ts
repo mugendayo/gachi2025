@@ -254,7 +254,7 @@ export function overrideOffset(search: string, realNow: number): number | null {
 
 /** main の開きタグの直後に走らせるスクリプト：描画前に光の状態を書き込む（今日の日付と残り日数は boardTextScript が黒板へ） */
 export function bootScript(): string {
-  const boot = function (cfg: ClockConfig, core: typeof clockCore, gateKey: string) {
+  const boot = function (cfg: ClockConfig, core: typeof clockCore) {
     try {
       const room = document.getElementById("kb-world");
       if (!room) return;
@@ -269,11 +269,11 @@ export function bootScript(): string {
           : Date.parse(t.split("T")[0] + "T" + (t.split("T")[1] || "").padStart(5, "0") + ":00+09:00");
         if (target === target) now = target;
       }
-      let gate = "closed";
-      try {
-        if (sessionStorage.getItem(gateKey) === "open") gate = "open";
-      } catch (e) {}
-      room.dataset.gate = gate;
+      // 門は読み込むたびに閉じる（検分用に Preview と手元では ?gate=open で開けておける）
+      if (dbg && /[?&]gate=open(&|$)/.test(location.search)) {
+        room.dataset.gate = "open";
+        (window as unknown as { __kbGateOpen: boolean }).__kbGateOpen = true;
+      }
       if (/[?&]motion(=|&|$)/.test(location.search)) room.dataset.motionForced = "";
       // 検分用の表示（〔本人〕の枠など）は Preview と手元だけ
       if (dbg) room.dataset.debug = "1";
@@ -297,7 +297,7 @@ export function bootScript(): string {
       w.__kbCount = s.countLabel;
     } catch (e) {}
   };
-  return `(${boot.toString()})(${JSON.stringify(clockConfig)},${clockCore.toString()},${JSON.stringify(`gbf_${site.year}_gate`)});`;
+  return `(${boot.toString()})(${JSON.stringify(clockConfig)},${clockCore.toString()});`;
 }
 
 /** 黒板の見出しの直後に走らせる：今日の日付と本番までの残り日数を書き込む（描画前） */

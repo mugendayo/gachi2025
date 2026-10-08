@@ -39,7 +39,13 @@ const MAX_TIMEOUT = 2147483647;
 // 落書きの保存先：列の組み方（PC＝3列／スマホ＝縦）で文字の並びが変わるので分ける。座標は x も y も黒板の幅で割る（回転・幅の変化で伸び縮みしない）
 const doodleKey = () => `gbf_${site.year}_doodle_v2:${window.matchMedia("(min-width: 900px)").matches ? "wide" : "narrow"}`;
 const DOODLE_MAX_POINTS = 12000;
-const CHALK_IDLE_MS = 10000; // 指でチョークを持ったまま放っておくと、粉受けに戻す（スクロールできなくならないように）
+// こすったときの消え方：一度では消えず、少しずつかすれていく（1往復でおよそ半分残る。向きによらず同じ）
+const RUB_KEEP = 0.5;
+// にじみ：こすった向きへ、すくった粉を薄く置き直す濃さ
+const SMUDGE = 0.22;
+// 誰もいない教室（見えない手が落書きしたり消したりする帯）と、触られていない時間
+const QUIET_SCENES = new Set(["akegata", "asa", "yugata", "shinya"]);
+const GHOST_IDLE_MS = 12000;
 
 /** 同じ種からは同じ乱数（全員が同じ消し跡を見る） */
 function rng(seed: number) {
@@ -346,9 +352,10 @@ export default function BoardFx() {
       chalk.restore();
     };
 
-    const stampAt = (ctx: CanvasRenderingContext2D, x: number, y: number, scale = 1) => {
+    const stampAt = (ctx: CanvasRenderingContext2D, x: number, y: number, scale = 1, strength = 1) => {
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
+      ctx.globalAlpha = strength;
       ctx.drawImage(stamp, x - (SW * scale) / 2, y - (SH * scale) / 2, SW * scale, SH * scale);
       ctx.restore();
     };
@@ -505,17 +512,79 @@ export default function BoardFx() {
       if (!raf) raf = requestAnimationFrame(loop);
     };
 
+    /* ---------------- にじみ：こすった方向へ、チョークの粉が伸びて広がる（どの文字・落書きにも効く） ---------------- */
+    const PW = SW + 18;
+    const PH = SH + 10;
+    const patch = document.createElement("canvas");
+    patch.width = Math.max(4, Math.ceil(PW * dpr * 0.34));
+    patch.height = Math.max(4, Math.ceil(PH * dpr * 0.34));
+    const pctx = patch.getContext("2d")!;
+    // すくう範囲の縁をぼかす型（四角い写しの縁が線になって見えないように）
+    const feather = document.createElement("canvas");
+    feather.width = patch.width;
+    feather.height = patch.height;
+    {
+      const g = feather.getContext("2d")!;
+      g.translate(feather.width / 2, feather.height / 2);
+      g.scale(feather.width / 2, feather.height / 2);
+      const rg = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+      rg.addColorStop(0, "rgba(0,0,0,1)");
+      rg.addColorStop(0.5, "rgba(0,0,0,.75)");
+      rg.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = rg;
+      g.fillRect(-1, -1, 2, 2);
+    }
+    const smudgeAt = (src: HTMLCanvasElement, ctx: CanvasRenderingContext2D, k: number, x: number, y: number, mx: number, my: number, alpha: number) => {
+      // 黒板消しの下の粉をすくって（縮めてぼかし）、動いた向きに少しずらして薄く置き直す
+      const sx = Math.max(0, x - PW / 2);
+      const sy = Math.max(0, y - PH / 2);
+      const sw = Math.min(PW, W - sx);
+      const sh = Math.min(PH, H - sy);
+      if (sw <= 2 || sh <= 2) return;
+      pctx.clearRect(0, 0, patch.width, patch.height);
+      const pw = Math.ceil((patch.width * sw) / PW);
+      const ph = Math.ceil((patch.height * sh) / PH);
+      pctx.drawImage(src, sx * k, sy * k, sw * k, sh * k, 0, 0, pw, ph);
+      pctx.globalCompositeOperation = "destination-in";
+      pctx.drawImage(feather, (-(sx - (x - PW / 2)) * patch.width) / PW, (-(sy - (y - PH / 2)) * patch.height) / PH);
+      pctx.globalCompositeOperation = "source-over";
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(patch, 0, 0, pw, ph, sx + mx, sy + my, sw, sh);
+      ctx.restore();
+    };
+
+    /** 1回の押し当ての強さ：黒板消しの面が通り過ぎる間に重なる回数で割り、1往復で RUB_KEEP だけ残す */
+    const rubStrength = (dx: number, dy: number, step: number, keep = RUB_KEEP) => {
+      const d = Math.hypot(dx, dy);
+      const reach = d > 0.5 ? (Math.abs(dx) / d) * SW + (Math.abs(dy) / d) * SH : SW;
+      // 面の濃さの平均（行ごとのムラと左右のぼかし）がおよそ 0.5
+      return Math.min(1, (1 - Math.pow(keep, Math.max(step, 0.5) / reach)) / 0.5);
+    };
+
     /* ---------------- 消す ---------------- */
     let eraseStroke: Stroke | null = null;
     const eraseSeg = (x0: number, y0: number, x1: number, y1: number, clip?: Item) => {
       const d = Math.hypot(x1 - x0, y1 - y0);
       const n = Math.max(1, Math.ceil(d / 4));
+      const rub = rubStrength(x1 - x0, y1 - y0, d / n);
       const run = () => {
         for (let i = 1; i <= n; i++) {
           const x = x0 + ((x1 - x0) * i) / n;
           const y = y0 + ((y1 - y0) * i) / n;
-          stampAt(chalk, x, y);
-          if (!clip) stampAt(doodle, x, y);
+          if (clip) stampAt(chalk, x, y);
+          else {
+            // 人がこする：粉がにじんで伸び、少しずつかすれる
+            // すくった粉の一部だけを先へ置く（消す量より少なく＝こするほど減っていく）
+            if (i % 3 === 0 && d > 0.5) {
+              const ux = (x1 - x0) / d;
+              const uy = (y1 - y0) / d;
+              smudgeAt(chalkC, chalk, dpr, x, y, ux * 10, uy * 10, SMUDGE);
+              smudgeAt(doodleC, doodle, dpr, x, y, ux * 10, uy * 10, SMUDGE);
+            }
+            stampAt(chalk, x, y, 1, rub);
+            stampAt(doodle, x, y, 1, rub);
+          }
           // 見えない手の書き直しのときは拭き跡をごく薄く（日付の地を白くしない）
           hazeAt(x, y, clip ? 0.005 : 0.018);
           if (i % 3 === 0) emit(x, y);
@@ -555,25 +624,15 @@ export default function BoardFx() {
       el.classList.remove("is-held");
       el.style.transform = "";
     };
-    let chalkIdle = 0;
     let lastPointerType = "mouse";
     const selectTool = (next: Tool) => {
-      if (tool.kind === "chalk") {
+      if (tool.kind === "chalk" && tool.el !== next.el) {
         putBack(tool.el);
         tool.el.classList.remove("is-picked");
       }
       tool = next;
       board.classList.toggle("is-drawing", next.kind === "chalk");
-      window.clearTimeout(chalkIdle);
-      if (next.kind === "chalk") {
-        next.el.classList.add("is-picked");
-        armChalkIdle();
-      }
-    };
-    const armChalkIdle = () => {
-      window.clearTimeout(chalkIdle);
-      if (tool.kind === "chalk" && lastPointerType !== "mouse")
-        chalkIdle = window.setTimeout(() => selectTool({ kind: "eraser", el: eraser }), CHALK_IDLE_MS);
+      if (next.kind === "chalk") next.el.classList.add("is-picked");
     };
 
     /* ---------------- 書き直し（rewrite）／焼き付き（burn） ---------------- */
@@ -718,13 +777,12 @@ export default function BoardFx() {
     };
 
     /* ---------------- 触る（こする・書く・照らす） ---------------- */
-    let active: "rub" | "draw" | null = null;
+    let active: "rub" | "draw" | "pan" | null = null;
     let armed = false;
     let start = { x: 0, y: 0 };
     let last = { x: 0, y: 0 };
     let lightMoved = false;
     let drawStroke: Stroke | null = null;
-    let downAt = 0;
     const local = (e: PointerEvent) => {
       const b = board.getBoundingClientRect();
       return { x: e.clientX - b.left, y: e.clientY - b.top };
@@ -749,7 +807,16 @@ export default function BoardFx() {
       measureRest(eraser);
       if (strokes.some((st) => st.t === "c")) eraseStroke = { t: "e", p: [norm(last.x, W), norm(last.y, W)] };
     };
-    const endTouch = () => {
+    const endTouch = (e?: PointerEvent) => {
+      if (e && touchY.delete(e.pointerId) && active === "pan") {
+        // 指が残っている間は、残った指でそのまま動かせる
+        if (touchY.size) {
+          panY = avgY();
+          return;
+        }
+        active = null;
+        return;
+      }
       if (active === "rub") {
         putBack(eraser);
         scheduleReturn();
@@ -759,21 +826,12 @@ export default function BoardFx() {
         }
       }
       if (active === "draw" && drawStroke && tool.kind === "chalk") {
-        const dx = Math.abs(last.x - start.x);
-        const dy = Math.abs(last.y - start.y);
-        if (lastPointerType !== "mouse" && dy > 120 && dx < dy / 4 && performance.now() - downAt < 450) {
-          // 指で速く真っすぐ縦に払った＝スクロールしたかった：線は捨てて、チョークを粉受けに戻す（次からスクロールできる）
-          replayDoodle();
-          selectTool({ kind: "eraser", el: eraser });
-        } else {
-          if (drawStroke.p.length >= 2) {
-            strokes.push(drawStroke);
-            saveDoodle();
-          }
-          // 書き終えたら手から離す（粉受けで少し浮いて光る＝まだ持っている）
-          putBack(tool.el);
-          armChalkIdle();
+        if (drawStroke.p.length >= 2) {
+          strokes.push(drawStroke);
+          saveDoodle();
         }
+        // 書き終えたら手から離す（粉受けで少し浮いて光る＝まだ持っている。黒板消しを押すまで持ち続ける）
+        putBack(tool.el);
       }
       // 黒板をただタップした：少しだけ粉が舞う（消しも書きもしない）
       if (armed && active === null) emit(start.x, start.y, 10, 6);
@@ -781,16 +839,44 @@ export default function BoardFx() {
       armed = false;
       active = null;
     };
+    let lastUser = performance.now();
+    // チョークを持っている間の2本指＝スクロール（黒板の上でも、持ち替えずにページを動かせる）
+    const touchY = new Map<number, number>();
+    let panY = 0;
+    const avgY = () => [...touchY.values()].reduce((a, b) => a + b, 0) / Math.max(1, touchY.size);
     const onDown = (e: PointerEvent) => {
       lastPointerType = e.pointerType;
-      // 2本目の指＝ピンチ。こすり・書きを止めて拡大に任せる
-      if (!e.isPrimary) return endTouch();
-      // 粉受けの道具を押した：持ち替える（持っているチョークをもう一度押すと粉受けに戻す）
+      lastUser = performance.now();
+      ghostToken++;
+      if (e.pointerType === "touch") {
+        // 1本目の指＝新しい触り始め（取りこぼした指の記録を捨てる）
+        if (e.isPrimary) touchY.clear();
+        touchY.set(e.pointerId, e.clientY);
+      }
+      if (!e.isPrimary) {
+        if (tool.kind === "chalk" && e.pointerType === "touch") {
+          // 書きかけの線は捨てる（2本指は書くためではなく動かすため）
+          if (active === "draw" && drawStroke) {
+            drawStroke = null;
+            replayDoodle();
+            ghostMarks = [];
+            putBack(tool.el);
+          }
+          active = "pan";
+          armed = false;
+          capture(e);
+          panY = avgY();
+          return;
+        }
+        // 黒板消しのときの2本目の指＝ピンチ。こすりを止めて拡大に任せる
+        return endTouch();
+      }
+      // 粉受けの道具を押した：押したものを必ず持つ（チョークはチョーク、黒板消しは黒板消し）
       const toolEl = (e.target as HTMLElement).closest<HTMLElement>("[data-tool]");
       if (toolEl) {
         e.preventDefault();
-        if (toolEl.dataset.tool === "chalk" && !(tool.kind === "chalk" && tool.el === toolEl))
-          selectTool({ kind: "chalk", el: toolEl, color: toolEl.dataset.color || "#f2f0e6" });
+        lastUser = performance.now();
+        if (toolEl.dataset.tool === "chalk") selectTool({ kind: "chalk", el: toolEl, color: toolEl.dataset.color || "#f2f0e6" });
         else selectTool({ kind: "eraser", el: eraser });
         return;
       }
@@ -804,11 +890,9 @@ export default function BoardFx() {
       if (tool.kind === "chalk") {
         // チョーク：どの向きにも書ける（持っている間は黒板の上でスクロールしない）
         e.preventDefault();
-        window.clearTimeout(chalkIdle);
         active = "draw";
         capture(e);
         start = last = p;
-        downAt = performance.now();
         drawStroke = { t: "c", c: tool.color, p: [norm(p.x, W), norm(p.y, W)] };
         chalkLine(p.x, p.y, p.x + 0.1, p.y + 0.1, tool.color);
         measureRest(tool.el);
@@ -826,8 +910,16 @@ export default function BoardFx() {
       }
     };
     const onMove = (e: PointerEvent) => {
+      if (touchY.has(e.pointerId)) touchY.set(e.pointerId, e.clientY);
+      if (active === "pan") {
+        const y = avgY();
+        window.scrollBy(0, panY - y);
+        panY = y;
+        return;
+      }
       if (!e.isPrimary) return;
       moveLight(e);
+      if (active) lastUser = performance.now();
       const p = local(e);
       if (active === "draw" && tool.kind === "chalk" && drawStroke) {
         if (Math.hypot(p.x - last.x, p.y - last.y) < 1.2) return;
@@ -893,12 +985,220 @@ export default function BoardFx() {
       step();
     };
 
+    /* ---------------- 誰もいない教室：見えない手が落書きし、黒板消しがひとりでに消す ---------------- */
+    let ghostToken = 0;
+    let ghostBusy = false;
+    type GhostMark = { x: number; y: number; w: number; h: number };
+    let ghostMarks: GhostMark[] = [];
+    const boardInView = () => {
+      const r = board.getBoundingClientRect();
+      return r.bottom > 120 && r.top < window.innerHeight - 120 && r.width > 0;
+    };
+    // 文字も落書きも無い所を探す（縮めた写しでインクの量を数える）
+    const probe = document.createElement("canvas");
+    const freeSpot = (w: number, h: number): { x: number; y: number } | null => {
+      const k = 1 / 8;
+      probe.width = Math.max(1, Math.round(W * k));
+      probe.height = Math.max(1, Math.round(H * k));
+      const g = probe.getContext("2d", { willReadFrequently: true })!;
+      g.clearRect(0, 0, probe.width, probe.height);
+      g.drawImage(chalkC, 0, 0, probe.width, probe.height);
+      g.drawImage(doodleC, 0, 0, probe.width, probe.height);
+      const data = g.getImageData(0, 0, probe.width, probe.height).data;
+      const cw = Math.ceil(w * k) + 2;
+      const ch = Math.ceil(h * k) + 2;
+      const cands: { x: number; y: number }[] = [];
+      for (let y = 3; y + ch < probe.height - 4; y += 2)
+        for (let x = 3; x + cw < probe.width - 3; x += 2) {
+          let ink = 0;
+          for (let yy = y; yy < y + ch && ink < 3; yy++)
+            for (let xx = x; xx < x + cw; xx++) if (data[(yy * probe.width + xx) * 4 + 3] > 30) ink++;
+          if (ink < 3) cands.push({ x: (x + 1) / k, y: (y + 1) / k });
+        }
+      if (!cands.length) return null;
+      // 黒板の中ほど（画面に見えている範囲）を優先
+      const b = board.getBoundingClientRect();
+      const vis = cands.filter((c) => b.top + c.y > 100 && b.top + c.y + h < window.innerHeight - 60);
+      const pool = vis.length ? vis : cands;
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
+    const ghostDraw = async (token: number) => {
+      const defs = site.ghostDoodles;
+      if (!defs.length) return;
+      const def = defs[Math.floor(Math.random() * defs.length)];
+      const w = 70 + Math.random() * 50;
+      const h = w / (def.aspect || 1);
+      const spot = freeSpot(w, h);
+      if (!spot) return;
+      const stick = board.querySelector<HTMLElement>('[data-tool="chalk"]');
+      const color = stick?.dataset.color || "#f2f0e6";
+      const mine = () => token === ghostToken && !disposed;
+      // 粉受けからチョークが浮いて、描き始めの所まで運ばれる
+      if (stick) {
+        const rest = measureRest(stick);
+        const sx = spot.x + def.strokes[0][0] * w;
+        const sy = spot.y + def.strokes[0][1] * h;
+        const t0 = performance.now();
+        while (mine()) {
+          const p = Math.min(1, (performance.now() - t0) / 700);
+          const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          hold(stick, rest.x + (sx - rest.x) * e, rest.y + (sy - rest.y) * e, -35);
+          if (p >= 1) break;
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+      }
+      try {
+        for (const st of def.strokes) {
+          for (let i = 2; i < st.length; i += 2) {
+            if (!mine()) return;
+            const x0 = spot.x + st[i - 2] * w;
+            const y0 = spot.y + st[i - 1] * h;
+            const x1 = spot.x + st[i] * w;
+            const y1 = spot.y + st[i + 1] * h;
+            chalkLine(x0, y0, x1, y1, color);
+            if (stick) hold(stick, x1, y1, -35);
+            if (Math.random() < 0.2) emit(x1, y1, 4, 1);
+            await wait(18 + Math.hypot(x1 - x0, y1 - y0) * 6);
+          }
+          await wait(180);
+        }
+        ghostMarks.push({ x: spot.x, y: spot.y, w, h });
+      } finally {
+        // 人が同じチョークで書いている最中なら手を離さない
+        if (stick && !(active === "draw" && tool.el === stick)) putBack(stick);
+      }
+    };
+    const ghostErase = async (token: number) => {
+      const m = ghostMarks.shift();
+      if (!m) return;
+      const rest = measureRest(eraser);
+      const cy = m.y + m.h / 2;
+      const pts: [number, number][] = [[rest.x, rest.y]];
+      const passes = 6;
+      for (let i = 0; i <= passes; i++) pts.push([i % 2 ? m.x - 10 : m.x + m.w + 10, m.y + (m.h * i) / passes]);
+      pts.push([m.x + m.w / 2, cy]);
+      // 見えない手は落書きを7往復で消し切る（人より少し強く）
+      const ghostRub = rubStrength(1, 0, 5, 0.35);
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1];
+        const [bx, by] = pts[i];
+        const dur = i === 1 ? 650 : 420;
+        const t0 = performance.now();
+        let px = ax;
+        let py = ay;
+        const ok = await new Promise<boolean>((done) => {
+          const step = () => {
+            if (token !== ghostToken || disposed) return done(false);
+            const p = Math.min(1, (performance.now() - t0) / dur);
+            const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+            const x = ax + (bx - ax) * e;
+            const y = ay + (by - ay) * e;
+            hold(eraser, x, y, 90);
+            if (i > 1) {
+              const d = Math.hypot(x - px, y - py);
+              const n = Math.max(1, Math.ceil(d / 5));
+              for (let k = 1; k <= n; k++) {
+                const sx = px + ((x - px) * k) / n;
+                const sy = py + ((y - py) * k) / n;
+                if (k % 3 === 0 && d > 0.5) smudgeAt(doodleC, doodle, dpr, sx, sy, ((x - px) / d) * 8, ((y - py) / d) * 8, SMUDGE);
+                stampAt(doodle, sx, sy, 1, ghostRub);
+                hazeAt(sx, sy, 0.012);
+                if (k % 4 === 0) emit(sx, sy);
+              }
+            }
+            px = x;
+            py = y;
+            if (p < 1) requestAnimationFrame(step);
+            else done(true);
+          };
+          step();
+        });
+        if (!ok) break;
+      }
+      if (active !== "rub") putBack(eraser);
+    };
+    const ghostTick = async () => {
+      if (ghostBusy || busy || active || reduce || document.hidden) return;
+      if (state.phase === "after" || !QUIET_SCENES.has(state.scene) || world.dataset.gate !== "open") return;
+      if (performance.now() - lastUser < GHOST_IDLE_MS || !boardInView()) return;
+      ghostBusy = true;
+      const token = ++ghostToken;
+      try {
+        if (ghostMarks.length >= 2 || (ghostMarks.length && Math.random() < 0.45)) await ghostErase(token);
+        else await ghostDraw(token);
+      } finally {
+        ghostBusy = false;
+        // 次の気配まで、8〜22秒あける（描いた落書きはしばらく残る）
+        lastUser = performance.now() - GHOST_IDLE_MS + 8000 + Math.random() * 14000;
+      }
+    };
+    intervals.push(window.setInterval(ghostTick, 3000));
+
+    /* ---------------- 光の筋に漂う粉（朝・昼・放課後の静かな教室） ---------------- */
+    const motesC = mk("kb-cv-motes");
+    const motes = motesC.getContext("2d")!;
+    type Mote = { x: number; y: number; vx: number; vy: number; r: number; ph: number };
+    const moteList: Mote[] = [];
+    let moteRaf = 0;
+    let moteLast = 0;
+    const motesOn = () =>
+      !reduce && !document.hidden && ["akegata", "asa", "hiru", "yugata", "choshinsei"].includes(state.scene) && state.sun > 0.2 && boardInView();
+    const moteLoop = (t: number) => {
+      moteRaf = 0;
+      if (!motesOn()) {
+        motes.clearRect(0, 0, W, H);
+        return;
+      }
+      if (t - moteLast > 33) {
+        moteLast = t;
+        if (moteList.length < 34) moteList.push({ x: Math.random() * W * 0.7, y: Math.random() * H, vx: 0.05 + Math.random() * 0.12, vy: -0.04 - Math.random() * 0.08, r: 0.6 + Math.random() * 1.3, ph: Math.random() * 6.28 });
+        motes.clearRect(0, 0, W, H);
+        for (const m of moteList) {
+          m.x += m.vx;
+          m.y += m.vy;
+          m.ph += 0.03;
+          if (m.y < -4 || m.x > W) {
+            m.x = Math.random() * W * 0.6;
+            m.y = H + 4;
+          }
+          const a = (0.18 + 0.22 * Math.sin(m.ph)) * Math.min(1, state.sun * 1.4);
+          motes.fillStyle = `rgba(255,248,225,${a.toFixed(3)})`;
+          motes.beginPath();
+          motes.arc(m.x, m.y, m.r, 0, 6.283);
+          motes.fill();
+        }
+      }
+      moteRaf = requestAnimationFrame(moteLoop);
+    };
+    const kickMotes = () => {
+      if (!moteRaf && motesOn()) moteRaf = requestAnimationFrame(moteLoop);
+    };
+    intervals.push(window.setInterval(kickMotes, 2000));
+
+    /** 検分用：いま黒板にある自分の落書きを、見えない手の落書きの形（0〜1）で書き出す（Preview と手元だけ） */
+    if (debugAllowed())
+      (window as unknown as { __kbExportDoodle: () => string }).__kbExportDoodle = () => {
+        const cs = strokes.filter((st) => st.t === "c");
+        if (!cs.length) return "[]";
+        const xs = cs.flatMap((st) => st.p.filter((_, i) => i % 2 === 0));
+        const ys = cs.flatMap((st) => st.p.filter((_, i) => i % 2 === 1));
+        const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+        const w = x1 - x0 || 1, h = y1 - y0 || 1;
+        const out = { aspect: Math.round((w / h) * 100) / 100, strokes: cs.map((st) => st.p.map((v, i) => Math.round(((i % 2 === 0 ? v - x0 : v - y0) / (i % 2 === 0 ? w : h)) * 1000) / 1000)) };
+        return JSON.stringify(out);
+      };
+
     /* ---------------- 組み立て ---------------- */
     const layout = () => {
       sizeCanvases();
+      motesC.width = Math.round(W);
+      motesC.height = Math.round(H);
+      motesC.style.width = `${W}px`;
+      motesC.style.height = `${H}px`;
       collect();
       drawAll();
       replayDoodle();
+      ghostMarks = [];
       restOf.clear();
       placeNowMark();
     };
@@ -1046,9 +1346,9 @@ export default function BoardFx() {
       timeouts.forEach((t) => window.clearTimeout(t));
       window.clearTimeout(idleTimer);
       window.clearTimeout(rto);
-      window.clearTimeout(chalkIdle);
       flushDoodle();
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(moteRaf);
       ro.disconnect();
       wideMq.removeEventListener("change", onWide);
       document.removeEventListener("visibilitychange", onVisible);
@@ -1060,7 +1360,7 @@ export default function BoardFx() {
       room.removeEventListener("pointermove", onMove);
       board.removeEventListener("pointerup", endTouch);
       board.removeEventListener("pointercancel", endTouch);
-      [dustC, doodleC, chalkC, smearC, ghostC, nowMark].forEach((el) => el.remove());
+      [dustC, doodleC, chalkC, smearC, ghostC, motesC, nowMark].forEach((el) => el.remove());
       board.classList.remove("is-canvas", "is-drawing");
     };
   }, []);

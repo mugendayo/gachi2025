@@ -6,10 +6,14 @@ import BoardFx from "./BoardFx";
 import { HandSymbol, SignFront } from "./Signboard";
 
 /** チョーク（粉受けに置いてある色。拾うと黒板に書ける） */
+// 黒板・粉受け・道具の絵（site.assets が空のあいだは CSS と canvas で描いた仮のもの）
+const A = site.assets;
+const artStyle = (url: string) => (url ? ({ "--art": `url(${url})` } as React.CSSProperties) : undefined);
+
 const CHALKS = [
-  { key: "w", color: "#f2f0e6", name: "白いチョーク" },
-  { key: "y", color: "#f3df7a", name: "黄色いチョーク" },
-  { key: "r", color: "#f2a7a0", name: "赤いチョーク" },
+  { key: "w", color: "#f2f0e6", name: "白いチョーク", art: A.chalkW },
+  { key: "y", color: "#f3df7a", name: "黄色いチョーク", art: A.chalkY },
+  { key: "r", color: "#f2a7a0", name: "赤いチョーク", art: A.chalkR },
 ];
 
 export default function Classroom() {
@@ -70,7 +74,11 @@ export default function Classroom() {
         </figure>
       </div>
 
-      <div className="kb-board" id="kb-board">
+      <div
+        className={`kb-board${A.board ? " has-art" : ""}`}
+        id="kb-board"
+        style={A.board ? ({ "--art": `url(${A.board})` } as React.CSSProperties) : undefined}
+      >
         <div className="kb-head">
           {/* 本番までの実際の日数と今日の日付（直後のスクリプトが描画前に書き込む。React は中身を照合しない） */}
           <h2 className="kb-count">
@@ -128,12 +136,13 @@ export default function Classroom() {
         {/* 粉受け（チョークと黒板消し）。スマホでは黒板が画面にある間、画面の下に貼り付く。
             指・マウスで使う道具なので、キーボードと読み上げの対象からは外す（読み上げの正本は黒板の文字） */}
         <div className="kb-ledge">
-          <div className="kb-tray">
+          <div className={`kb-tray${A.tray ? " has-art" : ""}`} style={artStyle(A.tray)}>
             {CHALKS.map((c) => (
               <button
                 key={c.key}
                 type="button"
-                className={`kb-chalk kb-chalk-${c.key}`}
+                className={`kb-chalk kb-chalk-${c.key}${c.art ? " has-art" : ""}`}
+                style={artStyle(c.art)}
                 data-tool="chalk"
                 data-color={c.color}
                 aria-label={c.name}
@@ -142,7 +151,15 @@ export default function Classroom() {
               />
             ))}
           </div>
-          <button type="button" className="kb-eraser" data-tool="eraser" aria-label="黒板消し" aria-hidden="true" tabIndex={-1} />
+          <button
+            type="button"
+            className={`kb-eraser${A.eraser ? " has-art" : ""}`}
+            style={artStyle(A.eraser)}
+            data-tool="eraser"
+            aria-label="黒板消し"
+            aria-hidden="true"
+            tabIndex={-1}
+          />
         </div>
       </div>
 

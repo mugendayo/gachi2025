@@ -81,7 +81,7 @@
 }
 /* 時計の絵（site.clock）：文字盤と針は同じ大きさの正方形。針は中心で回す */
 .kb-clock.has-art {
-  width: clamp(72px, 17vw, 112px);
+  width: clamp(66px, 15vw, 104px);
   border-radius: 0;
   background: none;
   box-shadow: none;
@@ -96,35 +96,35 @@
   background: #151515;
 }
 .kb-art-hand-h {
-  width: 2.6cqw;
-  height: calc(var(--dial) * 0.5cqw);
-  left: calc(var(--cx) - 1.3cqw);
-  top: calc(var(--cy) - var(--dial) * 0.5cqw);
+  width: 2.4cqw;
+  height: calc(var(--dial) * 0.58cqw);
+  left: calc(var(--cx) - 1.2cqw);
+  top: calc(var(--cy) - var(--dial) * 0.58cqw);
   transform: rotate(var(--ch));
   clip-path: polygon(50% 0, 100% 22%, 78% 100%, 22% 100%, 0 22%);
 }
 .kb-art-hand-m {
-  width: 1.9cqw;
+  width: 1.8cqw;
   height: calc(var(--dial) * 0.8cqw);
-  left: calc(var(--cx) - 0.95cqw);
+  left: calc(var(--cx) - 0.9cqw);
   top: calc(var(--cy) - var(--dial) * 0.8cqw);
   transform: rotate(var(--cm));
   clip-path: polygon(50% 0, 100% 16%, 75% 100%, 25% 100%, 0 16%);
 }
 .kb-art-hand-s {
-  width: 0.8cqw;
-  height: calc(var(--dial) * 0.88cqw);
-  left: calc(var(--cx) - 0.4cqw);
-  top: calc(var(--cy) - var(--dial) * 0.88cqw);
+  width: 0.7cqw;
+  height: calc(var(--dial) * 0.86cqw);
+  left: calc(var(--cx) - 0.35cqw);
+  top: calc(var(--cy) - var(--dial) * 0.86cqw);
   transform: rotate(var(--cs));
   background: #d81e1e;
 }
 .kb-art-cap {
   position: absolute;
-  width: 5cqw;
-  height: 5cqw;
-  left: calc(var(--cx) - 2.5cqw);
-  top: calc(var(--cy) - 2.5cqw);
+  width: 3.4cqw;
+  height: 3.4cqw;
+  left: calc(var(--cx) - 1.7cqw);
+  top: calc(var(--cy) - 1.7cqw);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fff3b0, #c99a2e 55%, #6d4f12);
   box-shadow: 0 0 0 0.6cqw #111;
@@ -284,6 +284,11 @@
 }
 .kb-cv-dust {
   z-index: 6;
+}
+/* 窓からの光の筋に漂う粉（朝・昼・放課後） */
+.kb-cv-motes {
+  z-index: 6;
+  mix-blend-mode: screen;
 }
 
 /* チョークの文字（DOM が正本。canvas が準備できたら透明にして読み上げ・選択だけに残す） */
@@ -511,6 +516,35 @@
   box-shadow: 0 8px 14px rgba(0, 0, 0, 0.45);
   pointer-events: none;
 }
+/* 絵の受け口（site.assets）：絵が入ったら、仮の色と影を絵に置き換える */
+.kb-board.has-art {
+  background: var(--art) center / cover;
+}
+.kb-tray.has-art {
+  background: var(--art) center / 100% 100%;
+  box-shadow: none;
+}
+.kb-chalk.has-art,
+.kb-eraser.has-art {
+  background: var(--art) center / contain no-repeat;
+  border-radius: 0;
+  box-shadow: none;
+}
+.kb-chalk.has-art {
+  height: 12px;
+}
+.kb-eraser.has-art {
+  height: 30px;
+}
+.kb-chalk.has-art.is-picked {
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+}
+.kb-eraser.has-art.is-held,
+.kb-chalk.has-art.is-held {
+  box-shadow: none;
+  filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.45));
+}
+
 /* チョークを持っている間：黒板の上はどの向きにも書ける（スクロールしない） */
 .kb-board.is-drawing {
   touch-action: pinch-zoom;
@@ -1385,14 +1419,36 @@
     bottom: 0;
     height: 22px;
   }
+  /* 指で持つ道具：見た目も当たり判定も大きく、隣と重ならない（押したものを必ず持つ） */
   .kb-ledge .kb-eraser {
-    bottom: 10px;
+    bottom: 9px;
+    width: 76px;
+    height: 25px;
+  }
+  .kb-ledge .kb-eraser::after {
+    inset: -16px -10px -12px;
   }
   .kb-ledge .kb-chalk {
     bottom: 11px;
+    height: 9px;
+  }
+  .kb-ledge .kb-chalk::after {
+    inset: -20px -10px -14px;
+  }
+  .kb-ledge .kb-chalk-w {
+    left: 10%;
+    width: 44px;
+  }
+  .kb-ledge .kb-chalk-y {
+    left: calc(10% + 68px);
+    width: 32px;
+  }
+  .kb-ledge .kb-chalk-r {
+    left: calc(10% + 124px);
+    width: 36px;
   }
   .kb-ledge .kb-chalk.is-picked {
-    bottom: 16px;
+    bottom: 17px;
   }
 }
 
@@ -1407,6 +1463,35 @@
   }
   .kb-dayhead {
     font-size: 20px;
+  }
+}
+
+/* PC：黒板の前に一歩近づく（教室の壁の余白を減らし、黒板が視界の大半を占める。大きい画面ほど字も大きく） */
+@media (min-width: 900px) {
+  .kb-room {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .kb-board {
+    width: min(100% - 22px, 1480px);
+  }
+  .kb-rows {
+    font-size: clamp(15px, 1.5vw, 24px);
+  }
+  .kb-dayhead {
+    font-size: clamp(18px, 1.8vw, 28px);
+  }
+  .kb-count {
+    font-size: clamp(24px, 3.6vw, 60px);
+  }
+  .kb-date {
+    font-size: clamp(16px, 1.7vw, 28px);
+  }
+  .kb-finale-word {
+    font-size: clamp(34px, 5vw, 86px);
+  }
+  .kb-finale-date {
+    font-size: clamp(16px, 1.7vw, 28px);
   }
 }
 
