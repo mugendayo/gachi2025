@@ -4,6 +4,8 @@
 // 自分の輪：共有の輪の続き。床の短冊の束を押すと1つ足される。数の上限はない。
 //   まず共有の輪と同じ並べ方で天井のフックの間に渡していく（押すたびに天井の鎖が伸びる。渡している途中は先の数個が垂れる）。
 //   右のフックの真下が手前の部品（テレビ）で隠れないスパンまで渡しきったら、その先はそのフックから尾として垂れる。
+//   指で触る画面（幅 700px 未満か、指が主な端末）では、フックを端から離して並べ、いまのスパンを渡しきったらその右のフックから垂らす。
+//   フックの真下に部品があるときは、天井の帯に収まらない長さになった所で、尾は部品の奥を通って下の端から出る（passAt）。
 //   尾の先はページのどこへでも引っ張っていける。ページの左右の端まで持っていくとそこにくっつき、そこから新しい尾が続く。
 //   くっついた点を長押しすると外れる。くっついた点は端末に残る。
 //   尾とくっついた鎖は、ページ全体を覆う固定の canvas に、いま画面に入っている所だけ描く（節点はページ座標で持つ）。
@@ -46,8 +48,32 @@ const HOOK_Y = 8;
 const LAYERS = 40;
 /** 天井へ渡している途中の鎖の、先の垂れている輪の数（ここが尾の先＝掴める） */
 const LEAD = 5;
-/** ページの左右の端からこの幅に入るとくっつく */
+/** ページの左右の端からこの幅に入るとくっつく（マウス） */
 const EDGE = 16;
+/* 指で触る画面（幅 700px 未満か、指が主な端末）：画面の左右の端の約40px は端末の「戻る・進む」のスワイプが取る帯。
+   掴む所（尾の先・天井のフック・くっついた点の当たり）はこの帯より内側に置く */
+/** 天井のフックを端から離す幅（学校の幅に対する割合と、最小の px） */
+const SAFE_RATIO = 0.13;
+const SAFE_MIN = 48;
+/** 指で引いたとき：端からこの幅まで持ってくればくっつく／くっついた点は端からこの幅に置く／
+ *  掴んだ所が端に近いときは、一度この幅より内側へ出るまでくっつけない */
+const EDGE_TOUCH = 40;
+const PIN_TOUCH = 20;
+const ARM_TOUCH = 44;
+/** 尾の先・くっついた点の当たり判定の半径（指・マウス） */
+const HIT_TOUCH = 36;
+const HIT_MOUSE = 22;
+/** 指で、尾の先からこの近さより外（HIT_TOUCH まで）を押したときは、最初の動きが縦ならページのスクロールに譲る
+ *  （尾の先は親指でスクロールする辺りに垂れるので、広げた当たり判定で縦のスクロールを奪わない）。この近さの中は縦でも掴む */
+const FIRM_TOUCH = 18;
+/** 押せる部品の上に尾の先が描かれているとき、部品より尾の先を優先する近さ（指・マウス） */
+const HIT_CORE_TOUCH = 14;
+const HIT_CORE_MOUSE = 8;
+/** 尾の先の最後の輪は、上の輪との継ぎ目を軸に少し傾いて下がる（rad）。ときどき小さく揺れる（間隔・長さ・振れ幅） */
+const LOOSE = 0.42;
+const WOB_EVERY = 7000;
+const WOB_MS = 1800;
+const WOB_AMP = 0.22;
 /** くっついた点を外す長押し */
 const HOLD_MS = 600;
 /** 引っ張っている間、画面の上下の端に近づくと自動でスクロールする（端からの幅・1コマの最大 px） */
@@ -154,6 +180,9 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   /** 尾の最初の輪の通しの番号（共有の輪から数えて。それより前は天井に渡してある）。尾の付け根（canvas の中の x） */
   let tailFirst = 0;
   let freeX = 0;
+  /** 尾の付け根のフックの真下に手前の部品（テレビ）があり、尾がその奥を通って下から出ているときの、
+   *  フックから部品の上の端の奥までの真っすぐな鎖（教室の後ろの canvas に描く＝部品の裏に隠れる）。出ていないときは null */
+  let drop: Chain | null = null;
   /** 自分の輪が天井に入れる数と、いま天井に入っている数 */
   let ceilCap = 0;
   let ceilMine = 0;
@@ -382,8 +411,10 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     const nodes: Pt[] = [pt(x, y, true)];
     // まっすぐ下へ垂らす。床に着いたら床に沿って横へ寝かせ、ページの端で折り返す（静止形に近い初めの形）
     const bd = bounds();
-    const lo = bd.l + P;
-    const hi = Math.max(lo, bd.r - P);
+    // 指で触る画面では、床に寝かせた尾の先も端のスワイプの帯へ入れない
+    const gap = edgeSafe() ? SAFE_MIN : P;
+    const lo = bd.l + gap;
+    const hi = Math.max(lo, bd.r - gap);
     const floor = Math.max(y, floorY);
     let dir = x < (bd.l + bd.r) / 2 ? 1 : -1;
     let cx = x;
@@ -404,12 +435,16 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     return { nodes, rest, rings, first, pg: true };
   };
 
+  /** 指で触る画面か（幅 700px 未満か、指が主な端末）。端のスワイプの帯を避ける並べ方・くっつけ方にする */
+  const coarse = typeof window.matchMedia === "function" ? window.matchMedia("(pointer: coarse)") : null;
+  const edgeSafe = () => W < 700 || !!coarse?.matches;
   /** 天井のフックの位置と、i 番目のスパン（層ごとに左から右へ。上の層ほど長く垂れる）の左右のフックと輪の数 */
   const plan = () => {
     P = Math.min(P_MAX, Math.max(P_MIN, W / P_RATIO));
     const nh = W < 700 ? 4 : 5;
-    // 両端のフックは部屋の角（輪が半分に切れないよう、輪1つ分弱だけ内側）
-    const inset = P * 0.8;
+    // 両端のフックは部屋の角（輪が半分に切れないよう、輪1つ分弱だけ内側）。
+    // 指で触る画面では、端から幅の 13%（最小 48px）内側の壁に留める（尾の先や渡している途中の先が端の帯に入らない）
+    const inset = edgeSafe() ? Math.max(SAFE_MIN, W * SAFE_RATIO) : P * 0.8;
     const S = (W - 2 * inset) / (nh - 1);
     const hx = Array.from({ length: nh }, (_, i) => inset + S * i);
     const span = (i: number) => {
@@ -435,10 +470,12 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     let i = 0;
     while (i < spans && from + span(i).k <= shown) from += span(i++).k;
     let end = from;
+    // 指で触る画面では、いまのスパンの終わりまで（右のフックが部品に隠れていても、尾はその奥を通って下から出る＝passAt）
+    const safe = edgeSafe();
     for (; i < spans; i++) {
       const sp = span(i);
       end += sp.k;
-      if (!hid(sp.b)) break;
+      if (safe || !hid(sp.b)) break;
     }
     ceilCap = W <= 0 ? 0 : Math.max(0, end - shown);
     ceilMine = wantMine();
@@ -473,7 +510,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       break;
     }
     // 垂れている数個は短いので天井の帯の中に収まる。長い尾を垂らすときだけ、手前の部品に隠れないフックへ替える
-    if (!lead) x = openHook(hx, x);
+    // （指で触る画面では替えない：隠れないフックは端の帯の中にしかなく、尾は部品の奥を通って下から出す）
+    if (!lead && !edgeSafe()) x = openHook(hx, x);
     return { used, x };
   };
   /** 自分の輪のうち天井に入れる数。くっついた点があれば、そこへ届くいちばん手前の点を作ったときの数を超えない
@@ -491,9 +529,43 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       const k = shown + h.n - r.used;
       if (k < 2 || h.n > mine.n) continue;
       const p = hookPos(h, list, bd);
-      if (p && Math.hypot(p.x - (cb.left + window.scrollX + r.x), p.y - (cb.top + window.scrollY + HOOK_Y)) <= k * P * 1.15) return m;
+      if (!p) continue;
+      const px = cb.left + window.scrollX + r.x;
+      if (Math.hypot(p.x - px, p.y - (cb.top + window.scrollY + HOOK_Y)) <= k * P * 1.15) return m;
+      // 部品の奥を通って下から出た尾で作った点
+      const ps = passAt(r.x);
+      if (ps && k - ps.c >= 2 && Math.hypot(p.x - px, p.y - (cb.top + window.scrollY + ps.bottom)) <= (k - ps.c) * P * 1.15) return m;
     }
     return base;
+  };
+  /** 指で触る画面で、尾の付け根のフック（canvas の中の x）の真下に手前の部品（テレビ）があるとき：
+   *  c＝フックから部品の上の端の少し奥までの輪の数（ここまでは天井の帯で見えている）／bottom＝部品の下の端の少し奥（canvas の中の y）。
+   *  尾が c より長くなったら、そこから先は部品の奥を通って下の端から出す（奥の輪は見えないので数えない）。当てはまらなければ null */
+  const passAt = (x: number) => {
+    if (!edgeSafe() || W <= 0) return null;
+    const cb = canvas.getBoundingClientRect();
+    if (!cb.width) return null;
+    let top = Infinity;
+    let bottom = 0;
+    section.querySelectorAll<HTMLElement>("[data-occlude]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      if (r.bottom <= cb.top + HOOK_Y || cb.left + x <= r.left - P || cb.left + x >= r.right + P) return;
+      if (r.top - cb.top >= top) return;
+      top = r.top - cb.top;
+      // 出口は部品の下の端より輪1つ分奥（部品の四角の中は描かないので、最初の輪は下の端から半分のぞく）
+      let b = r.bottom - P;
+      // 部品のすぐ下に続く台（テレビ台の前板など・四角を抜かない）があれば、その下の端のすぐ下（最初の輪の上の端が台の下の端に揃う）
+      const next = el.nextElementSibling;
+      const nr = next instanceof HTMLElement && next.getAttribute("aria-hidden") ? next.getBoundingClientRect() : null;
+      if (nr && nr.height > 0 && nr.height < 80 && Math.abs(nr.top - r.bottom) <= 6 && cb.left + x > nr.left && cb.left + x < nr.right)
+        b = nr.bottom + P * 0.4;
+      bottom = b - cb.top;
+    });
+    // 部品の上の端が教室の後ろの canvas の外なら、奥へ入る所を描けないので使わない
+    if (!Number.isFinite(top) || top + P * 1.5 > H) return null;
+    const c = Math.max(2, Math.round((top + P * 1.5 - HOOK_Y) / P));
+    return { c, bottom };
   };
   /** ページ座標の点 x（canvas の中の x）から真下へ垂らすと、手前の部品（テレビ）の奥に隠れるか */
   const hiddenTest = () => {
@@ -539,7 +611,9 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     const el = list.find((p) => keyOf(p) === h.key) || list[Math.min(h.i, list.length - 1)];
     if (!el) return null;
     const b = el.getBoundingClientRect();
-    const x = Math.min(bd.r - P * 0.5, Math.max(bd.l + P * 0.5, bd.l + h.fx * bd.w));
+    // 指で触る画面では、端に作った点（前の作り方）も端から PIN_TOUCH の所に置く
+    const g = edgeSafe() ? PIN_TOUCH : P * 0.5;
+    const x = Math.min(bd.r - g, Math.max(bd.l + g, bd.l + h.fx * bd.w));
     return { x, y: b.top + window.scrollY + h.fy * b.height };
   };
   const hookFrom = (x: number, y: number, n: number): Hook => {
@@ -572,6 +646,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   const buildMine = () => {
     segs = [];
     active = [];
+    drop = null;
     if (W <= 0) return;
     // 床＝学校の部品の一番下（フッターや門の外の上に積もると掴めなくなる）
     const schools = [...document.querySelectorAll<HTMLElement>(".kb-school")].filter((el) => el.offsetParent !== null || el.getClientRects().length);
@@ -581,19 +656,34 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     wallL = wb.l + P * 0.5;
     wallR = Math.max(wallL, wb.r - P * 0.5);
     const cb = canvas.getBoundingClientRect();
-    let ax = cb.left + window.scrollX + freeX;
-    let ay = cb.top + window.scrollY + HOOK_Y;
+    const topX = cb.left + window.scrollX + freeX;
+    const topY = cb.top + window.scrollY + HOOK_Y;
+    let ax = topX;
+    let ay = topY;
     // 尾の輪：通しの番号 tailFirst から最後の自分の輪まで（q＝尾の中の番号）
     const R = shown + mine.n - tailFirst;
     const color = (q: number) => seqColor(tailFirst + q);
     const list = places();
     const bd = bounds();
     let from = 0;
+    // 尾の付け根の真下に手前の部品があるとき（指で触る画面）：最初の c 輪はフックから部品の奥へ真っすぐ垂れ、その先は部品の下の端から出る
+    const ps = passAt(freeX);
+    const lowY = ps ? cb.top + window.scrollY + ps.bottom : 0;
+    const under = () => {
+      if (!ps) return;
+      drop = drape(freeX, HOOK_Y, freeX, HOOK_Y + ps.c * P, ps.c, tailFirst, Array.from({ length: ps.c }, (_, q) => color(q)));
+      ax = topX;
+      ay = lowY;
+      from = ps.c;
+    };
     for (const h of mine.hooks) {
       const idx = shown + h.n - tailFirst;
-      const k = idx - from;
-      if (k < 2 || idx > R) continue;
+      if (idx > R) continue;
       const p = hookPos(h, list, bd);
+      // 最初の点が、部品の下の端から出た尾で作った点なら、そこから数える
+      if (p && ps && !drop && !segs.length && idx - ps.c >= 2 && Math.hypot(p.x - topX, p.y - lowY) <= (idx - ps.c) * P * 1.15) under();
+      const k = idx - from;
+      if (k < 2) continue;
       // くっつけるときは鎖をぴんと張っているので、距離はちょうど鎖の長さになる。少しの伸びまでは許す。
       // それより遠い点（画面の大きさや共有の長さが変わって届かなくなった点）は、いまは使わない（保存は残す）
       if (!p || Math.hypot(p.x - ax, p.y - ay) > k * P * 1.15) continue;
@@ -613,6 +703,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       ay = p.y;
       from = idx;
     }
+    // くっついた点が無く、尾が天井の帯に収まらない長さなら、部品の奥を通して下から出す
+    if (ps && !drop && !segs.length && R > ps.c) under();
     segs.push(hang(ax, ay, R - from, tailFirst + from, Array.from({ length: R - from }, (_, q) => color(from + q))));
   };
   const tail = (): Chain | undefined => segs[segs.length - 1];
@@ -635,6 +727,10 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         armL: boolean;
         armR: boolean;
         touch: boolean;
+        /** 尾の先から少し離れた所を指で押した：最初の動きを見るまで仮に掴んでいる（縦ならスクロールに譲って離す） */
+        soft: boolean;
+        sx: number;
+        sy: number;
       }
     | { kind: "hold"; id: number; sx: number; sy: number; hook: Hook; timer: number }
     | { kind: "done"; id: number; touch: boolean };
@@ -797,8 +893,19 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       a: Math.atan2(df(p0.y, p1.y, p2.y, p3.y), df(p0.x, p1.x, p2.x, p3.x)),
     };
   };
-  /** 鎖の輪を描く。ox・oy＝座標のずらし。view＝この縦の範囲に入る輪だけ描く（null＝全部） */
-  const paint = (c2: CanvasRenderingContext2D, d: number, list: Chain[], ox: number, oy: number, view: [number, number] | null) => {
+  /** 尾の先の最後の輪の、いまの揺れ（rad・揺れていないときは0） */
+  let wob = 0;
+  /** 鎖の輪を描く。ox・oy＝座標のずらし。view＝この縦の範囲に入る輪だけ描く（null＝全部）。
+   *  loose＝この鎖の最後の輪（自由な尾の先）を、上の輪との継ぎ目を軸に少し傾けて描く */
+  const paint = (
+    c2: CanvasRenderingContext2D,
+    d: number,
+    list: Chain[],
+    ox: number,
+    oy: number,
+    view: [number, number] | null,
+    loose: Chain | null = null,
+  ) => {
     const rx = P * 0.62;
     const ry = P * 0.8;
     const pad = P * PER_NODE * 2;
@@ -831,22 +938,32 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
             if (ny < view[0] - pad || ny > view[1] + pad) continue;
           }
           const q = at(ns, u);
-          const x = q.x - ox;
-          const y = q.y - oy;
+          let x = q.x - ox;
+          let y = q.y - oy;
+          let a = q.a;
+          if (c === loose && r === k - 1 && k >= 2) {
+            // 上の輪との継ぎ目（輪の上の端・鎖の向きに半輪ぶん手前）を軸に回す＝少しほどけかけて下がって見える
+            const hh = P * 0.85;
+            const jx = x - Math.cos(a) * hh;
+            const jy = y - Math.sin(a) * hh;
+            a += LOOSE + wob;
+            x = jx + Math.cos(a) * hh;
+            y = jy + Math.sin(a) * hh;
+          }
           const col = tone(c.rings[r]);
           const art = useArt ? ringArt(col) : null;
           if (art) {
             // 絵の縦を鎖の向きに合わせて回す（回す角＝鎖の向き − 90°）
-            const cos = Math.sin(q.a);
-            const sin = -Math.cos(q.a);
+            const cos = Math.sin(a);
+            const sin = -Math.cos(a);
             c2.setTransform(d * cos, d * sin, -d * sin, d * cos, d * x, d * y);
             if (odd) c2.drawImage(art[1], -fw.s / 2, -fh.s / 2, fw.s, fh.s);
             else c2.drawImage(art[0], -fw.f / 2, -fh.f / 2, fw.f, fh.f);
             drew = true;
           } else if (odd) {
             c2.fillStyle = col;
-            const cos = Math.cos(q.a);
-            const sin = Math.sin(q.a);
+            const cos = Math.cos(a);
+            const sin = Math.sin(a);
             c2.setTransform(d * cos, d * sin, -d * sin, d * cos, d * x, d * y);
             c2.fillRect(-P * 0.72, -P * 0.15, P * 1.44, P * 0.3);
             c2.setTransform(d, 0, 0, d, 0, 0);
@@ -854,7 +971,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
             c2.strokeStyle = col;
             c2.lineWidth = P * 0.26;
             c2.beginPath();
-            c2.ellipse(x, y, rx, ry, q.a - Math.PI / 2, 0, Math.PI * 2);
+            c2.ellipse(x, y, rx, ry, a - Math.PI / 2, 0, Math.PI * 2);
             c2.stroke();
           }
         }
@@ -864,7 +981,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   const drawRoom = () => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    paint(ctx, dpr, drapes, 0, 0, null);
+    paint(ctx, dpr, drop ? drapes.concat(drop) : drapes, 0, 0, null);
   };
   const pdpr = () => Math.min(2, window.devicePixelRatio || 1);
   let pd = 1;
@@ -873,7 +990,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     pctx.clearRect(0, 0, VW, VH);
     const sx = window.scrollX;
     const sy = window.scrollY;
-    paint(pctx, pd, segs, sx, sy, [sy, sy + VH]);
+    paint(pctx, pd, segs, sx, sy, [sy, sy + VH], tail() || null);
     // くっついた点：小さな画鋲
     for (let i = 0; i < active.length; i++) {
       const p = segs[i]?.nodes[segs[i].nodes.length - 1];
@@ -965,6 +1082,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   };
   const kick = () => {
     if (rafId || !needFrame()) return;
+    stopWob();
     if (pageRaf) {
       cancelAnimationFrame(pageRaf);
       pageRaf = 0;
@@ -980,6 +1098,40 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     moving = true;
     still = 0;
     kick();
+  };
+  /* 尾の先の最後の輪：WOB_EVERY ごとに、止まっていて画面に入っていれば WOB_MS だけ小さく揺れる（描き直すだけ。物理は回さない）。
+     rAF はその間だけ。動きを減らす設定では揺れない */
+  let wobRaf = 0;
+  let wobFrom = 0;
+  const stopWob = () => {
+    if (wobRaf) cancelAnimationFrame(wobRaf);
+    wobRaf = 0;
+    wob = 0;
+  };
+  const wobTick = (t: number) => {
+    wobRaf = 0;
+    const e = (t - wobFrom) / WOB_MS;
+    if (e >= 1 || grab || rafId || document.hidden) {
+      wob = 0;
+      if (!rafId) drawPage();
+      return;
+    }
+    // ふくらんでしぼむ包みの中で、ゆっくり1往復半
+    wob = WOB_AMP * Math.sin(Math.PI * e) * Math.sin(3 * Math.PI * e);
+    drawPage();
+    wobRaf = requestAnimationFrame(wobTick);
+  };
+  const wobble = (force = false) => {
+    if (reduce || wobRaf || rafId || grab || document.hidden) return false;
+    const c = tail();
+    const tip = tipOf(c);
+    if (!tip || tip.pin || !c || c.rings.length < 2) return false;
+    const sx = window.scrollX;
+    const sy = window.scrollY;
+    if (!force && (tip.y < sy || tip.y > sy + VH || tip.x < sx || tip.x > sx + VW)) return false;
+    wobFrom = performance.now();
+    wobRaf = requestAnimationFrame(wobTick);
+    return true;
   };
 
   /* ---------- 大きさ ---------- */
@@ -1092,6 +1244,13 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     }
   };
 
+  /** ページの端でくっつく決まり：catchIn＝端からこの幅に入るとくっつく／pin＝くっついた点を端から置く幅／
+   *  arm＝掴んだ所が端に近いときは、一度この幅より内側へ出るまでくっつけない。指は端のスワイプの帯を避ける */
+  const edgeRule = (touch: boolean) =>
+    touch
+      ? { catchIn: EDGE_TOUCH, pin: PIN_TOUCH, arm: ARM_TOUCH }
+      : // 指で触る画面の並べ方のときは、マウスでも点は端から PIN_TOUCH に置く（hookPos が読み込み直しで置き直す位置と揃える）
+        { catchIn: EDGE, pin: edgeSafe() ? PIN_TOUCH : P * 0.5, arm: EDGE * 2.5 };
   /** 指の位置から、尾の先の狙い（ページ座標）を決める。長さが足りない所までは引けない */
   /* ---------- 掴む：尾の先（ページのどこでも）・くっついた点の長押し ---------- */
   const aimTip = () => {
@@ -1113,9 +1272,10 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     g.ty = y;
     // 掴んだ場所が端のそばだったときは、一度端から離れるまでくっつけない
     const bd = bounds();
-    if (x > bd.l + EDGE * 2.5) g.armL = true;
-    if (x < bd.r - EDGE * 2.5) g.armR = true;
-    if ((g.armL && x <= bd.l + EDGE) || (g.armR && x >= bd.r - EDGE)) attach(x <= bd.l + EDGE ? bd.l + P * 0.5 : bd.r - P * 0.5, y);
+    const er = edgeRule(g.touch);
+    if (x > bd.l + er.arm) g.armL = true;
+    if (x < bd.r - er.arm) g.armR = true;
+    if ((g.armL && x <= bd.l + er.catchIn) || (g.armR && x >= bd.r - er.catchIn)) attach(x <= bd.l + er.catchIn ? bd.l + er.pin : bd.r - er.pin, y);
   };
   /** 尾の先をページの端にくっつける：その区間を留め、くっついた点から空の尾を続ける */
   const attach = (x: number, y: number) => {
@@ -1166,6 +1326,14 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       swing();
       return;
     }
+    // くっついた点が無くなって尾が天井の帯に収まらない長さになったら、部品の奥を通して下から出し直す
+    const ps = passAt(freeX);
+    if (ps && !drop && !active.length && rings.length > ps.c) {
+      rebuildMine();
+      draw();
+      swing();
+      return;
+    }
     if (reduce) {
       solve(segs, 120);
       freeze(segs);
@@ -1187,6 +1355,20 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     }
     return { hook: best, d: bd };
   };
+  /** ページ座標の点が、手前の部品（[data-occlude]）の四角の中か（そこでは鎖は描かれていない） */
+  const behindPart = (p: Pt) => {
+    const cx = p.x - window.scrollX;
+    const cy = p.y - window.scrollY;
+    return occluders(false).some((r) => cx > r.left && cx < r.right && cy > r.top && cy < r.bottom);
+  };
+  /** 押した所で、指の縦の動きがページのスクロールになるか（touch-action が縦を許しているか。黒板など自分で指を扱う所は false） */
+  const panY = (t: EventTarget | null) => {
+    for (let el = t as Element | null; el && el !== document.documentElement; el = el.parentElement) {
+      const ta = getComputedStyle(el).touchAction;
+      if (ta !== "auto" && ta !== "manipulation" && !ta.includes("pan-y")) return false;
+    }
+    return true;
+  };
   /** 学校のページの上の操作か（公式バー・持ち物・会話窓・門など、ページより上に重なる物の上では掴まない） */
   const onPage = (t: EventTarget | null) => {
     const el = t as Element | null;
@@ -1199,15 +1381,26 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     if (grab && (grab.id === e.pointerId || e.pointerType === "mouse")) finish(endGrab());
     if (grab || !e.isPrimary) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (isControl(e.target) || !onPage(e.target)) return;
+    if (!onPage(e.target)) return;
     const x = e.clientX + window.scrollX;
     const y = e.clientY + window.scrollY;
     const touch = e.pointerType === "touch";
-    const lim = touch ? 28 : 22;
+    const lim = touch ? HIT_TOUCH : HIT_MOUSE;
     const tip = tipOf(tail());
     const dt = tip ? Math.hypot(tip.x - x, tip.y - y) : Infinity;
-    const nh = nearHook(x, y, lim);
-    if (tip && dt <= lim && (!nh.hook || dt <= nh.d)) {
+    const ctl = isControl(e.target);
+    // 手前の部品（テレビ）の上を押した
+    const onPart = !!(e.target as Element | null)?.closest?.("[data-occlude]");
+    // テレビの操作（音量のつまみ・チャンネル・電源）は、尾の先より常に優先する
+    if (ctl && onPart) return;
+    // 尾の先が手前の部品の奥に隠れている（そこでは鎖は描かれていない）
+    const hidden = !!tip && behindPart(tip);
+    // 押せる部品（床のもちもの・短冊の箱など）の上では掴まない。ただし尾の先がその部品の上に描かれていて、
+    // 尾の先の輪そのものを押したとき（指 HIT_CORE_TOUCH・マウス HIT_CORE_MOUSE 以内）だけは尾の先を掴む
+    if (ctl && !(tip && dt <= (touch ? HIT_CORE_TOUCH : HIT_CORE_MOUSE) && !hidden)) return;
+    const nh = ctl ? { hook: null, d: lim } : nearHook(x, y, lim);
+    // 部品の上を押したときは、その奥に隠れた尾の先は掴まない（見えない鎖を引き出さない。部品の外に見えている所を押せば掴める）
+    if (tip && dt <= lim && !(onPart && hidden) && (!nh.hook || dt <= nh.d)) {
       // 尾の先を掴んだ：この操作はほかの部品へ渡さない（黒板などが同時に反応しない）
       e.stopPropagation();
       if (!touch) e.preventDefault();
@@ -1216,6 +1409,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         document.documentElement.setPointerCapture(e.pointerId);
       } catch {}
       const bd = bounds();
+      const er = edgeRule(touch);
+      stopWob();
       tip.pin = true;
       grab = {
         kind: "tip",
@@ -1228,9 +1423,12 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         tx: tip.x,
         ty: tip.y,
         clamped: false,
-        armL: tip.x > bd.l + EDGE * 2.5,
-        armR: tip.x < bd.r - EDGE * 2.5,
+        armL: tip.x > bd.l + er.arm,
+        armR: tip.x < bd.r - er.arm,
         touch,
+        soft: touch && dt > FIRM_TOUCH && panY(e.target),
+        sx: e.clientX,
+        sy: e.clientY,
       };
       moving = true;
       still = 0;
@@ -1279,6 +1477,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       return;
     }
     if (grab.kind === "tip") {
+      // 仮に掴んでいる間は、向きが決まる（onTouch）まで尾の先を動かさない
+      if (grab.soft) return;
       grab.cx = e.clientX;
       grab.cy = e.clientY;
       aimTip();
@@ -1348,7 +1548,29 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     e.stopPropagation();
   };
   // 指で尾の先を掴んでいる間は、その指でページをスクロールさせない
+  // 仮に掴んでいるとき（尾の先から少し離れた所を押した）は、押した瞬間は止めず、最初の動きで決める：
+  // 縦が勝てば離してスクロールに譲る／横か斜めなら掴んだままスクロールを止める
   const onTouch = (e: TouchEvent) => {
+    if (grab?.kind === "tip" && grab.soft) {
+      if (e.type !== "touchmove") return;
+      const t = e.touches[0];
+      if (!t) return;
+      const dx = Math.abs(t.clientX - grab.sx);
+      const dy = Math.abs(t.clientY - grab.sy);
+      if (dy > dx * 1.2) {
+        endGrab();
+        return;
+      }
+      grab.soft = false;
+      grab.cx = t.clientX;
+      grab.cy = t.clientY;
+      aimTip();
+      if (grab?.kind === "tip" && reduce) {
+        settle(segs, 20);
+        drawPage();
+      }
+      kick();
+    }
     if (grab && (grab.kind === "tip" || (grab.kind === "done" && grab.touch)) && e.cancelable) e.preventDefault();
   };
   // 長押しで出る端末のメニューを、くっついた点の上では出さない
@@ -1367,7 +1589,11 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     const x = e.clientX + window.scrollX;
     const y = e.clientY + window.scrollY;
     const tip = tipOf(tail());
-    const on = (tip && Math.hypot(tip.x - x, tip.y - y) <= 22) || nearHook(x, y, 22).hook;
+    // onDocDown と同じ見方：テレビの操作の上と、テレビの奥に隠れた尾の先では手の形にしない
+    const part = !!(e.target as Element | null)?.closest?.("[data-occlude]");
+    if (part && isControl(e.target)) return setCursor("");
+    const tipOn = !!tip && Math.hypot(tip.x - x, tip.y - y) <= HIT_MOUSE && !(part && behindPart(tip));
+    const on = tipOn || nearHook(x, y, HIT_MOUSE).hook;
     setCursor(on ? "grab" : "");
   };
 
@@ -1384,6 +1610,12 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       ns.splice(ns.length - 1, 0, pt((a.x + b.x) / 2, (a.y + b.y) / 2));
     }
     c.rest = (k * P) / (ns.length - 1);
+  };
+  /** count 輪足すと、尾が天井の帯に収まらなくなり、部品の奥を通って下から出る形に変わるか */
+  const crossing = (c: Chain, count: number) => {
+    if (drop || active.length) return false;
+    const ps = passAt(freeX);
+    return !!ps && c.rings.length <= ps.c && c.rings.length + count > ps.c;
   };
   const add = (count: number) => {
     const fresh = load();
@@ -1404,8 +1636,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       mine.n = Math.min(MINE_CAP, mine.n + count);
       save(mine);
       rebuild();
-    } else if (count > 8) {
-      // まとめて足すとき（検分用）は、尾の先に寄せて差し込まず組み立て直す
+    } else if (count > 8 || crossing(c, count)) {
+      // まとめて足すとき（検分用）と、尾が天井の帯からあふれて部品の奥へ入るときは、尾の先に寄せて差し込まず組み立て直す
       mine.n = Math.min(MINE_CAP, mine.n + count);
       save(mine);
       rebuildMine();
@@ -1424,8 +1656,11 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         freeze([c]);
       }
     } else if (tip && !tip.pin) {
-      // 足した先が少し揺れる
-      tip.px = tip.x - P * 0.6;
+      // 足した先が少し揺れる（指で触る画面では、内側へ向けて小さく＝揺れても端の帯へ出ない）
+      if (edgeSafe()) {
+        const bd = bounds();
+        tip.px = tip.x + (tip.x > (bd.l + bd.r) / 2 ? P : -P) * 0.3;
+      } else tip.px = tip.x - P * 0.6;
       swing();
     }
     draw();
@@ -1520,6 +1755,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     if (!document.hidden) kick();
   };
   const patrol = window.setInterval(refresh, 15000);
+  const wobTimer = window.setInterval(wobble, WOB_EVERY);
   window.addEventListener(SCENE_EVENT, refresh);
   window.addEventListener(CLOCK_EVENT, refresh);
   window.addEventListener("resize", onResize);
@@ -1554,6 +1790,18 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     savedHooks: Hook[];
     tip: { x: number; y: number } | null;
     raf: () => boolean;
+    /** 並べ方：指で触る画面の並べ方か・天井のフックの x（画面の座標）・尾の付け根の x・尾が部品の奥を通って下から出ているか
+     *  （出ているなら、フックから奥へ入る輪の数と、下から出る所の y）・当たり判定の半径（firm＝指でこの近さの中は縦に動かしても掴む）・端でくっつく決まり */
+    layout: {
+      edgeSafe: boolean;
+      hooksX: number[];
+      tailX: number;
+      under: { rings: number; y: number } | null;
+      hit: { touch: number; mouse: number; firm: number };
+      edge: { touch: { catchIn: number; pin: number; arm: number }; mouse: { catchIn: number; pin: number; arm: number } };
+    };
+    /** 尾の先の最後の輪をいま1回揺らす（揺らせたら true） */
+    wobble: () => boolean;
     colors: (n: number) => string[];
     add: (n?: number) => number;
     clear: () => void;
@@ -1595,7 +1843,19 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         const p = tipOf(tail());
         return p ? { x: Math.round(p.x), y: Math.round(p.y) } : null;
       },
-      raf: () => rafId !== 0,
+      raf: () => rafId !== 0 || wobRaf !== 0,
+      get layout() {
+        const cb = canvas.getBoundingClientRect();
+        return {
+          edgeSafe: edgeSafe(),
+          hooksX: (roomPlan?.hx || []).map((h) => Math.round(cb.left + h)),
+          tailX: Math.round(cb.left + freeX),
+          under: drop && segs[0] ? { rings: drop.rings.length, y: Math.round(segs[0].nodes[0].y) } : null,
+          hit: { touch: HIT_TOUCH, mouse: HIT_MOUSE, firm: FIRM_TOUCH },
+          edge: { touch: edgeRule(true), mouse: edgeRule(false) },
+        };
+      },
+      wobble: () => wobble(true),
       colors: (n: number) => Array.from({ length: Math.max(0, n) }, (_, i) => ringColor(i)),
       add: (n = 1) => {
         add(Math.max(1, Math.floor(n)));
@@ -1619,6 +1879,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     endGrab();
     setCursor("");
     window.clearInterval(patrol);
+    window.clearInterval(wobTimer);
+    stopWob();
     window.clearTimeout(curlTimer);
     window.clearTimeout(relayTimer);
     io.disconnect();

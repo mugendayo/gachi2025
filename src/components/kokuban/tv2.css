@@ -1,0 +1,86 @@
+/* テレビの見た目の追加・上書き（kokuban.css のテレビの続き）。BackTv.tsx から読む。
+   kokuban.css より後に読まれるとは限らないので、上書きは kokuban.css より強い指定で書く */
+
+/* 音量：回る絵のつまみ（.kb-tv-knob）と、その周りの目盛りの点を包む箱。この箱は回らない。
+   指でもマウスでも、押したまま動かして回す・押すだけで一段変える。つまみの上ではページを縦にスクロールしない */
+.kb-tv-panel .kb-tv-vol {
+  position: relative;
+  flex: none;
+  width: min(100%, 56px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  outline-offset: 9px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* 上の点がパネルの縁に寄りすぎないよう、少しだけ下げる（320px 幅では空きが無いので下げない） */
+.kb-tv-body.has-art .kb-tv-panel .kb-tv-vol {
+  width: clamp(30px, 9cqw, 52px);
+  margin-top: clamp(0px, 4cqw - 11px, 8px);
+}
+.kb-tv-panel .kb-tv-vol[data-turning] {
+  cursor: grabbing;
+}
+/* 触れる範囲：つまみと同じ中心の見えない四角。スマホでも 44px ほど（PC では見た目より少し広く）。
+   下のチャンネルのボタンには、つまみとボタンの間の隙間の分しか掛からない */
+.kb-tv-vol-hit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(44px, 100% + 12px);
+  height: max(44px, 100% + 12px);
+  transform: translate(-50%, -50%);
+  touch-action: none;
+}
+/* 絵のつまみ：大きさは箱いっぱい。触るのは箱の方なので、つまみ自身は指を受けない。
+   押すだけで段階が変わったときは、印が少しなめらかに回る（回している間は指にぴったり付いてくる） */
+.kb-tv-body .kb-tv-panel .kb-tv-vol .kb-tv-knob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  pointer-events: none;
+  transition: transform 0.18s ease-out;
+}
+.kb-tv-body .kb-tv-panel .kb-tv-vol[data-turning] .kb-tv-knob {
+  transition: none;
+}
+.kb-tv-body.has-art .kb-tv-panel .kb-tv-vol .kb-tv-knob::after {
+  content: none;
+}
+
+/* 目盛りの点：つまみの周りに5つ。印が向く範囲（左下 0 → 右下 100）に沿って並び、音量の分だけ白く埋まる。
+   パネルに刷った印のように、部屋の明るさ（--amb）に合わせて暗くする（テレビの絵と同じ） */
+.kb-tv-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: brightness(calc(0.45 + 0.55 * var(--amb, 1)));
+}
+.kb-tv-dots i {
+  --d: clamp(3px, 0.8cqw, 4px);
+  position: absolute;
+  left: calc(50% + var(--sx) * (50% + var(--d) / 2 + 2.5px));
+  top: calc(50% + var(--sy) * (50% + var(--d) / 2 + 2.5px));
+  width: var(--d);
+  height: var(--d);
+  margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.14);
+  transition: background-color 0.15s;
+}
+.kb-tv-dots i.is-on {
+  background: #e6e8e4;
+  box-shadow: 0 0 2px rgba(230, 232, 228, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-world:not([data-motion-forced]) .kb-tv-body .kb-tv-panel .kb-tv-vol .kb-tv-knob,
+  .kb-world:not([data-motion-forced]) .kb-tv-dots i {
+    transition: none;
+  }
+}

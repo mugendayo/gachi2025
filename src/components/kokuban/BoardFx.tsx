@@ -3,7 +3,8 @@
 // DOM の文字が正本（読み上げ・JSなし）。ここでは同じ文字を canvas に写してチョークの質感を付け、
 // こすると canvas だけが消える。消したあとの戻り方は2通り（?return=rewrite で切り替え・既定は焼き付き）。
 // 粉受けのチョークを拾うと、黒板に好きな文字を書ける（落書きはその端末に残る）。
-// 同じ所を何度もこする（10回ほど）と、そこはゼロまで消える。黒板消しはクリーナーに入れるときれいになる。
+// 同じ所を何度もこする（10回ほど）と、そこはゼロまで消える。黒板消しはこするほど汚れ、汚れるほど消えにくく、
+// やがて字が伸びて広がり、こすった所が白く濁る。クリーナーの上でこするときれいになる。
 // 書きなおす札を押すと、見えない手が黒板を拭いて最初の板書を書き直す（自分の落書きも消える）。
 // 時間帯の仕掛け：蛍光灯がまたたいて点く／消灯で消える／0時に「あと◯日」と日付を黒板消しで消して書き直す／
 // 入口のタイムスリップで着いたとき、日付と残り日数が書かれる。
@@ -46,6 +47,10 @@ const DOODLE_MAX_POINTS = 12000;
 const RUB_KEEP = 0.5;
 // にじみ：こすった向きへ、すくった粉を薄く置き直す濃さ
 const SMUDGE = 0.22;
+// 汚れ切った黒板消しのにじみの濃さ（こすり始め。同じ所をこするほど弱まる）
+const SMUDGE_BAD = 0.3;
+// 汚れた黒板消しのにじみで、すくった所から減らす粉の割合（にじみの濃さに対して）
+const LIFT = 0.5;
 // こすった回数：黒板を粗い格子に分けて、その場所を何回（片道）こすったかを数える（保存しない。書きなおす・読み込み直しで0）。
 // こすった回数は片道で数える（本人「10回くらいこすったら、次第にゼロまで」）。WEAR_SOFT 回までは今の手ざわり（少しずつかすれる・にじむ・跡が残る）、そこから強まり、WEAR_GONE 回でその場所はゼロになる
 const CELL = 24;
@@ -53,10 +58,21 @@ const WEAR_SOFT = 3;
 const WEAR_GONE = 10;
 // 動きを減らす設定の粉：その場でふわっと現れて、この時間で消える（動かない）
 const STILL_MS = 400;
-// 黒板消しの汚れ：こするほど粉を含んで白くなり、消えにくく・にじみやすくなる。クリーナーに入れると落ちる（その端末に残す）
+// 黒板消しの汚れ（0〜1）：こするほど粉を含んで白くなる。クリーナーでこすると落ちる（その端末に残す）
 const eraserKey = () => `gbf_${site.year}_eraser_v1`;
-const LOAD_PER_PX = 0.0001; // こすった長さ 1px あたりの溜まり方（黒板をまるごと数回拭くと白くなる）〔Preview で本人が決める〕
-const LOAD_KEEP_MAX = 0.75; // いちばん汚れたときの消え残り〔Preview で本人が決める〕
+// 溜まり方：LOAD_SPAN の長さ（黒板の幅。広い画面では LOAD_SPAN_MAX まで）を LOAD_PASSES 回こすると真っ白（1）
+const LOAD_PASSES = 20;
+const LOAD_SPAN_MAX = 600;
+// 効き方は3段：LOAD_DULL 未満＝きれい（今までどおり）／LOAD_DULL〜LOAD_BAD＝だんだん消えにくい／LOAD_BAD 以上＝こするほど広がって白く濁る
+const LOAD_DULL = 0.35;
+const LOAD_BAD = 0.7;
+// クリーナーの口の幅を、片道 CLEAN_PASSES 回こすると汚れが0（6往復）
+const CLEAN_PASSES = 12;
+// クリーナーの口（絵の中の上面の溝の位置。src/data/assetGeometry.json の cleaner.slot と同じ値・%）
+const SLOT = { l: 12.58, t: 3.66, w: 71.84, h: 10.3 };
+// 粉受けの溝に溜まった粉（0〜1）：こすった長さで増え、黒板消しを押すと舞って少し減る。最初から少しある
+const TRAY_PASSES = 30;
+const TRAY_START = 0.25;
 // 誰もいない教室（見えない手が落書きしたり消したりする帯）と、触られていない時間
 const QUIET_SCENES = new Set(["akegata", "asa", "yugata", "shinya"]);
 const GHOST_IDLE_MS = 12000;
@@ -74,6 +90,8 @@ function rng(seed: number) {
 }
 
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export default function BoardFx() {
   useEffect(() => {
@@ -631,6 +649,35 @@ export default function BoardFx() {
       smear.fillRect(x - 42, y - 42, 84, 84);
       smear.restore();
     };
+    // 汚れた黒板消しの面が黒板に残す粉の筋：面を何本かの帯に分け、帯ごとに決まった濃さで、動いた向きに引く
+    // （同じ帯は毎回同じ濃さ＝フェルトの筋）。拭き跡のもやの層に描くので、こすっても真っ白にはならない（上限は CSS）
+    const LANES = (() => {
+      const r = rng(41);
+      return Array.from({ length: 11 }, (_, k) => ({ o: k / 10 - 0.5 + (r() - 0.5) * 0.05, a: 0.25 + r() * 0.75, w: 1 + r() * 2.6 }));
+    })();
+    const powderAt = (x0: number, y0: number, x1: number, y1: number, amount: number) => {
+      const d = Math.hypot(x1 - x0, y1 - y0);
+      if (d < 0.3 || amount <= 0) return;
+      const ux = (x1 - x0) / d;
+      const uy = (y1 - y0) / d;
+      // 面の、動く向きと直角の幅（横に動けば縦の長さ）
+      const span = (Math.abs(ux) * SH + Math.abs(uy) * SW) * 0.92;
+      smear.save();
+      // 端は平ら（丸いと細かく区切った線の継ぎ目が重なって、ゆっくり動かすほど濃い点が並ぶ）
+      smear.lineCap = "butt";
+      smear.strokeStyle = "rgb(236,238,230)";
+      for (const ln of LANES) {
+        const ox = -uy * ln.o * span;
+        const oy = ux * ln.o * span;
+        smear.globalAlpha = Math.min(1, amount * ln.a);
+        smear.lineWidth = ln.w;
+        smear.beginPath();
+        smear.moveTo(x0 + ox, y0 + oy);
+        smear.lineTo(x1 + ox, y1 + oy);
+        smear.stroke();
+      }
+      smear.restore();
+    };
 
     /** 文字の範囲だけに処理を閉じ込める（隣の行を巻き込まない） */
     const clipTo = (it: Item, fn: () => void) => {
@@ -758,10 +805,11 @@ export default function BoardFx() {
     const norm = (v: number, d: number) => Math.round((v / d) * 10000) / 10000;
 
     /* ---------------- 粉 ---------------- */
-    // fall＝舞った粉（少し舞い上がってから重力で加速して落ち、左右にわずかに揺れる。小さな粒ほどゆっくり）。
+    // 粒（P）：fall＝舞った粉（少し舞い上がってから重力で加速して落ち、左右にわずかに揺れる。小さな粒ほどゆっくり）。
     // 粉受けの上面（PC＝黒板の下の縁／スマホ＝画面の下に貼り付いた粉受け。位置は毎コマ測る）に当たると止まり、
     // しばらく白く溜まってから薄れて消える／still＝動きを減らす設定の粉（動かずに、その場でふわっと現れて STILL_MS で消える）。
-    // 光る粒は全体の1〜2割だけ（窓の光の筋・蛍光灯・懐中電灯の円の中で、ときどき一瞬きらめく）。ほかは灰白の不透明な点
+    // 雲（Cloud）：粉受けの粉やクリーナーの口から舞い上がる、ぼやけた白いかたまり。横へ広がりながら少し上がり、ふくらんで薄れて消える。
+    // 窓の光の筋（消灯中は懐中電灯の円）の中では少し明るく見える
     type P = {
       x: number;
       /** 粒の下の端（粉受けの上面より下へは行かない） */
@@ -772,24 +820,26 @@ export default function BoardFx() {
       r: number;
       kind: "fall" | "still";
       born: number;
-      /** 揺れときらめきの位相と速さ */
+      /** 揺れの位相 */
       ph: number;
-      tw: number;
-      glint: boolean;
       /** 粉受けに着いた時刻（0＝まだ落ちている）と、溜まっている長さ */
       landed: number;
       stay: number;
       /** 粉受けより下で生まれた（粉受けの陰を落ちていく。上に出たら、ほかの粒と同じく粉受けに着く） */
       under: boolean;
+      /** 落ちる速さの倍率（1＝ふつう。小さいほど空中にただよってから、ゆっくり落ちる） */
+      fl: number;
     };
+    type Cloud = { x: number; y: number; vx: number; vy: number; r0: number; r1: number; a: number; born: number; life: number; still: boolean };
     const DUST_MAX = 360; // 粒の数の上限（超えたら、溜まっている古い粒から入れ替える）
-    const GLINT_SHARE = 0.15;
+    const CLOUD_MAX = 72;
     const PILE_MS = 1700; // 粉受けに溜まっている長さ（粒ごとに 0.7〜1.3 倍）
     const PILE_FADE = 900;
     const parts: P[] = [];
+    const clouds: Cloud[] = [];
     let raf = 0;
     let dustLast = 0;
-    // 光る粒がきらめく所を測るための、教室の中の黒板の位置（粉受けを測るときに一緒に測る）
+    // 雲が明るく見える所を測るための、教室の中の黒板の位置（粉受けを測るときに一緒に測る）
     let roomOff = { x: 0, y: 0, w: 1, h: 1 };
     let flashX = NaN;
     let flashY = NaN;
@@ -809,7 +859,7 @@ export default function BoardFx() {
       floorV = tr && tr.height ? tr.top - b.top + Math.min(2, tr.height * 0.05) : H;
       return floorV;
     };
-    // 光る粒がきらめく所（黒板の座標で 0〜1）：窓の光の筋の中・蛍光灯が点いている間・消灯中の懐中電灯の円の中
+    // 光が当たっている所（黒板の座標で 0〜1）：窓の光の筋の中・消灯中の懐中電灯の円の中
     const glowAt = (x: number, y: number) => {
       const rx = x + roomOff.x;
       const ry = y + roomOff.y;
@@ -824,9 +874,48 @@ export default function BoardFx() {
       const t = ry / roomOff.h;
       const left = (u - 0.1 - 0.2 * t) * roomOff.w;
       const right = (u + 0.34 - 0.2 * t) * roomOff.w;
-      const beam = rx > left && rx < right ? state.sun * (1 - state.dark) * (1 - 0.3 * state.lit) : 0;
-      return Math.min(1, Math.max(beam, state.lit ? 0.55 : 0));
+      return rx > left && rx < right ? clamp01(state.sun * (1 - state.dark) * (1 - 0.3 * state.lit)) : 0;
     };
+    // 雲の形（ぼやけた白いかたまり。いくつかの丸を重ねて、輪郭を少しいびつに）。明るい版は光の中で上に重ねる。
+    // 中に細かなざらつき（粒の濃淡）を入れて、煙ではなく粉の塵に見せる
+    const makePuff = (rgb: string) => {
+      const c = document.createElement("canvas");
+      c.width = c.height = 96;
+      const g = c.getContext("2d")!;
+      const r = rng(61);
+      for (let i = 0; i < 8; i++) {
+        const cx = 48 + (r() - 0.5) * 30;
+        const cy = 48 + (r() - 0.5) * 18;
+        const rad = 18 + r() * 18;
+        const rg = g.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        rg.addColorStop(0, `rgba(${rgb},0.36)`);
+        rg.addColorStop(0.55, `rgba(${rgb},0.17)`);
+        rg.addColorStop(1, `rgba(${rgb},0)`);
+        g.fillStyle = rg;
+        g.fillRect(0, 0, 96, 96);
+      }
+      // ざらつき：薄い所を抜き、濃い粒を足す（真ん中ほど多い）
+      const near = () => {
+        const a = r() * 6.283;
+        const d = Math.sqrt(r()) * 40;
+        return [48 + Math.cos(a) * d, 48 + Math.sin(a) * d * 0.75, 1 - d / 40] as const;
+      };
+      g.globalCompositeOperation = "destination-out";
+      for (let i = 0; i < 260; i++) {
+        const [x, y, f] = near();
+        g.fillStyle = `rgba(0,0,0,${(0.22 * (1 - f * 0.5)).toFixed(3)})`;
+        g.fillRect(x, y, 1.5 + r() * 2.5, 1.5 + r() * 2.5);
+      }
+      g.globalCompositeOperation = "source-over";
+      for (let i = 0; i < 360; i++) {
+        const [x, y, f] = near();
+        g.fillStyle = `rgba(${rgb},${(0.1 + 0.32 * f * r()).toFixed(3)})`;
+        g.fillRect(x, y, 1 + r() * 1.6, 1 + r() * 1.6);
+      }
+      return c;
+    };
+    const puffImg = makePuff("222,222,214");
+    const puffLit = makePuff("255,252,242");
     const loop = () => {
       dust.clearRect(0, 0, W, H);
       const t = performance.now();
@@ -838,6 +927,41 @@ export default function BoardFx() {
         flashX = parseFloat(room.style.getPropertyValue("--fx"));
         flashY = parseFloat(room.style.getPropertyValue("--fy"));
       }
+      // 雲
+      let m = 0;
+      for (const c of clouds) {
+        const age = t - c.born;
+        if (age >= c.life) continue;
+        const u = age / c.life;
+        let r: number;
+        let a: number;
+        if (c.still) {
+          r = lerp(c.r0, c.r1, 0.6);
+          a = c.a * (age < 120 ? age / 120 : Math.max(0, 1 - (age - 120) / (c.life - 120)));
+        } else {
+          // 広がりながら勢いが落ちる。大きさは初めに急にふくらみ、だんだんゆっくり
+          c.x += c.vx * k;
+          c.y += c.vy * k;
+          c.vx *= Math.pow(0.962, k);
+          c.vy *= Math.pow(0.972, k);
+          r = lerp(c.r0, c.r1, 1 - Math.pow(1 - u, 2.6));
+          a = c.a * (u < 0.08 ? u / 0.08 : Math.pow(1 - (u - 0.08) / 0.92, 1.1));
+        }
+        clouds[m++] = c;
+        // 横に少し長い（横へ広がる粉塵）
+        const rx = r * 1.45;
+        const ry = r * 0.8;
+        dust.globalAlpha = Math.min(1, a);
+        dust.drawImage(puffImg, c.x - rx, c.y - ry, rx * 2, ry * 2);
+        const lit = glowAt(c.x, c.y);
+        if (lit > 0.05) {
+          dust.globalAlpha = Math.min(1, a * lit * 0.55);
+          dust.drawImage(puffLit, c.x - rx, c.y - ry, rx * 2, ry * 2);
+        }
+      }
+      clouds.length = m;
+      dust.globalAlpha = 1;
+      // 粒
       let n = 0;
       for (const p of parts) {
         let a = p.a;
@@ -857,10 +981,10 @@ export default function BoardFx() {
           h = Math.max(0.8, p.r * 0.7);
         } else {
           // 重力で加速し、粒の大きさで決まる速さで頭打ち（小さな粒ほどゆっくり）
-          const vt = 1.6 + p.r * 1.3;
-          p.vy = Math.min(vt, p.vy + (0.03 + 0.02 * p.r) * k);
+          const vt = (1.6 + p.r * 1.3) * p.fl;
+          p.vy = Math.min(vt, p.vy + (0.03 + 0.02 * p.r) * p.fl * k);
           p.vx *= Math.pow(0.97, k);
-          const sway = Math.sin(p.ph + (t - p.born) * 0.004) * (p.vy > 0 ? 0.2 : 0.05);
+          const sway = Math.sin(p.ph + (t - p.born) * 0.004) * (p.vy > 0 ? 0.2 / Math.sqrt(p.fl) : 0.05);
           p.x += (p.vx + sway) * k;
           p.y += p.vy * k;
           if (p.under && p.y < floor - 2) p.under = false;
@@ -875,27 +999,12 @@ export default function BoardFx() {
         parts[n++] = p;
         dust.fillStyle = `rgba(212,212,203,${a.toFixed(3)})`;
         dust.fillRect(p.x - w / 2, p.y - h, w, h);
-        if (p.glint && p.kind === "fall") {
-          // 光の中でだけ、ときどき一瞬きらめく
-          const s = Math.sin(p.ph * 3 + (t - p.born) * p.tw);
-          const g = s > 0.7 ? glowAt(p.x, p.y) * Math.pow(s, 16) * a : 0;
-          if (g > 0.04) {
-            dust.fillStyle = `rgba(255,255,250,${Math.min(1, g * 1.4).toFixed(3)})`;
-            dust.fillRect(p.x - w / 2 - 0.5, p.y - h - 0.5, w + 1, h + 1);
-            if (g > 0.4) {
-              const cy = p.y - h / 2;
-              const L = p.r * 1.6 + 1;
-              dust.fillRect(p.x - L, cy - 0.35, L * 2, 0.7);
-              dust.fillRect(p.x - 0.35, cy - L, 0.7, L * 2);
-            }
-          }
-        }
       }
       parts.length = n;
-      raf = n ? requestAnimationFrame(loop) : 0;
+      raf = n || m ? requestAnimationFrame(loop) : 0;
     };
-    /** 粉を1粒（vy＜0 で少し舞い上がってから落ちる） */
-    const spawn = (x: number, y: number, vx: number, vy: number, a: number, r: number) => {
+    /** 粉を1粒（vy＜0 で少し舞い上がってから落ちる。fl＝落ちる速さの倍率） */
+    const spawn = (x: number, y: number, vx: number, vy: number, a: number, r: number, fl = 1) => {
       if (parts.length >= DUST_MAX) {
         const i = parts.findIndex((p) => p.landed > 0 || p.kind === "still");
         if (i < 0) return;
@@ -911,15 +1020,21 @@ export default function BoardFx() {
         kind: reduce ? "still" : "fall",
         born: performance.now(),
         ph: Math.random() * 6.283,
-        tw: 0.006 + Math.random() * 0.005,
-        glint: Math.random() < GLINT_SHARE,
         landed: 0,
         stay: PILE_MS * (0.7 + Math.random() * 0.6),
         under: y >= floorNow(),
+        fl,
       });
     };
+    /** 雲を1つ（vx・vy＝1コマあたりの初めの速さ。r0→r1 にふくらむ） */
+    const cloudAt = (x: number, y: number, vx: number, vy: number, r0: number, r1: number, a: number, life: number) => {
+      if (clouds.length >= CLOUD_MAX) clouds.shift();
+      clouds.push({ x, y, vx: reduce ? 0 : vx, vy: reduce ? 0 : vy, r0, r1, a, born: performance.now(), life: reduce ? Math.min(life, 760) : life, still: reduce });
+    };
+    // 雲の大きさは黒板の幅で少し変える（スマホでは小さめ）
+    const cloudScale = () => Math.min(1, Math.max(0.8, W / 900));
     const kick = () => {
-      if (parts.length && !raf) {
+      if ((parts.length || clouds.length) && !raf) {
         dustLast = 0;
         raf = requestAnimationFrame(loop);
       }
@@ -930,19 +1045,104 @@ export default function BoardFx() {
         spawn(x + (Math.random() - 0.5) * spread, y + (Math.random() - 0.3) * dy, (Math.random() - 0.5) * 0.6, -0.2 - Math.random() * 0.6, 0.55 + Math.random() * 0.35, 1 + Math.random() * 1.6);
       kick();
     };
-    /** こすった粉：黒板消しの下に隠れないよう、動いてきた側の縁と下の縁から出す（ux,uy＝動いた向き） */
-    const emitRub = (x: number, y: number, ux: number, uy: number, n = 2) => {
-      if (!ux && !uy) return emit(x, y + SH / 2, SW, n);
-      const half = Math.abs(ux) * (SW / 2) + Math.abs(uy) * (SH / 2);
-      const span = (Math.abs(ux) * SH + Math.abs(uy) * SW) * 0.9;
+    /** こすった粉：小さく薄い灰白の粒が、黒板消しの縁からこぼれて、ほとんど舞わずに重力で落ちる（ux,uy＝動いた向き） */
+    const emitRub = (x: number, y: number, ux: number, uy: number, n = 1) => {
       for (let i = 0; i < n; i++) {
-        if (Math.random() < 0.7) {
-          const back = half + 2 + Math.random() * 7;
+        let px: number;
+        let py: number;
+        if ((ux || uy) && Math.random() < 0.6) {
+          // 動いてきた側の縁（黒板消しの下に隠れないように）
+          const half = Math.abs(ux) * (SW / 2) + Math.abs(uy) * (SH / 2);
+          const span = (Math.abs(ux) * SH + Math.abs(uy) * SW) * 0.9;
+          const back = half + 2 + Math.random() * 5;
           const side = (Math.random() - 0.5) * span;
-          spawn(x - ux * back - uy * side, y - uy * back + ux * side, -ux * 0.3 + (Math.random() - 0.5) * 0.5, -0.15 - Math.random() * 0.7, 0.6 + Math.random() * 0.35, 1.1 + Math.random() * 1.6);
-        } else spawn(x + (Math.random() - 0.5) * SW, y + SH / 2 + 1 + Math.random() * 4, (Math.random() - 0.5) * 0.4, -0.1 - Math.random() * 0.4, 0.6 + Math.random() * 0.35, 1.1 + Math.random() * 1.6);
+          px = x - ux * back - uy * side;
+          py = y - uy * back + ux * side;
+        } else {
+          // 下の縁
+          px = x + (Math.random() - 0.5) * SW;
+          py = y + SH / 2 + 1 + Math.random() * 3;
+        }
+        // 数は少なく、1粒ずつは目で追える大きさ・濃さ（細かすぎると、落ちていくのが見えない）。ゆっくりめに落ちる
+        spawn(px, py, (Math.random() - 0.5) * 0.25, -0.05 - Math.random() * 0.2, 0.4 + Math.random() * 0.2, 1.3 + Math.random() * 0.9, 0.8);
       }
       kick();
+    };
+    // こすった長さをためて、一定の長さごとに1粒だけ出す（点の間隔や速さによらず同じ量）
+    let rubDustAcc = 0;
+    const RUB_DUST_EVERY = 42;
+
+    /* ---------------- 粉受けの溝に溜まった粉 ---------------- */
+    let trayDust = TRAY_START;
+    let trayShown = -1;
+    const trayC = document.createElement("canvas");
+    trayC.className = "kb-tray-dust";
+    trayC.setAttribute("aria-hidden", "true");
+    trayEl?.prepend(trayC);
+    const trayG = trayC.getContext("2d")!;
+    // 溝の中の粉のかたまり（毎回同じ並び）。th＝見え始める溜まり具合（小さいものから先に見える）
+    const TRAY_BITS = (() => {
+      const r = rng(53);
+      const centers = Array.from({ length: 7 }, () => r());
+      return Array.from({ length: 120 }, () => {
+        const c = centers[Math.floor(r() * centers.length)];
+        const x = Math.min(0.99, Math.max(0.01, c + (r() + r() + r() - 1.5) * 0.12));
+        return { x, y: r(), w: 0.01 + r() * 0.05, h: 0.18 + r() * 0.3, a: 0.25 + r() * 0.5, th: Math.pow(r(), 1.4) * 0.95 };
+      });
+    })();
+    const TRAY_UP = 6; // 粉受けの上の縁より上に描ける高さ（CSS の .kb-tray-dust と同じ）
+    const drawTray = (force = false) => {
+      if (!trayEl) return;
+      if (!force && Math.abs(trayDust - trayShown) < 0.02) return;
+      trayShown = trayDust;
+      const w = trayEl.clientWidth;
+      const h = trayEl.clientHeight;
+      if (!w || !h) return;
+      const k = dpr;
+      const th = h + TRAY_UP;
+      if (trayC.width !== Math.round(w * k) || trayC.height !== Math.round(th * k)) {
+        trayC.width = Math.round(w * k);
+        trayC.height = Math.round(th * k);
+      }
+      trayG.setTransform(k, 0, 0, k, 0, 0);
+      trayG.clearRect(0, 0, w, th);
+      if (trayDust < 0.01) return;
+      const blob = (cx: number, cy: number, rx: number, ry: number, a: number) => {
+        const g = trayG.createRadialGradient(cx, cy, 0, cx, cy, rx);
+        g.addColorStop(0, `rgba(238,237,230,${a.toFixed(3)})`);
+        g.addColorStop(0.55, `rgba(232,231,224,${(a * 0.6).toFixed(3)})`);
+        g.addColorStop(1, "rgba(232,231,224,0)");
+        trayG.save();
+        trayG.translate(cx, cy);
+        trayG.scale(1, ry / rx);
+        trayG.translate(-cx, -cy);
+        trayG.fillStyle = g;
+        trayG.fillRect(cx - rx, cy - rx, rx * 2, rx * 2);
+        trayG.restore();
+      };
+      // 溝の底（粉受けの絵の高さ 35〜85%）：金属の光を覆う、つやのない白っぽい粉の帯
+      const top = TRAY_UP + h * 0.35;
+      const bh = h * 0.5;
+      const film = trayG.createLinearGradient(0, top, 0, top + bh);
+      film.addColorStop(0, "rgba(232,231,224,0)");
+      film.addColorStop(0.55, `rgba(232,231,224,${(0.45 * trayDust).toFixed(3)})`);
+      film.addColorStop(1, `rgba(232,231,224,${(0.2 * trayDust).toFixed(3)})`);
+      trayG.fillStyle = film;
+      trayG.fillRect(0, top, w, bh);
+      for (const bit of TRAY_BITS) {
+        if (trayDust <= bit.th) continue;
+        const a = bit.a * Math.min(1, (trayDust - bit.th) / 0.2 + 0.3);
+        const rx = (bit.w * w * (0.6 + trayDust * 0.9)) / 2;
+        const cx = bit.x * w;
+        // 溝の底のかたまり
+        blob(cx, top + bh * (0.3 + bit.y * 0.5), rx, bit.h * bh, Math.min(0.85, a * 1.2));
+        // 奥の縁に盛り上がった粉（黒板の前に少しだけ見える）。多く溜まるほど高い
+        if (bit.y < 0.5) blob(cx + rx * 0.3, TRAY_UP + 0.5, rx * 0.8, (1.2 + 3.2 * trayDust) * (0.6 + bit.h), Math.min(0.8, a));
+      }
+    };
+    const addTrayDust = (v: number) => {
+      trayDust = clamp01(trayDust + v);
+      drawTray();
     };
 
     /* ---------------- にじみ：こすった方向へ、チョークの粉が伸びて広がる（どの文字・落書きにも効く） ---------------- */
@@ -967,8 +1167,9 @@ export default function BoardFx() {
       g.fillStyle = rg;
       g.fillRect(-1, -1, 2, 2);
     }
-    const smudgeAt = (src: HTMLCanvasElement, ctx: CanvasRenderingContext2D, k: number, x: number, y: number, mx: number, my: number, alpha: number) => {
-      // 黒板消しの下の粉をすくって（縮めてぼかし）、動いた向きに少しずらして薄く置き直す
+    const smudgeAt = (src: HTMLCanvasElement, ctx: CanvasRenderingContext2D, k: number, x: number, y: number, mx: number, my: number, alpha: number, lift = 0, taps = 1) => {
+      // 黒板消しの下の粉をすくって（縮めてぼかし）、動いた向きに少しずらして薄く置き直す。
+      // lift＞0：すくった所の粉をその割合だけ減らす（粉を運ぶ＝足し続けて白く塗り固めない）
       const sx = Math.max(0, x - PW / 2);
       const sy = Math.max(0, y - PH / 2);
       const sw = Math.min(PW, W - sx);
@@ -981,9 +1182,18 @@ export default function BoardFx() {
       pctx.globalCompositeOperation = "destination-in";
       pctx.drawImage(feather, (-(sx - (x - PW / 2)) * patch.width) / PW, (-(sy - (y - PH / 2)) * patch.height) / PH);
       pctx.globalCompositeOperation = "source-over";
+      if (lift > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.globalAlpha = Math.min(1, lift);
+        ctx.drawImage(feather, x - PW / 2, y - PH / 2, PW, PH);
+        ctx.restore();
+      }
+      // taps＞1：ずらす途中にも置いて、跡が筋になって続く（字が二重に写ったように見せない）。重ねた濃さが alpha になるよう分ける
+      const a = taps > 1 ? 1 - Math.pow(1 - alpha, 1 / taps) : alpha;
       ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(patch, 0, 0, pw, ph, sx + mx, sy + my, sw, sh);
+      ctx.globalAlpha = a;
+      for (let t = 1; t <= taps; t++) ctx.drawImage(patch, 0, 0, pw, ph, sx + (mx * t) / taps, sy + (my * t) / taps, sw, sh);
       ctx.restore();
     };
 
@@ -998,9 +1208,8 @@ export default function BoardFx() {
       Math.min(1, (1 - Math.pow(keep, Math.max(step, 0.5) / reachOf(dx, dy))) / 0.5);
 
     /* ---------------- 消す ---------------- */
-    // 黒板消しの汚れ（0＝まっさら、1＝真っ白）。効き方はこすり始めの汚れで決め、ひと続きのこすりの途中では変えない
-    // （まっさらな端末の最初のひとこすりは、汚れの仕組みが無いときと同じ消え方）
-    // 保存は「汚れ|保存した時刻」。きれいになるのはクリーナーに入れたときだけ（置いておいても、押しても、持ち替えても汚れたまま。
+    // 黒板消しの汚れ（0＝まっさら、1＝真っ白）。効き方は、その一筆を引いた時点の汚れで決まる。
+    // 保存は「汚れ|保存した時刻」。きれいになるのはクリーナーでこすったときだけ（置いておいても、押しても、持ち替えても汚れたまま。
     // 汚れているあいだはクリーナーのランプが点滅して、持っていけばいいと分かる）
     let load = 0;
     try {
@@ -1008,9 +1217,8 @@ export default function BoardFx() {
       if (Number.isFinite(v)) load = Math.min(1, Math.max(0, v));
       if (load < 0.02) load = 0;
     } catch {}
-    let rubLoad = load;
     let savedLoad = load;
-    let shownLoad = 0;
+    let shownLoad = -1;
     const saveLoad = () => {
       if (load === savedLoad) return;
       savedLoad = load;
@@ -1018,62 +1226,110 @@ export default function BoardFx() {
         localStorage.setItem(eraserKey(), `${load.toFixed(4)}|${Date.now()}`);
       } catch {}
     };
-    // 見た目（粉で白くなった面）は、0.05 変わるごとに書く
+    // 見た目（粉で白くなった面）は、0.02 変わるごとに書く。--load＝粉の点々、--wash＝フェルトが白く覆われる濃さ（汚れの中ほどから強まる）
     const showLoad = (force = false) => {
       // 汚れている（0.3 以上）あいだ、クリーナーの赤いランプがゆっくり点滅する
       cleaner?.classList.toggle("is-blinking", load >= 0.3);
-      if (load === shownLoad || (!force && Math.abs(load - shownLoad) < 0.05)) return;
+      if (load === shownLoad || (!force && Math.abs(load - shownLoad) < 0.02)) return;
       shownLoad = load;
       eraser.style.setProperty("--load", load.toFixed(3));
+      eraser.style.setProperty("--wash", Math.pow(clamp01((load - 0.35) / 0.4), 1.3).toFixed(3));
     };
     showLoad(true);
+    /** 汚れの溜まり方の基準の長さ（黒板の幅。広い画面では LOAD_SPAN_MAX まで） */
+    const loadSpan = () => Math.max(240, Math.min(W - EDGE * 2, LOAD_SPAN_MAX));
 
     let eraseStroke: Stroke | null = null;
+    let smudgeAcc = 0;
+    let smudgeN = 0;
     const eraseSeg = (x0: number, y0: number, x1: number, y1: number, clip?: Item) => {
       const d = Math.hypot(x1 - x0, y1 - y0);
       const n = Math.max(1, Math.ceil(d / 4));
       const step = d / n;
       const reach = reachOf(x1 - x0, y1 - y0);
-      const rub = rubStrength(x1 - x0, y1 - y0, step, rubLoad > 0 ? Math.min(LOAD_KEEP_MAX, RUB_KEEP + 0.3 * rubLoad) : RUB_KEEP);
-      const smudge = rubLoad > 0 ? SMUDGE * (1 + 1.3 * rubLoad) : SMUDGE;
       const ux = d > 0.5 ? (x1 - x0) / d : 0;
       const uy = d > 0.5 ? (y1 - y0) / d : 0;
+      // 汚れの効き方（見えない手の黒板消しは汚れない＝いつもきれい）
+      const L = clip ? 0 : load;
+      // dull＝だんだん消えにくい（LOAD_DULL〜LOAD_BAD で 0→1）／bad＝逆効果（LOAD_BAD から強まり 0.85 で最大）
+      const dull = clamp01((L - LOAD_DULL) / (LOAD_BAD - LOAD_DULL));
+      const bad = clamp01((L - LOAD_BAD) / 0.15);
+      // 1往復で残る割合：きれい 0.5 → 消えにくい 0.88 → 逆効果 0.99（ほとんど消えない）
+      const keep = bad > 0 ? lerp(0.88, 0.99, bad) : lerp(RUB_KEEP, 0.88, dull);
+      const rub = rubStrength(x1 - x0, y1 - y0, step, keep);
+      // にじみ：汚れるほど濃く、遠くへ伸びる
+      const smudge = SMUDGE * (1 + 0.8 * dull);
+      const stretch = 10 + 6 * dull + 14 * bad;
       if (!clip) {
-        // 人がこすった分だけ汚れる（見えない手の黒板消しは汚れない）
-        load = Math.min(1, load + d * LOAD_PER_PX);
+        // 人がこすった分だけ黒板消しが汚れ、粉受けの溝に粉が溜まる
+        const span = loadSpan();
+        load = Math.min(1, load + d / (span * LOAD_PASSES));
+        addTrayDust(d / (span * TRAY_PASSES));
         showLoad();
       }
       const run = () => {
+        let px = x0;
+        let py = y0;
         for (let i = 1; i <= n; i++) {
           const x = x0 + ((x1 - x0) * i) / n;
           const y = y0 + ((y1 - y0) * i) / n;
           let haze = 0.005; // 見えない手の書き直しのときは拭き跡をごく薄く（日付の地を白くしない）
           if (clip) stampAt(chalk, x, y);
           else {
-            // こすった回数：面が1点の上を通り過ぎる間に、片道で 1
+            // こすった回数：面が1点の上を通り過ぎる間に、片道で 1。
+            // 何度もこすった所をゼロにする仕組みは、黒板消しが汚れるほど弱まり、LOAD_BAD で効かなくなる
             const w = addWear(x, y, ux, uy, step);
-            const s = Math.min(1, Math.max(0, (w - WEAR_SOFT) / (WEAR_GONE - WEAR_SOFT)));
+            const s = clamp01((w - WEAR_SOFT) / (WEAR_GONE - WEAR_SOFT)) * (1 - dull);
             // 人がこする：粉がにじんで伸び、少しずつかすれる
-            // すくった粉の一部だけを先へ置く（消す量より少なく＝こするほど減っていく）。何度もこすった所では置き直さない
-            const sm = smudge * Math.min(1, Math.max(0, 1 - (w - WEAR_SOFT) / 3));
-            if (i % 3 === 0 && d > 0.5 && sm > 0) {
-              smudgeAt(chalkC, chalk, dpr, x, y, ux * 10, uy * 10, sm);
-              smudgeAt(doodleC, doodle, dpr, x, y, ux * 10, uy * 10, sm);
+            // すくった粉の一部だけを先へ置く（きれいなうちは消す量より少なく＝こするほど減っていく）。
+            // 何度もこすった所では置き直さない（汚れるほど、この止めも弱まる）
+            const gate = clamp01(1 - (w - WEAR_SOFT) / 3);
+            // 逆効果の伸びは、同じ所をこするほど少しずつ弱まる（伸び切った粉はそれ以上は広がらない＝真っ白にはならない）
+            const spread = SMUDGE_BAD / (1 + Math.max(0, w - 1) * 0.4);
+            const sm = lerp(smudge * lerp(gate, 1, dull), spread, bad);
+            // にじみは、こすった長さ 12px ごとに置く（点の間隔や指の速さによらず同じ量）
+            smudgeAcc += step;
+            if (smudgeAcc >= 12 && d > 0.5 && sm > 0) {
+              smudgeAcc %= 12;
+              // 汚れるほど、粉を足すより運ぶ（伸びて広がるが、白く塗り固まらない）。
+              // 逆効果の段では運ぶ量を減らす（字の芯が残ったまま、色が擦った向きへ伸びる＝消えない）
+              const lift = sm * LIFT * dull * (1 - 0.65 * bad);
+              const taps = bad > 0 ? 3 : 1;
+              smudgeAt(chalkC, chalk, dpr, x, y, ux * stretch, uy * stretch, sm, lift, taps);
+              smudgeAt(doodleC, doodle, dpr, x, y, ux * stretch, uy * stretch, sm, lift, taps);
+              if (bad > 0) {
+                // 逆効果：向きと直角にも少しずつ広がる（字がぼやけて太る）
+                // （濃さも bad に比例させる＝0.7 を越えた瞬間に、にじみが急に倍にならない。落書きも同じようにぼやける）
+                const side = 4 * bad * (++smudgeN % 2 ? 1 : -1);
+                const sx2 = ux * stretch * 0.5 - uy * side;
+                const sy2 = uy * stretch * 0.5 + ux * side;
+                smudgeAt(chalkC, chalk, dpr, x, y, sx2, sy2, sm * 0.5 * bad, lift * 0.5 * bad);
+                smudgeAt(doodleC, doodle, dpr, x, y, sx2, sy2, sm * 0.5 * bad, lift * 0.5 * bad);
+              }
             }
             stampAt(chalk, x, y, 1, rub);
             stampAt(doodle, x, y, 1, rub);
             if (s > 0) {
               // 4回目あたりから、ムラのない面で上乗せして消す。片道で残る割合が (1-s)^1.5 まで下がり、WEAR_GONE でゼロ
-              // （汚れた黒板消しでも、焼き付き・拭き跡のもやも一緒に）
+              // （焼き付き・拭き跡のもやも一緒に）
               const f = 1 - Math.pow(Math.pow(1 - s, 1.5), Math.max(step, 0.5) / reach);
               for (const c of [chalk, doodle, smear, ghost]) stampAt(c, x, y, 1, f, solid);
             }
-            haze = 0.018 * (1 + rubLoad) * (1 - s);
+            haze = 0.018 * (1 + L) * (1 - s) + 0.01 * dull + 0.008 * bad;
+            // 逆効果：黒板消しの粉が黒板に移って、こすった所が白く濁っていく
+            if (bad > 0) powderAt(px, py, x, y, 0.14 * bad);
           }
           if (haze > 0) hazeAt(x, y, haze);
-          if (i % 3 === 0) emitRub(x, y, ux, uy);
+          // こすった粉は少しだけ（汚れた黒板消しほど少し多い）
+          rubDustAcc += step * (1 + 0.8 * L);
+          if (rubDustAcc >= RUB_DUST_EVERY) {
+            rubDustAcc -= RUB_DUST_EVERY;
+            emitRub(x, y, ux, uy);
+          }
           for (const it of items)
             if (!it.dirty && x > it.x - SW / 2 && x < it.x + it.w + SW / 2 && y > it.y - SH / 2 && y < it.y + it.h + SH / 2) it.dirty = true;
+          px = x;
+          py = y;
         }
       };
       if (clip) clipTo(clip, run);
@@ -1097,11 +1353,11 @@ export default function BoardFx() {
       restOf.set(el, rest);
       return rest;
     };
-    const hold = (el: HTMLElement, x: number, y: number, angle: number) => {
+    const hold = (el: HTMLElement, x: number, y: number, angle: number, scale = 1) => {
       const rest = restOf.get(el) || measureRest(el);
       el.classList.remove("is-moving");
       el.classList.add("is-held");
-      el.style.transform = `translate(${x - rest.x}px, ${y - rest.y}px) rotate(${angle}deg)`;
+      el.style.transform = `translate(${x - rest.x}px, ${y - rest.y}px) rotate(${angle}deg)${scale !== 1 ? ` scale(${scale})` : ""}`;
     };
     const putBack = (el: HTMLElement) => {
       el.classList.add("is-moving");
@@ -1118,7 +1374,9 @@ export default function BoardFx() {
       if (next.kind === "chalk") next.el.classList.add("is-picked");
     };
     /* ---------------- 黒板消しクリーナー（粉受けの右端の機械） ---------------- */
-    // 黒板消しを持ったまま上まで来る／クリーナーを押す（黒板消しが飛んでいって入る）と、機械が震えて口から粉が舞い、汚れが0になる
+    // 黒板消しを持ってこすっている手をクリーナーの上へ持っていくと、黒板消しが口（上面の溝）に乗り、
+    // 左右に動かした長さだけ汚れが落ちる（そのあいだ機械が震え、口から粉が舞う。止めると震えも止まる）。
+    // クリーナーを押すと、黒板消しが飛んでいって口の上で自動で往復し、きれいになって粉受けに戻る
     let cleaning = false;
     let cleanerBox: DOMRect | null = null;
     const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
@@ -1144,76 +1402,201 @@ export default function BoardFx() {
         };
         step();
       });
-    /** クリーナーの口から粉がぱっと舞い上がり、左右へ散って粉受けに落ちる（汚れていたほど多く） */
-    const puff = (x: number, y: number, w: number, amount: number) => {
-      for (let i = Math.round(14 + 36 * amount); i > 0; i--) {
-        if (reduce) spawn(x + (Math.random() - 0.5) * w, y - Math.random() * 26, 0, 0, 0.55 + Math.random() * 0.4, 1 + Math.random() * 1.6);
-        else spawn(x + (Math.random() - 0.5) * w * 0.8, y - Math.random() * 4, (Math.random() - 0.5) * 2.2, -1.2 - Math.random() * 1.9, 0.55 + Math.random() * 0.35, 1 + Math.random() * 1.6);
-      }
+    /**
+     * クリーナーの口の位置（黒板の座標）：x0〜x0+w＝口の左右、mx＝真ん中、top＝口の上の縁、
+     * ey＝口に乗せた黒板消しの中心の高さ（フェルトが溝に少し沈む）、s＝黒板消しの縮み（スマホのクリーナーは黒板消しより小さい）、ew＝縮めた幅
+     */
+    const slotOf = (cr: DOMRect) => {
+      const b = board.getBoundingClientRect();
+      const ew = eraser.offsetWidth || 66;
+      const eh = eraser.offsetHeight || 22;
+      const s = Math.min(1, (cr.width * 0.86) / ew);
+      const x0 = cr.left - b.left + (cr.width * SLOT.l) / 100;
+      const w = (cr.width * SLOT.w) / 100;
+      const top = cr.top - b.top + (cr.height * SLOT.t) / 100;
+      const cy = top + (cr.height * SLOT.h) / 200;
+      return { x0, w, mx: x0 + w / 2, top, ey: cy - (eh * s) / 2 + 2, s, ew: ew * s };
+    };
+    type Slot = ReturnType<typeof slotOf>;
+    /** クリーナーの口から粉が舞う（ex＝黒板消しの真ん中、dir＝動く向き、amount＝汚れ 0〜1） */
+    const slotPuff = (g: Slot, ex: number, dir: number, amount: number) => {
+      const sc = cloudScale();
+      const x = ex + dir * (g.ew / 2) * (0.55 + Math.random() * 0.5);
+      for (let i = amount > 0.5 ? 2 : 1; i > 0; i--)
+        cloudAt(x + (Math.random() - 0.5) * 6, g.top - 2, dir * (0.5 + Math.random() * 1.2), -0.55 - Math.random() * 0.8, 5 * sc, (16 + Math.random() * 14) * sc, 0.08 + 0.36 * amount, 900 + Math.random() * 500);
+      if (Math.random() < 0.3 + 0.5 * amount)
+        spawn(x, g.top - 3, dir * (0.4 + Math.random() * 1.2), -0.6 - Math.random() * 1, 0.4 + Math.random() * 0.25, 0.8 + Math.random() * 0.8);
+      // 軽い粒は口の上に漂ってから、ゆっくり落ちる
+      if (Math.random() < 0.5 * amount)
+        spawn(x, g.top - 4, dir * (0.3 + Math.random() * 0.9), -0.8 - Math.random() * 1, 0.3 + Math.random() * 0.2, 0.9 + Math.random() * 0.7, 0.22);
       kick();
     };
-    /** 粉受けの黒板消しを押した：黒板消しから粉がぱふっと少し出て落ちる（1回10〜20粒・汚れていたほど多く）。汚れは減らない */
+    // 手でこすってきれいにしている間（scrub＝口の位置。null＝黒板の上をこすっている）
+    let scrub: Slot | null = null;
+    let scrubX = 0;
+    let scrubAcc = 0;
+    let buzzTimer = 0;
+    /** 動かしている間だけクリーナーが震える（止めると止まる） */
+    const buzz = () => {
+      cleaner?.classList.add("is-scrubbing");
+      window.clearTimeout(buzzTimer);
+      buzzTimer = window.setTimeout(() => cleaner?.classList.remove("is-scrubbing"), 170);
+    };
+    // 手の位置（口の左右の端から端）を、黒板消しの真ん中の動き（口の幅の ±SCRUB_AMP）に写す（黒板消しが口から落ちそうなほどはみ出さない）
+    const SCRUB_AMP = 0.3;
+    const scrubPos = (g: Slot, x: number) => g.mx + (Math.min(g.x0 + g.w, Math.max(g.x0, x)) - g.mx) * SCRUB_AMP * 2;
+    const enterScrub = (p: { x: number; y: number }) => {
+      if (!cleanerBox) return;
+      const g = slotOf(cleanerBox);
+      scrub = g;
+      scrubX = Math.min(g.x0 + g.w, Math.max(g.x0, p.x));
+      scrubAcc = 0;
+      // 縦に持っていた黒板消しが、横向きになって口に吸い付く（短く動かす）
+      eraser.classList.add("is-docking", "is-on-cleaner");
+      later(() => eraser.classList.remove("is-docking"), 160);
+      hold(eraser, scrubPos(g, p.x), g.ey, 0, g.s);
+    };
+    const moveScrub = (p: { x: number; y: number }) => {
+      const g = scrub;
+      if (!g) return;
+      // 汚れの落ち方は手の動き（口の幅を片道 CLEAN_PASSES 回で0）で数える
+      const nx = Math.min(g.x0 + g.w, Math.max(g.x0, p.x));
+      const dx = nx - scrubX;
+      if (Math.abs(dx) < 0.5) return;
+      const before = load;
+      load = Math.max(0, load - Math.abs(dx) / (g.w * CLEAN_PASSES));
+      if (load < 0.02) load = 0;
+      showLoad();
+      buzz();
+      const ex = scrubPos(g, nx);
+      scrubAcc += Math.abs(dx);
+      if (scrubAcc >= 16) {
+        scrubAcc -= 16;
+        if (before > 0.01) slotPuff(g, ex, Math.sign(dx), before);
+      }
+      scrubX = nx;
+      hold(eraser, ex, g.ey + (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.6, g.s);
+    };
+    const leaveScrub = () => {
+      if (!scrub) return;
+      scrub = null;
+      eraser.classList.remove("is-on-cleaner", "is-docking");
+      showLoad(true);
+    };
+    /** 粉受けの黒板消しを押した：黒板消しの下・まわりの溝の粉が、ぱふっと横へ舞う（溜まっている粉と黒板消しの汚れが多いほど大きい）。
+     * 押すたびに溝の粉は少し減る。黒板消しの汚れは減らない */
     const tapEraser = () => {
       const b = board.getBoundingClientRect();
       const r = eraser.getBoundingClientRect();
       if (!r.width) return;
-      const x0 = r.left - b.left;
-      // 粉受けより上から出す（スマホの粉受けでは、黒板消しの下半分が粉受けの縁に重なっている）
-      const y = Math.min(floorNow(true) - 2, r.top - b.top + r.height * 0.4);
-      for (let i = 10 + Math.round(Math.random() * 4 + 6 * Math.min(1, load)); i > 0; i--) {
-        if (reduce) spawn(x0 + Math.random() * r.width, y - Math.random() * 14, 0, 0, 0.55 + Math.random() * 0.35, 1 + Math.random() * 1.5);
-        else spawn(x0 + r.width * (0.08 + Math.random() * 0.84), y - Math.random() * 3, (Math.random() - 0.5) * 1.6, -0.6 - Math.random() * 1.5, 0.55 + Math.random() * 0.35, 1 + Math.random() * 1.5);
+      const cx = r.left - b.left + r.width / 2;
+      const ew = r.width;
+      const y = floorNow(true) - 1;
+      const amount = clamp01(trayDust * 0.85 + load * 0.45);
+      const sc = cloudScale();
+      // 雲：黒板消しの左右の端から、溝に沿って横へ噴き出す（左右交互）。小さめの雲をたくさん重ねて、
+      // ひとつながりの粉塵の帯に見せる（速いものほど遠くへ行って薄まる。量が多いほど数が増え、大きく、遠くへ）
+      for (let i = Math.max(2, Math.round(4 + 12 * amount)); i > 0; i--) {
+        const dir = i % 2 ? 1 : -1;
+        const sp = Math.random();
+        cloudAt(
+          cx + dir * ew * (0.3 + Math.random() * 0.25),
+          y - 2 - Math.random() * 6,
+          dir * (0.8 + sp * 3.6) * (0.6 + 0.5 * amount),
+          -0.25 - Math.random() * 0.7,
+          (6 + Math.random() * 5) * sc,
+          (26 + Math.random() * 30) * (0.6 + 0.6 * amount) * sc,
+          (0.18 + 0.38 * amount) * (1 - 0.35 * sp),
+          1100 + Math.random() * 400,
+        );
+      }
+      // 舞い上がって、しばらく教室に漂う薄いもや（溜まりが多いときだけ。ゆっくり上がりながら横へ流れる）
+      if (amount > 0.3)
+        for (let i = 0; i < 4; i++)
+          cloudAt(cx + (i - 1.5) * ew * 0.5 + (Math.random() - 0.5) * 10, y - 6, (i - 1.5) * (0.4 + Math.random() * 0.5), -0.6 - Math.random() * 0.6, 14 * sc, (50 + Math.random() * 35) * amount * sc, 0.07 + 0.17 * amount, 1400 + Math.random() * 200);
+      // 細かい粒：勢いよく飛ぶものは重力で溝へ落ち、軽いものは宙に漂ってからゆっくり落ちる
+      for (let i = Math.round(3 + 9 * amount); i > 0; i--) {
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        spawn(cx + dir * ew * (0.2 + Math.random() * 0.4), y - 1 - Math.random() * 3, dir * (0.6 + Math.random() * 1.8), -0.7 - Math.random() * 1.2, 0.4 + Math.random() * 0.3, 0.9 + Math.random() * 1);
+      }
+      for (let i = Math.round(4 + 14 * amount); i > 0; i--) {
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        spawn(cx + dir * ew * (0.2 + Math.random() * 0.5), y - 2 - Math.random() * 6, dir * (0.4 + Math.random() * 2.2), -0.9 - Math.random() * 1.4, 0.3 + Math.random() * 0.25, 0.9 + Math.random() * 0.8, 0.22);
       }
       kick();
+      trayDust = Math.max(0, trayDust * 0.86 - 0.02);
+      drawTray(true);
+      // 押した黒板消しが溝に少し沈む
+      if (!reduce) {
+        eraser.classList.remove("is-pafu");
+        void eraser.offsetWidth;
+        eraser.classList.add("is-pafu");
+        later(() => eraser.classList.remove("is-pafu"), 320);
+      }
     };
-    /** from＝こすっていた手の位置（無ければ粉受けから飛んでいく） */
-    const toCleaner = async (from: { x: number; y: number } | null) => {
+    /** クリーナーを押した：黒板消しが口の上へ飛んでいき、自動で往復してきれいになり、粉受けに戻る（汚れていなければ短く2往復） */
+    const toCleaner = async () => {
       if (!cleaner || cleaning) return;
       cleaning = true;
       const before = load;
+      const dirty = before >= 0.05;
       try {
-        const b = board.getBoundingClientRect();
-        const cr = cleaner.getBoundingClientRect();
-        const mx = cr.left - b.left + cr.width / 2;
-        const my = cr.top - b.top + cr.height * 0.2;
-        const ew = eraser.offsetWidth || 66;
-        const eh = eraser.offsetHeight || 22;
-        // 口の幅に収まる大きさで差し込む（スマホのクリーナーは黒板消しより小さい）
-        const s = Math.min(1, (cr.width * 0.86) / ew);
-        if (!reduce) {
-          const start: [number, number, number, number] = from ? [from.x, from.y, 90, 1] : (() => {
-            const r = measureRest(eraser);
-            return [r.x, r.y, 0, 1] as [number, number, number, number];
-          })();
-          await moveEraser(start, [mx, my - (eh * s) / 2 - 8, 0, s], from ? 260 : 340);
-          await moveEraser([mx, my - (eh * s) / 2 - 8, 0, s], [mx, my + 3 - (eh * s) / 2, 0, s], 110);
-        }
-        cleaner.classList.remove("is-running");
-        void cleaner.offsetWidth;
-        cleaner.classList.add("is-running");
-        later(() => cleaner.classList.remove("is-running"), 850);
-        puff(mx, my, cr.width, Math.max(before, 0.3));
-        later(() => puff(mx, my, cr.width, Math.max(before, 0.3) * 0.5), reduce ? 380 : 420);
-        load = 0;
-        showLoad(true);
-        saveLoad();
-        if (!reduce) {
-          // 機械と一緒に、差し込んだ黒板消しも小刻みに震える
-          const rest = restOf.get(eraser) || measureRest(eraser);
-          const t0 = performance.now();
+        const g = slotOf(cleaner.getBoundingClientRect());
+        if (reduce) {
+          // 動きを減らす設定：黒板消しは動かさず、汚れが段々落ちて色が変わるだけ（口の上に粉がふわっと出て消える）
+          cleaner.classList.add("is-scrubbing");
+          const steps = dirty ? 6 : 2;
+          for (let k = 1; k <= steps; k++) {
+            await wait(200);
+            if (disposed) return;
+            load = before * (1 - k / steps);
+            showLoad(true);
+            if (k % 2 === 1) slotPuff(g, g.mx + (k % 4 === 1 ? -1 : 1) * g.w * 0.25, k % 4 === 1 ? -1 : 1, before * (1 - (k - 1) / steps));
+          }
+        } else {
+          const r = measureRest(eraser);
+          eraser.classList.add("is-on-cleaner");
+          await moveEraser([r.x, r.y, 0, 1], [g.mx, g.ey - 14, 0, g.s], 340);
+          await moveEraser([g.mx, g.ey - 14, 0, g.s], [g.mx, g.ey, 0, g.s], 100);
+          if (disposed) return;
+          cleaner.classList.add("is-scrubbing");
+          const trips = dirty ? 6 : 2;
+          const dur = dirty ? 1400 : 520;
+          const amp = g.w * SCRUB_AMP;
+          let x = g.mx;
+          let acc = 0;
           await new Promise<void>((done) => {
+            const t0 = performance.now();
             const step = () => {
               if (disposed) return done();
-              const t = performance.now() - t0;
-              const j = t < 700 ? Math.sin(t * 0.35) * 0.8 : 0;
-              setEraser(`translate(${mx - rest.x + j}px, ${my + 3 - (eh * s) / 2 - rest.y + Math.abs(j) * 0.4}px) scale(${s})`);
-              if (t < 760) requestAnimationFrame(step);
+              const t = Math.min(1, (performance.now() - t0) / dur);
+              const nx = g.mx + amp * Math.sin(t * trips * Math.PI * 2);
+              const dx = nx - x;
+              x = nx;
+              // 汚れは往復に合わせて少しずつ0へ
+              const now0 = load;
+              load = before * (1 - t);
+              showLoad();
+              acc += Math.abs(dx);
+              if (acc >= 24) {
+                acc -= 24;
+                slotPuff(g, x, Math.sign(dx) || 1, dirty ? now0 : 0);
+              }
+              setEraser(`translate(${x - r.x}px, ${g.ey + (Math.random() - 0.5) * 0.9 - r.y}px) rotate(${(Math.random() - 0.5) * 1.4}deg) scale(${g.s})`);
+              if (t < 1) requestAnimationFrame(step);
               else done();
             };
             step();
           });
+          cleaner.classList.remove("is-scrubbing");
+          await moveEraser([x, g.ey, 0, g.s], [x, g.ey - 10, 0, g.s], 90);
         }
+        load = 0;
+        showLoad(true);
+        saveLoad();
       } finally {
+        cleaner.classList.remove("is-scrubbing");
+        eraser.classList.remove("is-on-cleaner");
         if (active !== "rub") putBack(eraser);
         cleaning = false;
       }
@@ -1373,7 +1756,7 @@ export default function BoardFx() {
         const x = x0 + ((x1 - x0) * i) / n;
         const y = y0 + ((y1 - y0) * i) / n;
         for (const c of [chalk, doodle, smear, ghost]) stampAt(c, x, y, 1, 1, solid);
-        if (i % 3 === 0) emitRub(x, y, ux, uy, 1);
+        if (i % 8 === 0) emitRub(x, y, ux, uy, 1);
       }
     };
     /** 見えている所を、上から横に往復して拭く（見えていない所は、拭き終わりにまとめて消える） */
@@ -1548,7 +1931,6 @@ export default function BoardFx() {
       measureRest(eraser);
       // クリーナーの位置（こすっている間は動かない。スマホの粉受けは貼り付いて動くので、こすり始めに測る）
       cleanerBox = cleaner ? cleaner.getBoundingClientRect() : null;
-      rubLoad = load;
       if (strokes.some((st) => st.t === "c")) eraseStroke = { t: "e", p: [norm(last.x, W), norm(last.y, W)] };
     };
     /** こすり終わり：汚れを保存し、消した跡を落書きの記録に足す */
@@ -1573,6 +1955,7 @@ export default function BoardFx() {
         return;
       }
       if (active === "rub") {
+        leaveScrub();
         putBack(eraser);
         finishRub();
       }
@@ -1633,7 +2016,7 @@ export default function BoardFx() {
           // 黒板消しは押したら持つだけ（粉がぱふっと出る。消しも書き直しもしない）。クリーナーを押すと、黒板消しが飛んでいって入る（見えない手が黒板を使っている間はしない）
           selectTool({ kind: "eraser", el: eraser });
           if (toolEl.dataset.tool === "cleaner") {
-            if (!busy) toCleaner(null);
+            if (!busy) toCleaner();
           } else tapEraser();
         }
         return;
@@ -1703,14 +2086,23 @@ export default function BoardFx() {
         }
         beginRub(e);
       }
-      // 黒板消しを持ったままクリーナーの上まで来た：こするのをやめて、クリーナーに入れる
-      if (cleanerBox && e.clientX > cleanerBox.left - 6 && e.clientX < cleanerBox.right + 6 && e.clientY > cleanerBox.top - 6 && e.clientY < cleanerBox.bottom + 6) {
-        finishRub();
-        active = null;
-        armed = false;
-        cleanerBox = null;
-        toCleaner(p);
-        return;
+      // 黒板消しを持ったままクリーナーの上まで来た：黒板消しが口に乗り、左右に動かすとこすれてきれいになる。
+      // クリーナーから離れたら（少しゆとりを持って）、また黒板をこする
+      const cb = cleanerBox;
+      if (scrub && cb) {
+        if (e.clientX > cb.left - 34 && e.clientX < cb.right + 34 && e.clientY > cb.top - 44 && e.clientY < cb.bottom + 30) return moveScrub(p);
+        leaveScrub();
+        last = p;
+        // 消した跡の記録は、クリーナーへ行く前と戻ったあとで分ける（つなぐと、こすっていない所まで記録の上では消える）
+        if (eraseStroke) {
+          if (eraseStroke.p.length > 2) {
+            strokes.push(eraseStroke);
+            saveDoodle();
+          }
+          eraseStroke = { t: "e", p: [norm(p.x, W), norm(p.y, W)] };
+        }
+      } else if (cb && e.clientX > cb.left - 6 && e.clientX < cb.right + 6 && e.clientY > cb.top - 6 && e.clientY < cb.bottom + 6) {
+        return enterScrub(p);
       }
       hold(eraser, p.x, p.y, 90);
       eraseSeg(last.x, last.y, p.x, p.y);
@@ -1793,33 +2185,109 @@ export default function BoardFx() {
       const pool = vis.length ? vis : cands;
       return pool[Math.floor(pick * pool.length)];
     };
+    // 見えない手の字：板書と同じ手書きの書体で、小さく少し傾けて書く
+    const ghostFont = () => {
+      const ref = board.querySelector<HTMLElement>("[data-chalk]");
+      return ref ? getComputedStyle(ref).fontFamily : "sans-serif";
+    };
+    /** チョークを粉受けから書き始めの所まで運ぶ */
+    const carry = async (stick: HTMLElement | null, x: number, y: number, mine: () => boolean) => {
+      if (!stick) return;
+      const rest = measureRest(stick);
+      const t0 = performance.now();
+      while (mine()) {
+        const p = Math.min(1, (performance.now() - t0) / 700);
+        const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        hold(stick, rest.x + (x - rest.x) * e, rest.y + (y - rest.y) * e, -35);
+        if (p >= 1) break;
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+    };
+    /** 誰もいない教室で、見えない手が黒板に小さく書く（本人の言葉4つと、∞・魔法陣。どれを書くかはその分の時刻で決まる） */
     const ghostDraw = async (token: number) => {
-      const defs = site.ghostDoodles;
-      if (!defs.length) return;
+      const notes = site.ghostNotes;
+      const total = notes.phrases.length + notes.marks.length;
+      if (!total) return;
       const r = minuteRng(1);
-      const def = defs[Math.floor(r() * defs.length)];
-      const w = 70 + r() * 50;
-      const h = w / (def.aspect || 1);
-      const spot = freeSpot(w, h, r());
-      if (!spot) return;
-      const stick = board.querySelector<HTMLElement>('[data-tool="chalk"]');
+      const pick = Math.floor(r() * total);
+      const sticks = [...board.querySelectorAll<HTMLElement>('[data-tool="chalk"]')];
+      const stick = sticks.length ? sticks[Math.floor(r() * sticks.length)] : null;
       const color = stick?.dataset.color || "#f2f0e6";
       const mine = () => token === ghostToken && !disposed;
-      // 粉受けからチョークが浮いて、描き始めの所まで運ばれる
-      if (stick) {
-        const rest = measureRest(stick);
-        const sx = spot.x + def.strokes[0][0] * w;
-        const sy = spot.y + def.strokes[0][1] * h;
-        const t0 = performance.now();
-        while (mine()) {
-          const p = Math.min(1, (performance.now() - t0) / 700);
-          const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-          hold(stick, rest.x + (sx - rest.x) * e, rest.y + (sy - rest.y) * e, -35);
-          if (p >= 1) break;
-          await new Promise((r) => requestAnimationFrame(r));
-        }
-      }
       try {
+        if (pick < notes.phrases.length) {
+          // 本人の言葉を、小さく書く
+          const text = notes.phrases[pick];
+          const size = Math.round(Math.min(19, Math.max(13, W * 0.019)));
+          const font = `${size}px ${ghostFont()}`;
+          doodle.save();
+          doodle.font = font;
+          const uw = Math.ceil(doodle.measureText(text).width) + 4;
+          doodle.restore();
+          const uh = Math.ceil(size * 1.4);
+          const rot = ((r() - 0.5) * 10 * Math.PI) / 180;
+          const w = Math.abs(uw * Math.cos(rot)) + Math.abs(uh * Math.sin(rot));
+          const h = Math.abs(uw * Math.sin(rot)) + Math.abs(uh * Math.cos(rot));
+          if (w > W - 24) return;
+          // ほかの字にくっつかないよう、まわりに余白をとって空いた所を探す
+          const spot = freeSpot(w + 28, h + 18, r());
+          if (!spot) return;
+          const cx = spot.x + 14 + w / 2;
+          const cy = spot.y + 9 + h / 2;
+          // 字は一度だけ裏で書いておき、左から少しずつ写す（重ね塗りで濃くならないように）
+          const off = document.createElement("canvas");
+          off.width = Math.ceil(uw * dpr);
+          off.height = Math.ceil(uh * dpr);
+          const o = off.getContext("2d")!;
+          o.scale(dpr, dpr);
+          o.font = font;
+          o.textBaseline = "middle";
+          o.fillStyle = color;
+          o.shadowColor = "rgba(255,255,255,.35)";
+          o.shadowBlur = size * 0.1;
+          o.fillText(text, 2, uh / 2);
+          o.shadowBlur = 0;
+          o.globalAlpha = 0.4;
+          o.fillText(text, 2.7, uh / 2 + 0.5);
+          o.globalAlpha = 1;
+          o.globalCompositeOperation = "destination-out";
+          o.fillStyle = o.createPattern(makeGrain(13, 0.55), "repeat")!;
+          o.fillRect(0, 0, uw, uh);
+          const at = (fx: number) => ({ x: cx + (-uw / 2 + uw * fx) * Math.cos(rot), y: cy + (-uw / 2 + uw * fx) * Math.sin(rot) });
+          const s0 = at(0);
+          await carry(stick, s0.x, s0.y, mine);
+          const dur = 300 + text.length * 120;
+          const t0 = performance.now();
+          let done = 0;
+          while (mine()) {
+            const p = Math.min(1, (performance.now() - t0) / dur);
+            if (p > done) {
+              const a = done * uw;
+              const b = p * uw;
+              doodle.save();
+              doodle.translate(cx, cy);
+              doodle.rotate(rot);
+              doodle.drawImage(off, a * dpr, 0, Math.max(1, (b - a) * dpr), off.height, -uw / 2 + a, -uh / 2, Math.max(1 / dpr, b - a), uh);
+              doodle.restore();
+              done = p;
+              const tip = at(p);
+              if (stick) hold(stick, tip.x, tip.y + size * 0.2, -35);
+              if (Math.random() < 0.08) emit(tip.x, tip.y + size * 0.3, 4, 1);
+            }
+            if (p >= 1) break;
+            await new Promise((res) => requestAnimationFrame(res));
+          }
+          if (mine()) ghostMarks.push({ x: spot.x + 6, y: spot.y + 4, w: w + 16, h: h + 10 });
+          return;
+        }
+        // ∞・魔法陣を、線で描く
+        const def = notes.marks[pick - notes.phrases.length];
+        const w = Math.min(W - 24, 56 + r() * 30);
+        const h = w / (def.aspect || 1);
+        const found = freeSpot(w + 20, h + 20, r());
+        if (!found) return;
+        const spot = { x: found.x + 10, y: found.y + 10 };
+        await carry(stick, spot.x + def.strokes[0][0] * w, spot.y + def.strokes[0][1] * h, mine);
         for (const st of def.strokes) {
           for (let i = 2; i < st.length; i += 2) {
             if (!mine()) return;
@@ -1829,10 +2297,10 @@ export default function BoardFx() {
             const y1 = spot.y + st[i + 1] * h;
             chalkLine(x0, y0, x1, y1, color);
             if (stick) hold(stick, x1, y1, -35);
-            if (Math.random() < 0.2) emit(x1, y1, 4, 1);
-            await wait(18 + Math.hypot(x1 - x0, y1 - y0) * 6);
+            if (Math.random() < 0.1) emit(x1, y1, 4, 1);
+            await wait(14 + Math.hypot(x1 - x0, y1 - y0) * 5);
           }
-          await wait(180);
+          await wait(160);
         }
         ghostMarks.push({ x: spot.x, y: spot.y, w, h });
       } finally {
@@ -1875,7 +2343,7 @@ export default function BoardFx() {
                 if (k % 3 === 0 && d > 0.5) smudgeAt(doodleC, doodle, dpr, sx, sy, ((x - px) / d) * 8, ((y - py) / d) * 8, SMUDGE);
                 stampAt(doodle, sx, sy, 1, ghostRub);
                 hazeAt(sx, sy, 0.012);
-                if (k % 4 === 0) emitRub(sx, sy, d > 0.5 ? (x - px) / d : 0, d > 0.5 ? (y - py) / d : 0);
+                if (k % 10 === 0) emitRub(sx, sy, d > 0.5 ? (x - px) / d : 0, d > 0.5 ? (y - py) / d : 0);
               }
             }
             px = x;
@@ -1963,49 +2431,84 @@ export default function BoardFx() {
     /** 検分用：こすった回数・汚れ・書きなおす・クリーナー（Preview と手元だけ） */
     const kbWin = window as unknown as { __kbBoard?: unknown };
     if (debugAllowed()) {
-      /** chalk の canvas の、その範囲（黒板の座標・px）のアルファの合計 */
-      const alphaSum = (x = 0, y = 0, w = W, h = H) => {
-        const sx = Math.max(0, Math.round(x * dpr));
-        const sy = Math.max(0, Math.round(y * dpr));
-        const sw = Math.min(chalkC.width - sx, Math.round(w * dpr));
-        const sh = Math.min(chalkC.height - sy, Math.round(h * dpr));
+      /** canvas の、その範囲（黒板の座標・px）のアルファの合計（既定は字の canvas。k＝その canvas の倍率） */
+      const sumOf = (ctx: CanvasRenderingContext2D, k: number, x: number, y: number, w: number, h: number) => {
+        const cv = ctx.canvas;
+        const sx = Math.max(0, Math.round(x * k));
+        const sy = Math.max(0, Math.round(y * k));
+        const sw = Math.min(cv.width - sx, Math.round(w * k));
+        const sh = Math.min(cv.height - sy, Math.round(h * k));
         if (sw <= 0 || sh <= 0) return 0;
-        const data = chalk.getImageData(sx, sy, sw, sh).data;
+        const data = ctx.getImageData(sx, sy, sw, sh).data;
         let sum = 0;
         for (let i = 3; i < data.length; i += 4) sum += data[i];
         return sum;
       };
+      const alphaSum = (x = 0, y = 0, w = W, h = H) => sumOf(chalk, dpr, x, y, w, h);
       kbWin.__kbBoard = {
         /** いちばんこすられた場所の往復の回数 */
         get wear() {
           return Math.round(wearMax * 100) / 100;
         },
+        /** 黒板消しの汚れ（0〜1）。代入すると、その汚れにする（見た目も変わる） */
         get load() {
           return Math.round(load * 1000) / 1000;
+        },
+        set load(v: number) {
+          load = clamp01(Number(v) || 0);
+          showLoad(true);
+          saveLoad();
+        },
+        /** 粉受けの溝に溜まった粉（0〜1）。代入すると、その量にする */
+        get trayDust() {
+          return Math.round(trayDust * 1000) / 1000;
+        },
+        set trayDust(v: number) {
+          trayDust = clamp01(Number(v) || 0);
+          drawTray(true);
         },
         get dust() {
           return parts.length;
         },
-        /** 粉の様子：数・粉受けに溜まっている数・光る粒の数・落ちている粒（粉受けより上で生まれたもの）の下の端の最大・粉受けの上面 */
+        /**
+         * 粉の様子：n＝粒の数／falling＝落ちている途中の粒／landed＝粉受けに乗った粒／still＝動きを減らす設定の粒／
+         * clouds＝舞っている雲の数／trayDust＝溝の粉／maxY＝落ちている途中の粒（粉受けより上で生まれたもの）の下の端の最大／floor＝粉受けの上面
+         */
         dustInfo: () => {
           const fall = parts.filter((p) => p.kind === "fall" && !p.under);
           return {
             n: parts.length,
+            falling: parts.filter((p) => p.kind === "fall" && !p.landed).length,
             landed: parts.filter((p) => p.landed > 0).length,
-            glint: parts.filter((p) => p.glint).length,
-            maxY: fall.length ? Math.round(Math.max(...fall.map((p) => p.y)) * 10) / 10 : null,
+            still: parts.filter((p) => p.kind === "still").length,
+            clouds: clouds.length,
+            trayDust: Math.round(trayDust * 1000) / 1000,
+            maxY: fall.some((p) => !p.landed) ? Math.round(Math.max(...fall.filter((p) => !p.landed).map((p) => p.y)) * 10) / 10 : null,
             floor: Math.round(floorNow(true) * 10) / 10,
           };
         },
-        /** 粉受けの黒板消しを押したときと同じ（粉がぱふっと出る） */
+        /** 雲の位置と大きさ（黒板の座標） */
+        clouds: () => clouds.map((c) => ({ x: Math.round(c.x), y: Math.round(c.y), age: Math.round(performance.now() - c.born), life: Math.round(c.life) })),
+        /** 粉受けの黒板消しを押したときと同じ（溝の粉がぱふっと舞う） */
         tap: () => tapEraser(),
         get cleaning() {
           return cleaning;
         },
+        /** クリーナーの様子：手でこすっている最中か・震えているか・黒板消しとクリーナーの重なりの順・口の位置 */
+        cleanerInfo: () => ({
+          scrubbing: !!scrub,
+          cleaning,
+          buzzing: !!cleaner?.classList.contains("is-scrubbing"),
+          blinking: !!cleaner?.classList.contains("is-blinking"),
+          eraserZ: getComputedStyle(eraser).zIndex,
+          cleanerZ: cleaner ? getComputedStyle(cleaner).zIndex : null,
+          slot: cleaner ? slotOf(cleaner.getBoundingClientRect()) : null,
+        }),
         alpha: alphaSum,
+        /** 拭き跡のもや（smear の canvas）の、その範囲のアルファの合計 */
+        haze: (x = 0, y = 0, w = W, h = H) => sumOf(smear, 1, x, y, w, h),
         /** その行を横に times 往復こする（x0〜x1・高さ y）。こすったあとのアルファの合計を返す */
         rub: (x0: number, x1: number, y: number, times = 1) => {
-          rubLoad = load;
           for (let t = 0; t < times; t++)
             for (const [a, b] of [
               [x0, x1],
@@ -2022,13 +2525,14 @@ export default function BoardFx() {
         items: () => items.map((it) => ({ kind: it.kind, text: it.text, x: Math.round(it.x), y: Math.round(it.y), w: Math.round(it.w), h: Math.round(it.h) })),
         marks: () => marks.map((m) => ({ owner: m.owner, x: m.x, y: m.y, w: m.w, h: m.h, on: m.on })),
         reset: () => resetBoard(),
-        clean: () => toCleaner(null),
+        clean: () => toCleaner(),
       };
     }
 
     /* ---------------- 組み立て ---------------- */
     const layout = () => {
       sizeCanvases();
+      drawTray(true);
       motesC.width = Math.round(W);
       motesC.height = Math.round(H);
       motesC.style.width = `${W}px`;
@@ -2195,7 +2699,10 @@ export default function BoardFx() {
       board.removeEventListener("pointercancel", endTouch);
       plate?.removeEventListener("click", onReset);
       plate?.removeAttribute("aria-busy");
-      cleaner?.classList.remove("is-running");
+      window.clearTimeout(buzzTimer);
+      cleaner?.classList.remove("is-scrubbing");
+      eraser.classList.remove("is-on-cleaner", "is-docking", "is-pafu");
+      trayC.remove();
       delete kbWin.__kbBoard;
       [dustC, doodleC, chalkC, smearC, ghostC, motesC, nowMark].forEach((el) => el.remove());
       board.classList.remove("is-canvas", "is-drawing");

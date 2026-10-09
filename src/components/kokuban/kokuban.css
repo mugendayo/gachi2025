@@ -501,15 +501,18 @@
   box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   transform-origin: 50% 50%;
+  -webkit-tap-highlight-color: transparent;
 }
 .kb-eraser::after {
   content: "";
   position: absolute;
   inset: -12px -6px -10px;
 }
-/* 黒板消しの汚れ：こするほど粉で白くなる（--load＝0〜1 を JS が書く。クリーナーに入れると落ちる） */
+/* 黒板消しの汚れ：こするほど粉で白くなる（--load＝0〜1・--wash＝フェルトが白く覆われる濃さ 0〜1 を JS が書く。
+   クリーナーでこすると落ちる）。粉の点々は全体に、白い覆いは下のフェルト（絵の下 30%）に。0.7 を超えるとフェルトは一目で白い */
 .kb-eraser {
   --load: 0;
+  --wash: 0;
 }
 .kb-eraser::before {
   content: "";
@@ -518,9 +521,45 @@
   border-radius: inherit;
   pointer-events: none;
   background:
-    radial-gradient(circle at 20% 30%, rgba(240, 238, 230, 0.9) 0 1.5px, transparent 2px) 0 0 / 7px 6px,
-    radial-gradient(circle at 60% 70%, rgba(240, 238, 230, 0.8) 0 1px, transparent 1.5px) 0 0 / 5px 5px;
-  opacity: calc(var(--load) * 0.85);
+    /* 細かな粉の点（不規則な粒） */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .94 0 0 0 0 .91 0 0 0 2.4 -1.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 64px 32px,
+    /* 下のフェルトの白い覆い */
+    linear-gradient(
+      to bottom,
+      transparent 60%,
+      rgb(240 238 230 / calc(var(--wash) * 0.7)) 69%,
+      rgb(245 243 236 / calc(var(--wash) * 0.88)) 80%,
+      rgb(236 234 226 / calc(var(--wash) * 0.8)) 100%
+    ),
+    /* 全体にかかる薄い粉のくもり（下ほど濃い） */
+    linear-gradient(to bottom, rgb(236 234 226 / 0.18), rgb(236 234 226 / 0.42));
+  opacity: min(1, calc(var(--load) * 1.6));
+}
+/* 押した黒板消しが溝に少し沈む（transform は持つ・運ぶ動きが使うので、translate で動かす） */
+.kb-eraser.is-pafu {
+  animation: kb-pafu 0.3s ease-out;
+}
+@keyframes kb-pafu {
+  35% {
+    translate: 0 2px;
+  }
+}
+/* クリーナーの口に乗せた黒板消し：クリーナーより手前に。縦向きから横向きへ吸い付く間だけ、短く動かす */
+.kb-eraser.is-held.is-on-cleaner {
+  z-index: 9;
+}
+.kb-eraser.is-held.is-docking {
+  transition: transform 0.14s ease-out;
+}
+/* 粉受けの溝に溜まった粉（BoardFx が描く。チョーク・黒板消しより奥）。
+   溝の奥の縁に盛り上がった粉が黒板の前に少し見えるよう、上へ 6px はみ出す */
+.kb-tray-dust {
+  position: absolute;
+  left: 0;
+  top: -6px;
+  width: 100%;
+  height: calc(100% + 6px);
+  pointer-events: none;
 }
 /* 絵の黒板消しは、絵の形の中だけ白くする（透明な余白に粉が浮かないように） */
 .kb-eraser.has-art::before {
@@ -1305,7 +1344,7 @@
   .kb-world:not([data-motion-forced]) :is(.kb-hand-s, .kb-art-s, .kb-art-hand-s) {
     display: none;
   }
-  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-moonlight, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
+  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-moonlight, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-eraser.is-docking, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
   .kb-world:not([data-motion-forced]) .kb-room::after {
     transition: none;
   }

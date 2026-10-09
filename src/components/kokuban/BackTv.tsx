@@ -1,5 +1,6 @@
 "use client";
 // 教室の後ろのブラウン管。右の操作パネルのボタン（1・2・3）でチャンネル（site.tv）を変え、つまみで音量を変え、丸いボタンで電源を入れ切りする。
+// テレビの見た目の追加・上書きは tv2.css（つまみの触れる範囲・目盛りの点）。
 // 帯ごとの既定の見た目：点いている（選ばれたチャンネルの静止画）＝昼・文化祭準備・消灯／電源オフ＝朝・超新星祭・夕方／砂嵐＝深夜・明け方。
 // ボタンを押したら帯に関係なく、押した人の操作のとおりに映す（電源も帯の既定より優先。保存しないので読み込み直すと既定に戻る）。
 // チャンネルのボタン＝点けて再生。電源ボタン＝切る（止めて外し、画面が横一本の光に縮んで消える）／点ける（静止画。勝手に再生しない）。
@@ -10,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { site } from "@/data/site";
 import { debugAllowed } from "@/lib/worldClock";
 import type { TvPhase, TvPlayer, TvProbe, TvSource } from "./tvPlayer";
+import "./tv2.css";
 
 /**
  * idle＝帯の既定のまま／on＝電源を入れた（静止画）／off＝電源を切った／
@@ -24,6 +26,24 @@ const TV_ART: string = site.assets.tv;
 
 const thumbOf = (id: string) => (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "");
 const clampVol = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
+/** つまみを押すだけ（動かさずに離す）のときの段階：今より一つ上へ、いちばん上の次は 0 */
+const VOL_STEPS = [0, 30, 60, 100];
+const nextStep = (v: number) => VOL_STEPS.find((s) => s > v) ?? 0;
+/** つまみを押したまま動かした距離で音量を変える（120px で 0→100） */
+const VOL_PER_PX = 100 / 120;
+/** これより動いたら「回した」、動かずに離したら「押した」（指は少しぶれるので広め） */
+const MOVE_TOUCH = 6;
+const MOVE_MOUSE = 3;
+/** 長く押したまま動かさずに離したときは、段階を変えない（迷って離しただけ） */
+const TAP_MAX_MS = 700;
+/** 目盛りの点：つまみの周りに、印の動く範囲（-135°〜135°）に合わせて並べる */
+const DOTS = 5;
+const DOT_POS = Array.from({ length: DOTS }, (_, i) => {
+  const a = ((-135 + (270 / (DOTS - 1)) * i) * Math.PI) / 180;
+  return { sx: Math.sin(a).toFixed(4), sy: (-Math.cos(a)).toFixed(4) };
+});
+/** 点る数：0 なら全部消える。少しでも鳴っていれば一つは点る */
+const litOf = (v: number) => Math.ceil((v / 100) * DOTS);
 
 let modPromise: Promise<typeof import("./tvPlayer")> | null = null;
 const loadMod = () => (modPromise ??= import(/* webpackChunkName: "tvPlayer" */ "./tvPlayer"));
@@ -164,46 +184,84 @@ export default function BackTv() {
     stateRef.current = { ...s, mode: next };
   }, [chOf]);
 
-  const changeVolume = useCallback((v: number) => {
-    const nv = clampVol(v);
-    volRef.current = nv;
-    setVolumeState(nv);
-    ctrlRef.current?.setVolume(nv);
+  const saveVolume = useCallback(() => {
     try {
-      localStorage.setItem(VOL_KEY, String(nv));
+      localStorage.setItem(VOL_KEY, String(volRef.current));
     } catch {}
   }, []);
+  /** 音量を変える。回している途中は覚えず（save=false）、離したときにまとめて覚える */
+  const changeVolume = useCallback(
+    (v: number, save = true) => {
+      const nv = clampVol(v);
+      volRef.current = nv;
+      setVolumeState(nv);
+      ctrlRef.current?.setVolume(nv);
+      if (save) saveVolume();
+    },
+    [saveVolume],
+  );
 
-  // 音量つまみ：マウスは押したまま動かす（右・上で大きく）。指は横に動かし始めたときだけ拾い、縦はページのスクロールに任せる
-  const drag = useRef<{ id: number; x: number; y: number; v: number; mouse: boolean; on: boolean } | null>(null);
+  // 音量つまみ（指もマウスも同じ）：押したまま上か右へ動かすと大きく、下か左へ動かすと小さく。
+  // 動かさずに離すと一段ずつ（0→30→60→100→0）。つまみの上ではページを縦にスクロールしない（tv2.css の touch-action）。
+  // 動いた分は縦か横の一方だけを数える（斜めに動かしても倍にならず、向きが変わっても跳ばない）。
+  // どちらで数えるかは、ここ数歩の動きの向き（ex・ey）で決める。指で真上に動かしても一歩ごとの横ぶれは小さく出るので、
+  // 一歩だけで決めると横ぶれを拾って逆に回ることがある
+  const drag = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    lx: number;
+    ly: number;
+    ex: number;
+    ey: number;
+    v: number;
+    t: number;
+    moved: boolean;
+  } | null>(null);
+  const [turning, setTurning] = useState(false);
   const onKnobDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const mouse = e.pointerType === "mouse";
-    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, v: volRef.current, mouse, on: mouse };
-    if (mouse) e.currentTarget.setPointerCapture(e.pointerId);
+    if (drag.current || (e.pointerType === "mouse" && e.button !== 0)) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const { clientX: x, clientY: y } = e;
+    drag.current = { id: e.pointerId, x, y, lx: x, ly: y, ex: 0, ey: 0, v: volRef.current, t: e.timeStamp, moved: false };
   };
   const onKnobMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
-    const dx = e.clientX - d.x;
-    const dy = e.clientY - d.y;
-    if (!d.on) {
-      if (Math.hypot(dx, dy) < 6) return;
-      if (Math.abs(dx) <= Math.abs(dy)) {
-        drag.current = null;
-        return;
-      }
-      d.on = true;
-      e.currentTarget.setPointerCapture(e.pointerId);
+    if (!d.moved) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < (e.pointerType === "mouse" ? MOVE_MOUSE : MOVE_TOUCH)) return;
+      d.moved = true;
+      setTurning(true);
     }
-    changeVolume(d.v + (d.mouse ? dx - dy : dx) * 0.6);
+    const mx = e.clientX - d.lx;
+    const my = e.clientY - d.ly;
+    d.lx = e.clientX;
+    d.ly = e.clientY;
+    // ここ数歩の向き（古い歩ほど薄く数える）。横が勝てば右＝大きく、縦が勝てば上＝大きく
+    d.ex = d.ex * 0.6 + mx;
+    d.ey = d.ey * 0.6 + my;
+    const step = Math.abs(d.ex) >= Math.abs(d.ey) ? mx : -my;
+    // 端で止めておく（行き過ぎた分を貯めないので、戻せばすぐ効く）
+    d.v = Math.max(0, Math.min(100, d.v + step * VOL_PER_PX));
+    changeVolume(d.v, false);
   };
-  const onKnobUp = () => {
+  /** 離した（pointerup）・取り上げられた（pointercancel・lostpointercapture）。動かさずに離したときだけ一段変える。
+   *  lostpointercapture も聞くのは、離した知らせが来ないまま掴みっぱなし（次から押しても効かない）にならないため */
+  const onKnobUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
     drag.current = null;
+    setTurning(false);
+    if (d.moved) saveVolume();
+    else if (e.type === "pointerup" && e.timeStamp - d.t < TAP_MAX_MS) changeVolume(nextStep(volRef.current));
   };
   const onKnobKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const step = { ArrowUp: 5, ArrowRight: 5, ArrowDown: -5, ArrowLeft: -5, PageUp: 20, PageDown: -20 }[e.key];
     if (step !== undefined) changeVolume(volRef.current + step);
-    else if (e.key === "Home") changeVolume(0);
+    else if (e.key === "Enter" || e.key === " ") {
+      // 押しっぱなしの繰り返しでは回さない（一度押すと一段）
+      if (!e.repeat) changeVolume(nextStep(volRef.current));
+    } else if (e.key === "Home") changeVolume(0);
     else if (e.key === "End") changeVolume(100);
     else return;
     e.preventDefault();
@@ -228,6 +286,12 @@ export default function BackTv() {
           mode: s.mode,
           near: s.near,
           knob: volRef.current,
+          // つまみの周りの点がいくつ点っているか・触れる範囲の大きさ（px）
+          knobDots: rootRef.current?.querySelectorAll(".kb-tv-dots .is-on").length ?? 0,
+          knobHit: (() => {
+            const r = rootRef.current?.querySelector(".kb-tv-vol-hit")?.getBoundingClientRect();
+            return r ? { w: Math.round(r.width), h: Math.round(r.height) } : null;
+          })(),
           apiLoaded: !!document.querySelector('script[src="https://www.youtube.com/iframe_api"]'),
           glassShown: (() => {
             const g = rootRef.current?.querySelector<HTMLElement>(".kb-tv-glass");
@@ -266,6 +330,7 @@ export default function BackTv() {
   const id = cur?.youtubeId ?? "";
   const src = srcOver[channel] ?? cur?.src ?? "";
   const thumb = near && !src ? thumbOf(id) : "";
+  const lit = litOf(volume);
 
   return (
     <div ref={rootRef} className="kb-tv" data-tv={mode} data-tv-kind={src ? "video" : "yt"}>
@@ -293,22 +358,38 @@ export default function BackTv() {
           <i className="kb-tv-glass" />
         </div>
         <div className="kb-tv-panel">
+          {/* 音量：回る絵のつまみと、その周りの目盛りの点。触れる範囲は見えない四角（.kb-tv-vol-hit）で見た目より広い */}
           <div
-            className="kb-tv-knob"
+            className="kb-tv-vol"
             role="slider"
             tabIndex={0}
             aria-label="音量"
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={volume}
+            data-turning={turning ? "" : undefined}
             style={{ "--vol": volume } as React.CSSProperties}
             onPointerDown={onKnobDown}
             onPointerMove={onKnobMove}
             onPointerUp={onKnobUp}
             onPointerCancel={onKnobUp}
+            onLostPointerCapture={onKnobUp}
+            onContextMenu={(e) => e.preventDefault()}
             onKeyDown={onKnobKey}
           >
-            <i />
+            <b className="kb-tv-vol-hit" aria-hidden />
+            <span className="kb-tv-dots" aria-hidden>
+              {DOT_POS.map((p, i) => (
+                <i
+                  key={i}
+                  className={i < lit ? "is-on" : undefined}
+                  style={{ "--sx": p.sx, "--sy": p.sy } as React.CSSProperties}
+                />
+              ))}
+            </span>
+            <span className="kb-tv-knob" aria-hidden>
+              <i />
+            </span>
           </div>
           <div className="kb-tv-ch">
             {site.tv.map((c, i) => (

@@ -119,7 +119,7 @@
   inset: -10px -6px -8px;
 }
 /* 電源ランプ：絵の赤いランプの上に重ねる（絵の中のランプの位置＝左から 81%・上から 61%）。
-   ふだんは消えていて絵のランプが見える。黒板消しが汚れているあいだ（.is-blinking）ゆっくり点滅し、動いている間は点きっぱなし */
+   ふだんは消えていて絵のランプが見える。黒板消しが汚れているあいだ（.is-blinking）ゆっくり点滅し、こすっている間（.is-scrubbing）は点きっぱなし */
 .kb-cleaner-lamp {
   position: absolute;
   left: 81.2%;
@@ -141,7 +141,7 @@
 .kb-cleaner.is-blinking .kb-cleaner-lamp {
   animation: kb-cleaner-lamp 1.8s ease-in-out infinite;
 }
-.kb-cleaner.is-running .kb-cleaner-lamp {
+.kb-cleaner.is-scrubbing .kb-cleaner-lamp {
   animation: none;
   opacity: 1;
 }
@@ -155,8 +155,9 @@
     opacity: 1;
   }
 }
-.kb-cleaner.is-running {
-  animation: kb-cleaner-buzz 0.8s linear;
+/* 黒板消しを口の上でこすっている間、機械が小刻みに震える（止めると止まる） */
+.kb-cleaner.is-scrubbing {
+  animation: kb-cleaner-buzz 0.4s linear infinite;
 }
 @keyframes kb-cleaner-buzz {
   0%,
@@ -335,7 +336,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kb-world:not([data-motion-forced]) .kb-cleaner.is-running {
+  .kb-world:not([data-motion-forced]) .kb-cleaner.is-scrubbing {
     animation: none;
   }
   /* 動きを減らす設定：汚れているあいだのランプは点滅させず、点けたまま */
