@@ -1,0 +1,26 @@
+/* 窓際の机：木の天板の上に3つの物を横に並べる（スマホは縦に積まず、少しずつ重なってよい） */
+.pg-desk {
+  position: relative;
+  width: min(92vw, 640px);
+  margin: clamp(18px, 4vw, 32px) auto 0;
+}
+.pg-top {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 1.2fr;
+  align-items: end;
+  gap: clamp(8px, 3vw, 24px);
+  padding: 0 clamp(8px, 3vw, 20px) clamp(10px, 2vw, 16px);
+  min-height: clamp(150px, 34vw, 230px);
+  /* 天板：古い学校の机の木目（絵が入るまでの仮） */
+  background:
+    linear-gradient(to bottom, transparent calc(100% - clamp(14px, 3vw, 20px)), #6d4a2c calc(100% - clamp(14px, 3vw, 20px)), #4f3420 100%);
+  filter: brightness(calc(0.5 + 0.5 * var(--amb, 1)));
+}
+.pg-slot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+}

@@ -1,0 +1,771 @@
+/* 銀のアタッシュケース（SilverCase.tsx）。寸法は cqw＝ケースの幅に対する割合（大きさが変わっても形と触れる所の位置は同じ） */
+.sc {
+  --pg-pad: clamp(8px, 3vw, 20px);
+  /* スマホでは枠より右の余白の分だけ大きくし（指で回す3桁の幅を取る）、左の端を枠の左に揃える＝隣の枠の側へははみ出さない */
+  --sc-w: min(190px, calc(100% + var(--pg-pad) - 2px));
+  position: relative;
+  /* 机の上に転がり出た物（canvas）と、その触れる丸を、ガチャガチャ（.gc の z-index 2）より手前にする。
+     転がる物はケースの置かれた線より手前を通るので、ガチャの機械の前に描く（後ろに隠れて押せなくならないように） */
+  z-index: 3;
+  flex: 0 0 auto;
+  width: var(--sc-w);
+  left: max(0px, (var(--sc-w) - 100%) / 2);
+  aspect-ratio: 1 / 1.08;
+  container-type: inline-size;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* 触れる所の位置（ケースの絵に替えたときはここを絵に合わせる） */
+  --sc-oy: 78%;
+  --sc-dx: 43.8%;
+  --sc-dy: 89.7%;
+  --sc-lid-l: 2%;
+  --sc-lid-t: 42%;
+  --sc-lid-w: 95%;
+  --sc-lid-h: 28%;
+  --sc-lid-open-t: 5%;
+  --sc-lid-open-h: 39%;
+  --sc-lid-empty-h: 56%;
+  --sc-coin-l: 2%;
+  --sc-coin-t: 44%;
+  --sc-coin-w: 95%;
+  --sc-coin-h: 25%;
+  --sc-hint-l: 34%;
+  --sc-hint-t: 30%;
+}
+
+/* ---------- 形（CSS の 3D） ---------- */
+.sc-scene {
+  position: absolute;
+  inset: 0;
+  perspective: 330cqw;
+  perspective-origin: 50% 10%;
+  pointer-events: none;
+}
+.sc-shadow {
+  position: absolute;
+  left: 4%;
+  right: 6%;
+  bottom: -2cqw;
+  height: 14cqw;
+  background: radial-gradient(ellipse 50% 50% at 50% 55%, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.18) 60%, transparent 75%);
+}
+.sc-obj {
+  position: absolute;
+  left: 50%;
+  top: var(--sc-oy);
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(-26deg) rotateY(-12deg);
+}
+.sc-f {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.sc-alu {
+  background-color: #c4c9ce;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 0.3cqw, rgba(0, 0, 0, 0.03) 0.3cqw 0.7cqw),
+    linear-gradient(180deg, #eef0f2, #c9ced3 45%, #a9b0b6);
+  border: 0.45cqw solid #8b9299;
+}
+.sc-end {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 0.3cqw, rgba(0, 0, 0, 0.04) 0.3cqw 0.7cqw),
+    linear-gradient(180deg, #c9ced3, #9aa1a8);
+  filter: brightness(0.86);
+}
+.sc-b-back,
+.sc-l-back {
+  filter: brightness(0.8);
+}
+.sc-b-front,
+.sc-l-front {
+  transform-style: preserve-3d;
+}
+.sc-b-front {
+  border-top: 0.9cqw solid #7c838a;
+  border-radius: 0 0 1.2cqw 1.2cqw;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 0.3cqw, rgba(0, 0, 0, 0.03) 0.3cqw 0.7cqw),
+    radial-gradient(ellipse 30% 60% at 72% 70%, rgba(70, 60, 50, 0.16), transparent 70%),
+    linear-gradient(180deg, #e3e6e9, #bcc2c7 50%, #959ca3);
+}
+.sc-l-front {
+  border-bottom: 0.7cqw solid #7c838a;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 0.3cqw, rgba(0, 0, 0, 0.03) 0.3cqw 0.7cqw),
+    linear-gradient(180deg, #f2f4f5, #cfd4d8 60%, #b3b9bf);
+}
+.sc-l-top {
+  border-radius: 1.4cqw;
+  border-width: 0.6cqw;
+  background-image:
+    linear-gradient(118deg, transparent 30%, rgba(255, 255, 255, 0.45) 42%, transparent 55%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 0.25cqw, rgba(0, 0, 0, 0.035) 0.25cqw 0.6cqw),
+    radial-gradient(ellipse 40% 30% at 30% 75%, rgba(60, 55, 50, 0.18), transparent 70%),
+    linear-gradient(180deg, #d3d8dc, #e9ecee 50%, #c2c8cd);
+  overflow: hidden;
+}
+/* 使い古しの擦り傷 */
+.sc-scuff {
+  position: absolute;
+  inset: 12% 8% 18% 46%;
+  background:
+    repeating-linear-gradient(112deg, transparent 0 3.4cqw, rgba(255, 255, 255, 0.55) 3.4cqw 3.6cqw, transparent 3.6cqw 5.2cqw),
+    repeating-linear-gradient(97deg, transparent 0 6cqw, rgba(80, 80, 80, 0.18) 6cqw 6.2cqw);
+  opacity: 0.6;
+  -webkit-mask-image: radial-gradient(ellipse at 40% 50%, #000 30%, transparent 70%);
+  mask-image: radial-gradient(ellipse at 40% 50%, #000 30%, transparent 70%);
+}
+/* 剥がしかけの紙ラベルの跡（文字なし） */
+.sc-label {
+  position: absolute;
+  left: 12%;
+  top: 30%;
+  width: 20cqw;
+  height: 11cqw;
+  background: linear-gradient(170deg, rgba(240, 234, 214, 0.9), rgba(214, 206, 182, 0.85));
+  clip-path: polygon(0 8%, 100% 0, 96% 40%, 100% 62%, 78% 70%, 70% 100%, 30% 92%, 4% 100%);
+  transform: rotate(-7deg);
+  opacity: 0.75;
+}
+/* 手がかりの一言（silverCase.hint があるときだけ）：上に貼ったマスキングテープに書いてある */
+.sc-hint {
+  position: absolute;
+  left: 40%;
+  top: 46%;
+  max-width: 54%;
+  padding: 0.8cqw 2.4cqw;
+  background: rgba(232, 222, 186, 0.94);
+  color: #26282b;
+  font: 600 4.4cqw/1.25 var(--font-print, sans-serif);
+  transform: rotate(3deg);
+  box-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.18);
+}
+.sc-rim {
+  border: 2.2cqw solid #b4bac0;
+  border-radius: 1cqw;
+  box-shadow: inset 0 0 0 0.3cqw rgba(0, 0, 0, 0.25);
+}
+/* 中のスポンジ（灰色の凸凹） */
+.sc-foam {
+  background-color: #5a5e63;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.34) 0 24%, transparent 30%),
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.07) 0 20%, transparent 26%);
+  background-size: 3.6cqw 3.6cqw;
+}
+.sc-in-back,
+.sc-in-side {
+  filter: brightness(0.82);
+}
+.sc-floor {
+  transform-style: preserve-3d;
+}
+.sc-l-in {
+  filter: brightness(1.05);
+  box-shadow: inset 0 0 0 0.8cqw rgba(0, 0, 0, 0.25);
+}
+/* 五円玉を寝かせたくぼみ */
+.sc-pit {
+  position: absolute;
+  left: calc(50% - 31cqw);
+  top: calc(50% - 16cqw);
+  width: 36cqw;
+  height: 17cqw;
+  border-radius: 2.2cqw;
+  background: #3a3d41;
+  box-shadow: inset 0 0.8cqw 1.4cqw rgba(0, 0, 0, 0.6);
+}
+.sc-coin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #22170b 0 20%,
+    #8a6c22 21% 23%,
+    #d9c063 25%,
+    #c8a640 52%,
+    #a8892f 58% 60%,
+    #c3a140 62%,
+    #9c7e2a 90%,
+    #7c611f 92%
+  );
+  box-shadow: 0 0 0 0.2cqw rgba(60, 44, 10, 0.6);
+}
+/* 角の当て金 */
+.sc-corner {
+  position: absolute;
+  bottom: -0.45cqw;
+  width: 6cqw;
+  height: 6cqw;
+  background: radial-gradient(circle at 35% 30%, #fbfcfd, #b7bdc3 45%, #7d848b);
+  box-shadow: 0 0 0 0.25cqw rgba(60, 64, 70, 0.5);
+}
+.sc-cl {
+  left: -0.45cqw;
+  border-radius: 0 0 0 1.6cqw;
+}
+.sc-cr {
+  right: -0.45cqw;
+  border-radius: 0 0 1.6cqw 0;
+}
+.sc-ct {
+  top: -0.45cqw;
+  bottom: auto;
+}
+.sc-ct.sc-cl {
+  border-radius: 1.6cqw 0 0 0;
+}
+.sc-ct.sc-cr {
+  border-radius: 0 1.6cqw 0 0;
+}
+/* 留め金：下の箱の台座と、合わせ目を越えてふたに掛かる板（外れると手前へ跳ね上がる） */
+.sc-latch {
+  position: absolute;
+  top: 0.6cqw;
+  width: 9cqw;
+  height: 7cqw;
+  border-radius: 0.6cqw;
+  background: linear-gradient(180deg, #6e757c, #a3aab1 40%, #5f666d);
+  box-shadow: 0 0.3cqw 0.4cqw rgba(0, 0, 0, 0.35);
+  transform-style: preserve-3d;
+}
+.sc-ll {
+  left: 15%;
+}
+.sc-lr {
+  right: 15%;
+}
+.sc-latch b {
+  position: absolute;
+  left: 0.8cqw;
+  right: 0.8cqw;
+  bottom: 2cqw;
+  height: 10.5cqw;
+  border-radius: 0.8cqw 0.8cqw 0.4cqw 0.4cqw;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 25% 75%, rgba(0, 0, 0, 0.22)),
+    linear-gradient(180deg, #f4f6f7, #b9c0c6 70%, #8c939a);
+  box-shadow: 0 0 0 0.25cqw rgba(70, 76, 82, 0.6);
+  transform-origin: 50% 100%;
+  transform: translateZ(1.6cqw) rotateX(-58deg);
+  transition: transform 0.12s cubic-bezier(0.2, 1.7, 0.4, 1);
+}
+.sc[data-latch] .sc-latch b {
+  transform: translateZ(0.5cqw) rotateX(0deg);
+  transition-duration: 0.18s;
+}
+/* 持ち手（ふたの前の面・寝かせてある） */
+.sc-handle {
+  position: absolute;
+  left: 50%;
+  top: 1.6cqw;
+  width: 28cqw;
+  height: 5.6cqw;
+  margin-left: -14cqw;
+  transform-style: preserve-3d;
+}
+.sc-handle::before,
+.sc-handle::after {
+  content: "";
+  position: absolute;
+  top: 0.6cqw;
+  width: 4.4cqw;
+  height: 4.6cqw;
+  border-radius: 0.6cqw;
+  background: linear-gradient(180deg, #4a4e53, #2a2d31);
+}
+.sc-handle::before {
+  left: 0;
+}
+.sc-handle::after {
+  right: 0;
+}
+.sc-handle b {
+  position: absolute;
+  left: 2cqw;
+  right: 2cqw;
+  top: 0;
+  height: 4.6cqw;
+  border-radius: 2.4cqw;
+  background: linear-gradient(180deg, #55595f, #1f2124 70%);
+  box-shadow: 0 1.4cqw 1.2cqw rgba(0, 0, 0, 0.35);
+  transform: translateZ(3cqw);
+}
+/* ダイヤル錠：3つの数字の輪 */
+.sc-dial {
+  position: absolute;
+  left: 50%;
+  top: 2.6cqw;
+  display: flex;
+  gap: 0.9cqw;
+  padding: 0.9cqw 1.3cqw;
+  border-radius: 1cqw;
+  transform: translateX(-50%) translateZ(0.3cqw);
+  background: linear-gradient(180deg, #3e4247, #26292d);
+  box-shadow:
+    inset 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.6),
+    0 0 0 0.35cqw #9aa1a8;
+}
+.sc-wheel {
+  position: relative;
+  width: 7.4cqw;
+  height: 9cqw;
+  overflow: hidden;
+  border-radius: 0.5cqw;
+  background: linear-gradient(180deg, #5e6368, #d8dcdf 30% 70%, #5e6368);
+}
+/* 指で回している桁 */
+.sc-wheel[data-active] {
+  filter: brightness(1.2);
+  box-shadow: 0 0 0 0.4cqw rgba(255, 255, 255, 0.6);
+}
+.sc-wheel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 32% 68%, rgba(0, 0, 0, 0.55));
+}
+.sc-digits {
+  position: absolute;
+  inset: 0;
+}
+.sc-digits i {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 7.2cqw/1 ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  font-style: normal;
+  color: #17191c;
+}
+/* 鍵が掛かったままふたを押した：ガタつく */
+.sc-obj[data-rattle="a"] .sc-lid {
+  animation: sc-rattle-a 0.32s ease-out;
+}
+.sc-obj[data-rattle="b"] .sc-lid {
+  animation: sc-rattle-b 0.32s ease-out;
+}
+@keyframes sc-rattle-a {
+  0%,
+  100% {
+    transform: translate3d(0, -15cqw, -27cqw) rotateX(0deg);
+  }
+  30% {
+    transform: translate3d(0, -15cqw, -27cqw) rotateX(2.4deg);
+  }
+  60% {
+    transform: translate3d(0, -15cqw, -27cqw) rotateX(0.6deg);
+  }
+}
+@keyframes sc-rattle-b {
+  0%,
+  100% {
+    transform: translate3d(0, -15cqw, -27cqw) rotateX(0deg);
+  }
+  30% {
+    transform: translate3d(0, -15cqw, -27cqw) rotateX(2.4deg);
+  }
+  60% {
+    transform: translate3d(0, -15cqw, -27cqw) rotateX(0.6deg);
+  }
+}
+/* ふた：奥の辺を軸に開く */
+.sc-lid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.5, 0, 0.8, 0.6);
+}
+.sc[data-open] .sc-lid {
+  transition: transform 0.75s cubic-bezier(0.25, 1.2, 0.4, 1);
+}
+
+/* ---------- 絵のとき ---------- */
+/* 位置はすべて絵を採寸した値。閉じた絵 case.webp（800×596）は下の端に幅いっぱい、
+   開いた絵 case-open.webp（619×800）は高さいっぱいで左右の中央に置く（.sc は 幅100cqw×高さ108cqw）。
+   --sc-dx・--sc-dy＝錠の窓の中心（.sc に対する %）／--sc-dw・--sc-dh＝窓の大きさ／--sc-df＝数字の大きさ */
+.sc.has-art {
+  --sc-dx: 49.81%;
+  --sc-dy: 49.45%;
+  --sc-dw: 11.88cqw;
+  --sc-dh: 5.44cqw;
+  --sc-df: 3.9cqw;
+  --sc-hint-l: 30%;
+  --sc-hint-t: 72%;
+}
+.sc.has-art-open[data-open] {
+  --sc-dx: 49.84%;
+  --sc-dy: 90%;
+  --sc-dw: 10.35cqw;
+  --sc-dh: 4.05cqw;
+  --sc-df: 3.3cqw;
+  /* 開いた絵の錠はケースの下の端に近いので、ダイヤルの触れる四角はケースの下の端で止める（机の外へはみ出さない） */
+  --sc-hd-t: min(calc(var(--sc-dy) - max(26px, 12cqw)), calc(100% - max(52px, 24cqw)));
+}
+.sc-artbox {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+.sc-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+}
+.sc-art-closed {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  aspect-ratio: 800 / 596;
+  transform-origin: 50% 100%;
+  transition: opacity 0.18s ease;
+}
+.sc-art-open {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  aspect-ratio: 619 / 800;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.18s ease,
+    visibility 0s linear 0.18s;
+}
+.sc.has-art-open[data-open] .sc-art-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.18s ease;
+}
+.sc.has-art-open[data-open] .sc-art-closed {
+  opacity: 0;
+}
+/* 留め金の板（絵の同じ所を切り抜いた四角）。--x・--y・--w・--h＝閉じた絵の px */
+.sc-alatch {
+  --y: 123.75;
+  --w: 42.5;
+  --h: 93.75;
+  position: absolute;
+  left: calc(var(--x) / 800 * 100%);
+  top: calc(var(--y) / 596 * 100%);
+  width: calc(var(--w) / 800 * 100%);
+  height: calc(var(--h) / 596 * 100%);
+}
+.sc-alatch-l {
+  --x: 132.5;
+}
+.sc-alatch-r {
+  --x: 623.75;
+}
+.sc-alatch::before,
+.sc-alatch b {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--sc-art) no-repeat;
+  background-size: calc(800 / var(--w) * 100%) calc(596 / var(--h) * 100%);
+  background-position: calc(var(--x) / (800 - var(--w)) * 100%) calc(var(--y) / (596 - var(--h)) * 100%);
+}
+/* 板が起きた後に見える台座の陰 */
+.sc-alatch::before {
+  filter: brightness(0.32);
+  opacity: 1;
+  transition: opacity 0.12s ease;
+}
+.sc[data-latch] .sc-alatch::before {
+  opacity: 0;
+  transition-duration: 0.18s;
+}
+/* 外れると下の端を軸に手前へ跳ね上がる */
+.sc-alatch b {
+  transform-origin: 50% 100%;
+  transform: perspective(40cqw) rotateX(-62deg);
+  box-shadow: 0 0.6cqw 0.9cqw rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.12s cubic-bezier(0.2, 1.7, 0.4, 1),
+    box-shadow 0.12s ease;
+}
+.sc[data-latch] .sc-alatch b {
+  transform: perspective(40cqw) rotateX(0deg);
+  box-shadow: none;
+  transition-duration: 0.18s;
+}
+/* 鍵が掛かったままふたを押した：ケースごとガタつく（数字の輪も一緒に） */
+.sc-artbox[data-rattle="a"] {
+  animation: sc-art-rattle-a 0.32s ease-out;
+}
+.sc-artbox[data-rattle="b"] {
+  animation: sc-art-rattle-b 0.32s ease-out;
+}
+@keyframes sc-art-rattle-a {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(-0.6cqw) rotate(-0.5deg);
+  }
+  60% {
+    transform: translateY(0.1cqw) rotate(0.25deg);
+  }
+}
+@keyframes sc-art-rattle-b {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(-0.6cqw) rotate(-0.5deg);
+  }
+  60% {
+    transform: translateY(0.1cqw) rotate(0.25deg);
+  }
+}
+/* 開いた絵のスポンジの四角いくぼみ（開いた絵の px：x 236〜383・y 494〜585） */
+.sc-apit {
+  position: absolute;
+  left: calc(236 / 619 * 100%);
+  top: calc(494 / 800 * 100%);
+  width: calc(147 / 619 * 100%);
+  height: calc(91 / 800 * 100%);
+}
+.sc-acoin {
+  width: 30%;
+  height: auto;
+  aspect-ratio: 1;
+  box-shadow:
+    0 0 0 0.2cqw rgba(60, 44, 10, 0.6),
+    0 0.3cqw 0.5cqw rgba(0, 0, 0, 0.5);
+}
+/* 中身：シュークリームとドーナツ（開いた絵の下の段に、紙ナプキンを敷いてぞんざいに詰めてある）。
+   --x・--y＝中心・--w＝幅（開いた絵の px）・--rot＝傾き・--sy＝縦の縮み（隣に乗り上げて傾いている分。caseSim の描き方と同じ順＝回してから縦に縮める） */
+.sc-sweets {
+  position: absolute;
+  inset: 0;
+}
+.sc-sw {
+  position: absolute;
+  left: calc(var(--x) / 619 * 100%);
+  top: calc(var(--y) / 800 * 100%);
+  width: calc(var(--w) / 619 * 100%);
+  height: auto;
+  transform: translate(-50%, -50%) scaleY(var(--sy, 1)) rotate(var(--rot, 0deg));
+  filter: drop-shadow(0 0.5cqw 0.45cqw rgba(0, 0, 0, 0.5));
+  -webkit-user-drag: none;
+}
+/* 紙ナプキンは下の段の中で切る（端はスポンジの壁に押し込まれている）。下の段＝開いた絵の px：x 34〜585・y 381〜686 */
+.sc-napbox {
+  position: absolute;
+  left: calc(34 / 619 * 100%);
+  top: calc(381 / 800 * 100%);
+  width: calc(551 / 619 * 100%);
+  height: calc(305 / 800 * 100%);
+  overflow: hidden;
+}
+.sc-napkin {
+  left: calc((var(--x) - 34) / 551 * 100%);
+  top: calc((var(--y) - 381) / 305 * 100%);
+  width: calc(var(--w) / 551 * 100%);
+  filter: drop-shadow(0 0.3cqw 0.4cqw rgba(0, 0, 0, 0.35));
+}
+/* シュークリーム：押すと上から押しつぶされ（縦に縮んで横に広がる・下の端はそのまま）、つぶれた絵に替わってぷるんと戻る。
+   新しいものは小さく ぽん と出る。どれもケースの中だけの小さな動きなので、動きを減らす設定でも動かす */
+.sc-puff {
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(0%) scale(1, 1);
+}
+.sc-puff[data-st="squash"] {
+  animation: sc-puff-squash 0.12s cubic-bezier(0.6, 0, 0.9, 0.45) forwards;
+}
+.sc-puff[data-st="squashed"] {
+  animation: sc-puff-splat 0.36s cubic-bezier(0.25, 0.9, 0.35, 1.15);
+}
+.sc-puff[data-pop] {
+  animation: sc-puff-pop 0.32s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes sc-puff-squash {
+  to {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(19%) scale(1.26, 0.62);
+  }
+}
+@keyframes sc-puff-splat {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(9%) scale(1.14, 0.8);
+  }
+  55% {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(-1.5%) scale(0.96, 1.05);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(0%) scale(1, 1);
+  }
+}
+@keyframes sc-puff-pop {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(30%) scale(0.2, 0.2);
+    opacity: 0;
+  }
+  55% {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(-4%) scale(1.08, 0.94);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateY(0%) scale(1, 1);
+  }
+}
+/* 数字の輪：錠の窓（絵の枠の内側）にぴったり重ねる */
+.sc-artbox .sc-dial {
+  top: var(--sc-dy);
+  left: var(--sc-dx);
+  box-sizing: border-box;
+  width: var(--sc-dw);
+  height: var(--sc-dh);
+  gap: 0.35cqw;
+  padding: 0.45cqw 0.55cqw;
+  border-radius: 0.5cqw;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 0.25cqw 0.5cqw rgba(0, 0, 0, 0.6);
+}
+.sc-artbox .sc-wheel {
+  flex: 1 1 0;
+  width: auto;
+  height: 100%;
+  border-radius: 0.35cqw;
+}
+.sc-artbox .sc-wheel[data-active] {
+  box-shadow: 0 0 0 0.3cqw rgba(255, 255, 255, 0.6);
+}
+.sc-artbox .sc-digits i {
+  font-size: var(--sc-df);
+}
+.sc-artbox .sc-hint {
+  left: var(--sc-hint-l);
+  top: var(--sc-hint-t);
+}
+
+/* ---------- 机の上の canvas（転がり出た五円玉・ドーナツ、飛び散ったクリーム） ---------- */
+.sc-coins {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ---------- 触れる所（見えない四角） ---------- */
+.sc-hits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sc-hits > * {
+  position: absolute;
+  pointer-events: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.sc-hits > *:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+.sc-hit-dial {
+  --c: max(44px, 15cqw);
+  width: var(--c);
+  height: max(52px, 24cqw);
+  /* 3桁を並べた幅がケースの幅を越えるとき（スマホ）は、ケースの中に収める */
+  left: calc(clamp(0px, var(--sc-dx) - 1.5 * var(--c), 100% - 3 * var(--c)) + var(--i) * var(--c));
+  top: var(--sc-hd-t, calc(var(--sc-dy) - max(26px, 12cqw)));
+  cursor: ns-resize;
+  touch-action: none;
+}
+.sc-hit-lid {
+  left: var(--sc-lid-l);
+  top: var(--sc-lid-t);
+  width: var(--sc-lid-w);
+  height: var(--sc-lid-h);
+  cursor: pointer;
+}
+.sc[data-open] .sc-hit-lid {
+  top: var(--sc-lid-open-t);
+  height: var(--sc-lid-open-h);
+}
+.sc[data-open][data-empty] .sc-hit-lid {
+  height: var(--sc-lid-empty-h);
+}
+.sc-hit-coins {
+  left: var(--sc-coin-l);
+  top: var(--sc-coin-t);
+  width: var(--sc-coin-w);
+  height: max(44px, var(--sc-coin-h));
+  cursor: pointer;
+}
+/* 絵のとき：ふたは錠の下の面（閉じている）／ふたの内側（開いている）。五円玉はくぼみのまわり */
+.sc.has-art:not([data-open]) .sc-hit-lid {
+  left: 1%;
+  width: 98%;
+  top: calc(var(--sc-dy) + max(26px, 12cqw));
+  bottom: 1%;
+  height: auto;
+}
+.sc.has-art-open[data-open] .sc-hit-lid {
+  left: 8%;
+  width: 84%;
+  top: 1%;
+  height: 37%;
+}
+.sc.has-art-open[data-open][data-empty] .sc-hit-lid {
+  height: calc(var(--sc-hd-t) - 1%);
+}
+/* スマホではダイヤルの四角の上の端と少し重なる（後に置いた五円玉が上＝くぼみの所は五円玉） */
+.sc.has-art-open .sc-hit-coins {
+  left: 10%;
+  width: 80%;
+  top: 38%;
+  height: max(44px, calc(var(--sc-hd-t) - 38%));
+}
+/* 中身（開いている間）：ドーナツとシュークリームの触れる丸。見た目より少し大きく、指でも押しやすい 44px 以上にする。
+   丸どうしが重なった所は、押した点にいちばん近い絵のものになる（SilverCase の pickSweet）。位置は開いた絵の px（1px＝108cqw/800・絵は左右の中央） */
+.sc-hit-sw {
+  --s: max(44px, var(--w) * 108cqw / 800 * 1.2);
+  left: calc(50% + (var(--x) - 309.5) * 108cqw / 800);
+  top: calc(var(--y) * 108cqw / 800);
+  width: var(--s);
+  height: var(--s);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+/* 机の上に出たドーナツの触れる丸（位置と大きさは描くたびに SilverCase の placeDeskHits が書く） */
+.sc-hit-desk {
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: manipulation;
+}

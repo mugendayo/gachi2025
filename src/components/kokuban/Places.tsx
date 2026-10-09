@@ -11,11 +11,6 @@ import Garland from "./Garland";
 export function BackOfRoom() {
   return (
     <section className="kb-place kb-back" aria-label="教室の後ろ">
-      <div className="kb-lockers" aria-hidden>
-        {Array.from({ length: 8 }, (_, i) => (
-          <i key={i} />
-        ))}
-      </div>
       <Garland />
       <BackTv />
       <div className="kb-back-floor">

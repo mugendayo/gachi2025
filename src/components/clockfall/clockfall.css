@@ -1,0 +1,374 @@
+/* もちものが3つ揃ったあと：壁の時計が外れた跡・落ちる時計の重ね canvas・縁の破片・フッターの下の引き出し */
+
+/* 揃った瞬間の揺れ（もちもの欄と重ねの canvas は揺らさない） */
+html.gb-quake body > :not(.gb-inv):not(.cf-overlay) {
+  animation: gb-quake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes gb-quake {
+  10%,
+  90% {
+    transform: translate3d(-2px, 1px, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(4px, -2px, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-7px, 3px, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(7px, -3px, 0);
+  }
+}
+
+/* 壁の時計が外れたあと：絵と針は隠し、釘と、日に焼けていない丸い跡だけ残す */
+#kb-world[data-cf] .kb-clock > * {
+  visibility: hidden;
+}
+#kb-world[data-cf] .kb-clock.has-art {
+  filter: brightness(calc(0.45 + 0.55 * var(--amb, 1)));
+}
+#kb-world[data-cf] .kb-clock::before {
+  content: "";
+  position: absolute;
+  inset: 2%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 4.5%, #8a8a86 0 1.5px, #2b2b2a 2.6px, rgba(0, 0, 0, 0.25) 3.6px, transparent 4.6px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.13) 0 66%, rgba(255, 255, 255, 0.07) 67% 95%, rgba(70, 60, 40, 0.13) 96% 99%, transparent 100%);
+}
+/* 仮の時計（絵が無いとき）の枠と軸も消す */
+#kb-world[data-cf] .kb-clock:not(.has-art) {
+  background: none;
+  box-shadow: none;
+}
+#kb-world[data-cf] .kb-clock:not(.has-art)::after {
+  display: none;
+}
+
+/* 落ちている間だけ、画面に重ねる canvas */
+.cf-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+/* フッターの後ろ（body の最後）に置く入れ物。門の外（学校に入る前）では出さない */
+.cf-root {
+  position: relative;
+}
+body:has(#kb-world[data-gate="closed"]) .cf-root {
+  display: none;
+}
+/* 縁の上に積もった破片とひび（フッターの縁に合わせて置く静止の canvas） */
+.cf-rest {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.cf-rest:not([data-on]) {
+  display: none;
+}
+
+/* ---------- 引き出し ---------- */
+.cf-slot {
+  --cf-in: 58px;
+  --cf-fr: 120px;
+  position: relative;
+  height: calc(var(--cf-in) + var(--cf-fr) + 30px);
+  overflow: hidden;
+  background: #070707;
+}
+/* フッターの影 */
+.cf-slot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 16px;
+  z-index: 1;
+  background: linear-gradient(rgba(0, 0, 0, 0.75), transparent);
+  pointer-events: none;
+}
+.cf-drawer {
+  position: relative;
+  display: block;
+  width: min(600px, calc(100% - 32px));
+  margin: 0 auto;
+  color: #f4ead2;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.cf-slot.is-pop .cf-drawer {
+  animation: cf-pop 0.95s both;
+}
+@keyframes cf-pop {
+  0% {
+    transform: translateY(-101%);
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.4, 1);
+  }
+  42% {
+    transform: translateY(10%);
+    animation-timing-function: ease-in-out;
+  }
+  62% {
+    transform: translateY(-4%);
+    animation-timing-function: ease-in-out;
+  }
+  80% {
+    transform: translateY(1.5%);
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* 中：奥へすぼまる箱の内側に、ThanatosGames の世界の絵 */
+.cf-inside {
+  position: relative;
+  display: block;
+  height: var(--cf-in);
+  margin: 0 3%;
+  background: linear-gradient(180deg, #160e07, #3b2414 70%, #4a2e18);
+  clip-path: polygon(3.5% 0, 96.5% 0, 100% 100%, 0 100%);
+  transition: height 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.cf-inside-art {
+  position: absolute;
+  inset: 6px 6% 0;
+  background: #0d1622 url(/reward/worldmap.webp) center 42% / cover no-repeat;
+  clip-path: polygon(1.5% 0, 98.5% 0, 100% 100%, 0 100%);
+  filter: saturate(1.1) brightness(0.92);
+  transition: filter 0.35s ease;
+}
+.cf-inside-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.25) 45%, transparent 85%);
+}
+.cf-drawer:hover .cf-inside,
+.cf-drawer:focus-visible .cf-inside {
+  height: calc(var(--cf-in) + 22px);
+}
+.cf-drawer:hover .cf-inside-art,
+.cf-drawer:focus-visible .cf-inside-art {
+  filter: saturate(1.25) brightness(1.15);
+}
+.cf-drawer:active .cf-front {
+  transform: translateY(1px);
+}
+
+/* 前板：木の板（site.assets.drawer があればその絵＝下の has-art） */
+.cf-front {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: var(--cf-fr);
+  padding: 10px 14px 9px;
+  border-radius: 0 0 6px 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 28%, rgba(0, 0, 0, 0.28)),
+    repeating-linear-gradient(91deg, transparent 0 7px, rgba(0, 0, 0, 0.08) 8px 9px, transparent 10px 19px),
+    repeating-linear-gradient(89deg, transparent 0 23px, rgba(255, 220, 170, 0.05) 24px 26px, transparent 27px 41px),
+    linear-gradient(90deg, #4f2e15, #77482a 28%, #6a3f1f 58%, #4a2a13);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 170, 0.25),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.35),
+    0 10px 22px rgba(0, 0, 0, 0.55);
+}
+/* 真鍮の札入れ */
+.cf-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  padding: 5px 18px 6px;
+  border: 2px solid #c9a24a;
+  border-radius: 3px;
+  background: #15110c;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 230, 160, 0.25);
+}
+.cf-credit-made {
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: #a9b3c2;
+  text-transform: lowercase;
+  line-height: 1.3;
+}
+.cf-credit-name {
+  font-size: clamp(22px, 4.6vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  background: linear-gradient(180deg, #fff6d6 0%, #f2c75c 45%, #b8862b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
+}
+.cf-credit-url {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #8fa0b5;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+.cf-drawer:hover .cf-credit-url,
+.cf-drawer:focus-visible .cf-credit-url {
+  color: #fff;
+}
+.cf-drawer:focus-visible {
+  outline: none;
+}
+.cf-drawer:focus-visible .cf-label {
+  outline: 2px solid #f2c75c;
+  outline-offset: 3px;
+}
+/* 半月の取っ手 */
+.cf-pull {
+  width: 48px;
+  height: 12px;
+  border-radius: 0 0 24px 24px;
+  background: linear-gradient(180deg, #f0d585, #b48a33 55%, #7a5a1c);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 245, 200, 0.6);
+}
+
+/*
+ * 前板の絵（1400×270）があるとき。
+ * 木の板＝絵を前板いっぱいに。絵の名札入れ（x 580〜822・y 38〜130）と取っ手（x 566〜832・y 155〜219）は、
+ * 同じ絵から切り出して --z 倍（絵の px → 画面の px）で置き直す。元の位置の金具は、同じ高さの木（x 160〜）で覆う。
+ */
+.cf-front.has-art {
+  --z: 0.58;
+  display: block;
+  padding: 0;
+  background: var(--cf-art) center / 100% 100% no-repeat;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55);
+}
+.cf-patch {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 38.571%;
+  width: 22.857%;
+  background: var(--cf-art) 14.815% 0 / 437.5% 100% no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+.cf-hw {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+/* 切り出した金具の縁は、木の上へなじませる */
+.cf-plate,
+.cf-handle {
+  position: relative;
+  display: block;
+  flex: none;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent),
+    linear-gradient(180deg, transparent, #000 4%, #000 92%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent),
+    linear-gradient(180deg, transparent, #000 4%, #000 92%, transparent);
+  mask-composite: intersect;
+}
+.cf-plate {
+  width: calc(242px * var(--z));
+  height: calc(92px * var(--z));
+  background: var(--cf-art) 50.086% 21.348% / 578.512% 293.478% no-repeat;
+}
+.cf-handle {
+  width: calc(266px * var(--z));
+  height: calc(64px * var(--z));
+  background: var(--cf-art) 49.912% 75.243% / 526.316% 421.875% no-repeat;
+}
+/* 名札の紙（x 610〜793・y 53〜111） */
+.cf-paper {
+  position: absolute;
+  left: 12.397%;
+  right: 11.983%;
+  top: 16.304%;
+  bottom: 20.652%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  container-type: inline-size;
+}
+.cf-front.has-art .cf-credit-name {
+  /* 紙の幅の 9 割ほどに収める */
+  font-size: 10.2cqi;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #c99a3c 0%, #8a5f17 52%, #5e3f0c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0.5px 0 rgba(255, 250, 232, 0.75));
+}
+.cf-front.has-art .cf-credit-made,
+.cf-front.has-art .cf-credit-url {
+  flex: none;
+  color: #dcc690;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  line-height: 12px;
+}
+/* 切り出しの縁（木だけの所）に少し重ねて詰める */
+.cf-front.has-art .cf-credit-made {
+  font-size: 10px;
+  margin-bottom: -2px;
+}
+.cf-front.has-art .cf-credit-url {
+  font-size: 10px;
+  margin: -3px 0 -1px;
+}
+.cf-drawer:hover .cf-front.has-art .cf-credit-url,
+.cf-drawer:focus-visible .cf-front.has-art .cf-credit-url {
+  color: #fff;
+}
+.cf-drawer:focus-visible .cf-plate {
+  outline: 2px solid #f2c75c;
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .cf-slot {
+    --cf-in: 50px;
+    --cf-fr: 106px;
+  }
+  .cf-front.has-art {
+    --z: 0.49;
+  }
+  .cf-label {
+    padding: 4px 12px 5px;
+  }
+  .cf-credit-made,
+  .cf-credit-url {
+    font-size: 10px;
+  }
+}

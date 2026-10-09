@@ -147,8 +147,9 @@ function save(s: Saved) {
   } catch {}
 }
 
+/** opt.reduce＝端末の「動きを減らす」設定。輪飾りの揺れ・物理は小さな動きなので、その設定でも止めない（今は使わない） */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: HTMLButtonElement, opt: { reduce: boolean }) {
-  const reduce = opt.reduce;
   const ctx = canvas.getContext("2d");
   if (!ctx) return () => {};
   const world = document.getElementById("kb-world");
@@ -763,8 +764,8 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       const n = grab.node;
       n.px = n.x;
       n.py = n.y;
-      n.x += (grab.tx - n.x) * (reduce ? 1 : FOLLOW);
-      n.y += (grab.ty - n.y) * (reduce ? 1 : FOLLOW);
+      n.x += (grab.tx - n.x) * FOLLOW;
+      n.y += (grab.ty - n.y) * FOLLOW;
     }
     for (let it = 0; it < ITER; it++)
       for (const c of list) {
@@ -841,11 +842,6 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   /** 同期で n 刻み解く（揺れ戻りは見せない） */
   const solve = (list: Chain[], n: number) => {
     for (let i = 0; i < n; i++) step(list);
-  };
-  /** 動きを減らす設定：解いたら勢いを残さない（次の操作まで形だけ変わる） */
-  const settle = (list: Chain[], n: number) => {
-    solve(list, n);
-    freeze(list);
   };
   /** 作り直す前に、古い鎖の節点への掴みを離す。くっつけた・外した直後の「離すまで」の印（done）は節点を持たないので残す
    *  （残さないと、長押しで外して天井ごと作り直したとき、指を離したあとのクリックが下の部品へ届き、指のスクロールも止まらない） */
@@ -1044,9 +1040,9 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   };
   const needFrame = () => {
     if (document.hidden) return false;
-    if (grab?.kind === "tip") return !reduce || scrollSpeed() !== 0;
-    if (grab?.kind === "room" && grab.on) return !reduce;
-    return moving && !reduce;
+    if (grab?.kind === "tip") return true;
+    if (grab?.kind === "room" && grab.on) return true;
+    return moving;
   };
   const frame = (t: number) => {
     rafId = 0;
@@ -1056,24 +1052,20 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       window.scrollBy(0, v);
       aimTip();
     }
-    if (reduce) {
-      if (v) settle(segs, 20);
-    } else {
-      acc += Math.min(64, Math.max(0, t - last));
-      last = t;
-      while (acc >= STEP_MS) {
-        acc -= STEP_MS;
-        const e = step(all());
-        if (!grab || grab.kind === "hold" || grab.kind === "done") {
-          // 長い鎖は振り子の端で一瞬止まって見える。離してから静める時間が過ぎるまでは止めない（傾いたまま固まらないように）
-          const calm = !releasedAt || performance.now() - releasedAt > CALM_AFTER_MS;
-          still = calm && e < STILL_E ? still + 1 : 0;
-          if (still >= STILL_STEPS) {
-            moving = false;
-            releasedAt = 0;
-            freeze(all());
-            break;
-          }
+    acc += Math.min(64, Math.max(0, t - last));
+    last = t;
+    while (acc >= STEP_MS) {
+      acc -= STEP_MS;
+      const e = step(all());
+      if (!grab || grab.kind === "hold" || grab.kind === "done") {
+        // 長い鎖は振り子の端で一瞬止まって見える。離してから静める時間が過ぎるまでは止めない（傾いたまま固まらないように）
+        const calm = !releasedAt || performance.now() - releasedAt > CALM_AFTER_MS;
+        still = calm && e < STILL_E ? still + 1 : 0;
+        if (still >= STILL_STEPS) {
+          moving = false;
+          releasedAt = 0;
+          freeze(all());
+          break;
         }
       }
     }
@@ -1093,14 +1085,13 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
   };
   /** 離したあと・足したあとに揺らす */
   const swing = () => {
-    if (reduce) return;
     releasedAt = performance.now();
     moving = true;
     still = 0;
     kick();
   };
   /* 尾の先の最後の輪：WOB_EVERY ごとに、止まっていて画面に入っていれば WOB_MS だけ小さく揺れる（描き直すだけ。物理は回さない）。
-     rAF はその間だけ。動きを減らす設定では揺れない */
+     rAF はその間だけ */
   let wobRaf = 0;
   let wobFrom = 0;
   const stopWob = () => {
@@ -1122,7 +1113,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     wobRaf = requestAnimationFrame(wobTick);
   };
   const wobble = (force = false) => {
-    if (reduce || wobRaf || rafId || grab || document.hidden) return false;
+    if (wobRaf || rafId || grab || document.hidden) return false;
     const c = tail();
     const tip = tipOf(c);
     if (!tip || tip.pin || !c || c.rings.length < 2) return false;
@@ -1221,10 +1212,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     moving = true;
     still = 0;
     releasedAt = 0;
-    if (reduce) {
-      settle(drapes, 30);
-      drawRoom();
-    } else kick();
+    kick();
   };
   /** 押せる部品（ボタン・つまみ・埋め込みなど）の上では鎖を掴まない */
   const isControl = (t: EventTarget | null) =>
@@ -1297,11 +1285,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     segs.push(hang(x, y, 0, c.first + c.rings.length, []));
     grab = { kind: "done", id, touch };
     setCursor("");
-    if (reduce) {
-      solve([c], 120);
-      freeze([c]);
-      draw();
-    } else swing();
+    swing();
   };
   /** くっついた点を外す：前後の区間を1本につなぎ直し、その先は垂れる */
   const detach = (h: Hook) => {
@@ -1334,11 +1318,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       swing();
       return;
     }
-    if (reduce) {
-      solve(segs, 120);
-      freeze(segs);
-      draw();
-    } else swing();
+    swing();
   };
   /** 指の近くの、くっついた点 */
   const nearHook = (x: number, y: number, lim: number) => {
@@ -1434,10 +1414,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       still = 0;
       releasedAt = 0;
       setCursor("grabbing");
-      if (reduce) {
-        settle(segs, 20);
-        drawPage();
-      } else kick();
+      kick();
       return;
     }
     if (nh.hook) {
@@ -1483,10 +1460,6 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       grab.cy = e.clientY;
       aimTip();
       if (grab?.kind !== "tip") return;
-      if (reduce) {
-        settle(segs, 20);
-        drawPage();
-      }
       kick();
       return;
     }
@@ -1503,10 +1476,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
         else grab = null;
         return;
       }
-      if (reduce) {
-        settle(drapes, 30);
-        drawRoom();
-      } else kick();
+      kick();
     }
   };
   /** 掴んでいたものを離す（離したあとは揺れて止まる） */
@@ -1519,18 +1489,10 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     if (g.kind !== "room") setCursor("");
     return g;
   };
-  /** 離したあと：揺らして止める（動きを減らす設定では静止形へ） */
+  /** 離したあと：揺らして止める */
   const finish = (g: Grab | undefined) => {
     if (!g || g.kind === "hold" || g.kind === "done") return;
     if (g.kind === "room" && !g.on) return;
-    if (reduce) {
-      const list = g.kind === "room" ? drapes : segs;
-      solve(list, 120);
-      freeze(list);
-      moving = false;
-      draw();
-      return;
-    }
     swing();
   };
   /** 尾の先を掴んで離したあと・長押しで外したあとの「クリック」は、下の部品へ渡さない */
@@ -1565,10 +1527,6 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
       grab.cx = t.clientX;
       grab.cy = t.clientY;
       aimTip();
-      if (grab?.kind === "tip" && reduce) {
-        settle(segs, 20);
-        drawPage();
-      }
       kick();
     }
     if (grab && (grab.kind === "tip" || (grab.kind === "done" && grab.touch)) && e.cancelable) e.preventDefault();
@@ -1650,12 +1608,7 @@ export function start(section: HTMLElement, canvas: HTMLCanvasElement, strips: H
     }
     c = tail();
     const tip = tipOf(c);
-    if (reduce) {
-      if (c) {
-        solve([c], 60);
-        freeze([c]);
-      }
-    } else if (tip && !tip.pin) {
+    if (tip && !tip.pin) {
       // 足した先が少し揺れる（指で触る画面では、内側へ向けて小さく＝揺れても端の帯へ出ない）
       if (edgeSafe()) {
         const bd = bounds();

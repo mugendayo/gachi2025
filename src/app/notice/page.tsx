@@ -1,6 +1,7 @@
 // 校内連絡（NOTICE）。Discordの業務連絡と同じ文面。ひろしくんの補足はDiscordのみ。
 import type { Metadata } from "next";
 import { site } from "@/data/site";
+import BackButton from "@/components/BackButton";
 
 const n = site.notice;
 
@@ -12,8 +13,9 @@ export const metadata: Metadata = {
 
 export default function NoticePage() {
   return (
-    <main className="min-h-[70vh] bg-[#eceae4] px-4 py-10 text-[#1b1d21]">
+    <main className="min-h-[70vh] bg-[#eceae4] px-4 pb-10 pt-6 text-[#1b1d21] md:pt-10">
       <article className="mx-auto max-w-[640px] rounded-lg bg-white p-6 shadow-sm md:p-8">
+        <BackButton className="mb-5" />
         <h1 className="text-[20px] font-bold leading-snug md:text-[22px]">
           {n.tags.map((t) => `【${t}】`).join("")}【{n.title}】
         </h1>
@@ -50,6 +52,10 @@ export default function NoticePage() {
 
         <p className="mt-8">以上です。</p>
         <p className="text-[13px] text-[#555]">{n.from}</p>
+
+        <div className="mt-10 border-t border-[#e3e3de] pt-6">
+          <BackButton />
+        </div>
       </article>
     </main>
   );

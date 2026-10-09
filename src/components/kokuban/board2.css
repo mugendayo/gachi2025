@@ -335,16 +335,4 @@
   pointer-events: auto;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kb-world:not([data-motion-forced]) .kb-cleaner.is-scrubbing {
-    animation: none;
-  }
-  /* 動きを減らす設定：汚れているあいだのランプは点滅させず、点けたまま */
-  .kb-world:not([data-motion-forced]) .kb-cleaner.is-blinking .kb-cleaner-lamp {
-    animation: none;
-    opacity: 1;
-  }
-  .kb-world:not([data-motion-forced]) .kb-board .kb-reset {
-    transition: none;
-  }
-}
+/* クリーナー（ゴシゴシ・ランプ）と書きなおす札の動きは小さいので、端末の「動きを減らす」設定でも止めない */

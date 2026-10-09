@@ -144,8 +144,4 @@ html.kb-garland-grabbing * {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kb-world:not([data-motion-forced]) .kb-strips.is-curl::before {
-    animation: none;
-  }
-}
+/* 紙テープの束の動きは小さいので、端末の「動きを減らす」設定でも止めない */

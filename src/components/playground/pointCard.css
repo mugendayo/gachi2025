@@ -1,0 +1,264 @@
+/* 生徒指導ポイントカード：机の上に少し斜めに寝かせた名刺大の白いカード */
+.pc-root {
+  appearance: none;
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 236px;
+  min-width: 88px;
+  margin: 0;
+  padding: 0 0 4%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  perspective: 560px;
+  perspective-origin: 50% -40%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* 机に落ちる影（カードの手前の縁の下） */
+.pc-root::after {
+  content: "";
+  position: absolute;
+  left: 2%;
+  right: 0;
+  bottom: 1px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.34), transparent);
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+.pc-root:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.pc-plane {
+  position: relative;
+  z-index: 1;
+  display: block;
+  transform-style: preserve-3d;
+  transform: rotateX(34deg) rotateZ(-7deg);
+  transform-origin: 50% 100%;
+}
+
+/* 1枚のカード（いまのカード・すぐ下のカード・その下の端） */
+.pc-card {
+  position: relative;
+  display: block;
+  aspect-ratio: var(--pc-ratio, 91 / 55);
+  border-radius: 3px;
+}
+.pc-cur {
+  transform-style: preserve-3d;
+}
+.pc-prev,
+.pc-old {
+  position: absolute;
+  inset: 0;
+}
+.pc-prev {
+  transform: translate3d(4%, 11%, -3px) rotate(5deg);
+}
+.pc-old {
+  transform: translate3d(-3%, 17%, -6px) rotate(-4deg);
+  background: linear-gradient(170deg, #ece7da, #ddd6c4);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+/* 新しいカードが上にぽんと置かれる／埋まったカードが少し下へずれる */
+.pc-cur.is-placed {
+  animation: pc-place 0.42s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+.pc-prev.is-shifted {
+  animation: pc-shift 0.42s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+@keyframes pc-place {
+  0% {
+    transform: translate3d(-2%, -8%, 46px) rotate(-4deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  70% {
+    transform: translate3d(0, 0, -2px) rotate(0.5deg);
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes pc-shift {
+  0%,
+  55% {
+    transform: translate3d(0, 0, -3px);
+  }
+}
+
+/* カードの面：使い古しの白い紙 */
+.pc-face {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  container-type: inline-size;
+  color: #252b33;
+  font-family: var(--font-print, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif);
+  line-height: 1;
+  text-align: left;
+  background:
+    radial-gradient(120% 90% at 85% 110%, rgba(170, 150, 105, 0.22), transparent 55%),
+    radial-gradient(60% 50% at 8% 0%, rgba(160, 145, 110, 0.14), transparent 70%),
+    linear-gradient(172deg, #f6f3ec 0%, #efebe0 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(80, 70, 50, 0.25),
+    0 2px 5px rgba(0, 0, 0, 0.32);
+}
+/* 絵（card.webp）を当てたとき：紙は絵そのもの。影は絵の形に落とす */
+.pc-face.has-art {
+  color: #2a3038;
+  background-color: transparent;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 2.5px rgba(0, 0, 0, 0.32));
+}
+.pc-root.has-art .pc-old {
+  background: none;
+  box-shadow: none;
+  filter: brightness(0.9);
+}
+/* 文字は絵の上の白い帯（校章の丸の右・丸の段の上）に */
+.pc-face.has-art .pc-head {
+  left: 21cqw;
+  top: 3.6cqw;
+}
+.pc-face.has-art .pc-school {
+  font-size: 3.6cqw;
+  margin-bottom: 1.2cqw;
+}
+.pc-face.has-art .pc-name {
+  font-size: 6cqw;
+}
+.pc-face.has-art .pc-line {
+  left: 21cqw;
+  right: 6cqw;
+  top: 15.2cqw;
+  font-size: 3.8cqw;
+}
+/* 角の折れ（右上）と、真ん中の薄い折り目 */
+.pc-face::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7%;
+  height: 11.5%;
+  background: linear-gradient(225deg, rgba(60, 50, 35, 0.35) 0 47%, #e4dece 50%, #d6cfbc 100%);
+  border-bottom-left-radius: 2px;
+  pointer-events: none;
+}
+.pc-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(97deg, transparent 61.5%, rgba(255, 255, 255, 0.28) 62%, rgba(90, 80, 60, 0.06) 62.6%, transparent 64%);
+  pointer-events: none;
+}
+.pc-face.has-art::before,
+.pc-face.has-art::after {
+  content: none;
+}
+
+.pc-head {
+  position: absolute;
+  left: 5%;
+  top: 8%;
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+}
+.pc-emblem {
+  display: block;
+  flex: none;
+  width: 14cqw;
+  height: 14cqw;
+  color: #27313c;
+}
+.pc-title {
+  display: block;
+  white-space: nowrap;
+}
+.pc-school {
+  display: block;
+  font-size: 4.4cqw;
+  letter-spacing: 0.12em;
+  margin-bottom: 1.6cqw;
+}
+.pc-name {
+  display: block;
+  font-size: 7.4cqw;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.pc-line {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 33%;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.8cqw;
+  font-size: 4.2cqw;
+  white-space: nowrap;
+}
+.pc-blank {
+  display: block;
+  height: 1em;
+  border-bottom: 0.35cqw solid rgba(40, 44, 50, 0.7);
+}
+.pc-blank-s {
+  width: 13cqw;
+  margin-right: 3cqw;
+}
+.pc-blank-l {
+  flex: 1;
+}
+.pc-ink {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* 判子（上から見た木の持ち手）と、カードに落ちる影。動いている間だけ見える */
+.pc-hanko,
+.pc-hanko-shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.pc-hanko {
+  background:
+    radial-gradient(circle at 36% 32%, rgba(255, 240, 220, 0.55) 0 9%, transparent 24%),
+    radial-gradient(circle at 50% 50%, #5d4433 0 38%, #3e2c20 40% 62%, #2a1d15 66% 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.pc-hanko-shadow {
+  width: 13%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.55) 0 35%, transparent 70%);
+}

@@ -29,7 +29,7 @@ export default function Footer() {
 
         {/* 公式 */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-4 md:flex-row">
-          <div className="text-xs text-white/60">主催 ThanatosGames　© {site.year} ThanatosGames All Rights Reserved.</div>
+          <div className="text-xs text-white/60">© {site.year} ThanatosGames All Rights Reserved.</div>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href={site.notice.slug} className="underline underline-offset-2 hover:text-white">校内連絡</Link>
             <Link href="/kokoroe" className="underline underline-offset-2 hover:text-white">生徒心得</Link>

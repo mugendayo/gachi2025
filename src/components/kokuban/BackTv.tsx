@@ -165,6 +165,31 @@ export default function BackTv() {
     [chOf, ensureCtrl],
   );
 
+  // ほかの所（窓際の机のガチャガチャの紙など）から「この動画を流して」と頼まれたら、テレビを点けて流し、テレビまでスクロールする。
+  // 押した操作の中で流し始める（端末が「押して流した」と見なし、音ありで流れやすい）。画面に入るまでは今の作りどおり一時停止で待つ
+  useEffect(() => {
+    const onRequest = (e: Event) => {
+      const id = (e as CustomEvent<{ youtubeId?: string }>).detail?.youtubeId;
+      if (!id) return;
+      const seq = ++pressSeq.current;
+      const ch = { key: "request", youtubeId: id, src: "" };
+      setMode("play");
+      stateRef.current = { ...stateRef.current, mode: "play" };
+      if (ctrlRef.current) ctrlRef.current.play(ch);
+      else
+        ensureCtrl()
+          .then((c) => {
+            if (seq === pressSeq.current) c?.play(ch);
+          })
+          .catch(() => {
+            if (seq === pressSeq.current) setMode("snow");
+          });
+      rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    window.addEventListener("kb:tv-request", onRequest);
+    return () => window.removeEventListener("kb:tv-request", onRequest);
+  }, [ensureCtrl]);
+
   /** 電源ボタン：点いていれば切る、切れていれば点ける（静止画まで。再生はチャンネルのボタンで） */
   const power = useCallback(() => {
     const s = stateRef.current;

@@ -1341,10 +1341,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kb-world:not([data-motion-forced]) :is(.kb-hand-s, .kb-art-s, .kb-art-hand-s) {
-    display: none;
-  }
-  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-moonlight, .kb-sunlight, .kb-fluor, .kb-eraser.is-moving, .kb-eraser.is-docking, .kb-clock, .kb-scroll, .kb-chalk.is-moving),
+  /* 部屋の明かりの移り変わりは一段で切り替える（粉受けの黒板消し・チョークの動きは小さいので止めない） */
+  .kb-world:not([data-motion-forced]) :is(.kb-room, .kb-board, .kb-night, .kb-moonlight, .kb-sunlight, .kb-fluor, .kb-clock, .kb-scroll),
   .kb-world:not([data-motion-forced]) .kb-room::after {
     transition: none;
   }
@@ -1638,6 +1636,14 @@
   body.has-inv .kb-ledge {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
+}
+/* 700px 未満はもちもの欄が低い（下から 8px＋高さ 38px）ので、粉受けをそのすぐ上（隙間 6px）に */
+@media (max-width: 699px) {
+  body.has-inv .kb-ledge {
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 899px) {
   .kb-ledge .kb-tray {
     left: 0;
     right: 0;

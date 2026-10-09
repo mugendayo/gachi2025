@@ -5,10 +5,14 @@
 // 窓の絵（site.assets.windowFrame）があるとき：.kb-glass は絵のガラスの範囲（4枚の外接）にぴったり置き、
 // 枠の絵とタブレットはガラスの子として上に重ねる（寄せる＝ガラスの拡大に、枠と窓台のタブレットも一緒についてくる）。
 // 絵が無いときは、今までどおり CSS の枠と窓台。
+// 窓の下（ガラスの外・タブレットと反対の左寄り）には、押すと縦の動画が流れるスマホを立てかける（PhoneMv）。
+// その下は窓際の机（Playground）：ガチャガチャ・生徒指導ポイントカード・銀のアタッシュケース。
 import type { CSSProperties } from "react";
 import { site } from "@/data/site";
 import WindowFx from "./WindowFx";
 import WeatherPad from "./WeatherPad";
+import PhoneMv from "./PhoneMv";
+import Playground from "@/components/playground/Playground";
 import "./window.css";
 
 const HANDS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -48,6 +52,8 @@ export default function WindowSide() {
             <WeatherPad />
           </div>
         </div>
+        <PhoneMv />
+        <Playground />
         <WindowFx />
       </section>
     );
@@ -59,6 +65,8 @@ export default function WindowSide() {
         <i className="kb-wframe" aria-hidden />
       </div>
       <WeatherPad />
+      <PhoneMv />
+      <Playground />
       <WindowFx />
     </section>
   );

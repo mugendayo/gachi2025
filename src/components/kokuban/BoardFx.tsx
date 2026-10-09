@@ -56,8 +56,6 @@ const LIFT = 0.5;
 const CELL = 24;
 const WEAR_SOFT = 3;
 const WEAR_GONE = 10;
-// 動きを減らす設定の粉：その場でふわっと現れて、この時間で消える（動かない）
-const STILL_MS = 400;
 // 黒板消しの汚れ（0〜1）：こするほど粉を含んで白くなる。クリーナーでこすると落ちる（その端末に残す）
 const eraserKey = () => `gbf_${site.year}_eraser_v1`;
 // 溜まり方：LOAD_SPAN の長さ（黒板の幅。広い画面では LOAD_SPAN_MAX まで）を LOAD_PASSES 回こすると真っ白（1）
@@ -73,9 +71,21 @@ const SLOT = { l: 12.58, t: 3.66, w: 71.84, h: 10.3 };
 // 粉受けの溝に溜まった粉（0〜1）：こすった長さで増え、黒板消しを押すと舞って少し減る。最初から少しある
 const TRAY_PASSES = 30;
 const TRAY_START = 0.25;
-// 誰もいない教室（見えない手が落書きしたり消したりする帯）と、触られていない時間
-const QUIET_SCENES = new Set(["akegata", "asa", "yugata", "shinya"]);
+// 見えない手の落書き：どの時間帯でも（会期後だけは出ない）、黒板が見えていて、この時間だれも触っていないと始まる
 const GHOST_IDLE_MS = 12000;
+// 書き方（ちょっとした魔法）：チョークが粉受けから、ぴょんと弧を描いて跳んで来る（ms）
+const GHOST_HOP_MS = 620;
+// 字は1文字ずつ「ぽん」と出る：出た瞬間だけ少し大きく（+GHOST_POP）、GHOST_POP_MS で元の大きさに落ち着く
+const GHOST_POP_MS = 160;
+const GHOST_POP = 0.28;
+// ∞・魔法陣を描く速さ（px/ms）。線の多い形も GHOST_LINE_MAX_MS ほどで描き切るよう、そのときは速める。描き終わりに形全体が一度だけ弾む大きさ・長さ
+const GHOST_LINE_SPEED = 0.34;
+const GHOST_LINE_MAX_MS = 1200;
+const GHOST_BOUNCE = 0.1;
+const GHOST_BOUNCE_MS = 260;
+// 書き終わり：チョークがくるっと一回転して（ms）、ぴょんと粉受けへ帰る（ms）
+const GHOST_SPIN_MS = 380;
+const GHOST_HOME_MS = 560;
 
 /** 同じ種からは同じ乱数（全員が同じ消し跡を見る） */
 function rng(seed: number) {
@@ -106,8 +116,9 @@ export default function BoardFx() {
     const plate = board.querySelector<HTMLButtonElement>(".kb-reset");
 
     const params = new URLSearchParams(location.search);
-    // ?motion=1：動きを減らす設定の端末でも演出を見る（検分用）
-    const reduce = !params.has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // 端末が「動きを減らす」設定のとき止めるのは、大きな動き（蛍光灯のまたたき・秒針）だけ。
+    // 黒板の粉・黒板消し・見えない手などの小さな動きは、その設定でも動かす。?motion=1 で大きな動きも出す（検分用）
+    const reduceBig = !params.has("motion") && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (params.has("motion")) world.dataset.motionForced = "";
     let state: ClockState = clockCore(now(), clockConfig);
     // 戻り方：どの帯でも焼き付き（消したまま）。手を止めると見えない手が書き直す動きは、?return=rewrite（検分用・本番では効かない）のときだけ
@@ -182,14 +193,13 @@ export default function BoardFx() {
       const L = markPath.getTotalLength();
       markPath.style.transition = "none";
       markPath.style.strokeDasharray = `${L}px`;
-      markPath.style.strokeDashoffset = reduce ? "0px" : `${L}px`;
-      if (!reduce)
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            markPath.style.transition = "stroke-dashoffset 1.3s ease 0.3s";
-            markPath.style.strokeDashoffset = "0px";
-          }),
-        );
+      markPath.style.strokeDashoffset = `${L}px`;
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          markPath.style.transition = "stroke-dashoffset 1.3s ease 0.3s";
+          markPath.style.strokeDashoffset = "0px";
+        }),
+      );
     };
 
     const apply = (s: ClockState, prev?: ClockState) => {
@@ -197,7 +207,7 @@ export default function BoardFx() {
         // 蛍光灯：点くときはまたたいてから点き、消灯は一瞬またたいて消える
         world.dataset.switching = "";
         later(() => delete world.dataset.switching, 400);
-        if (!reduce) {
+        if (!reduceBig) {
           world.dataset.flicker = s.lit ? "on" : "off";
           later(() => delete world.dataset.flicker, 900);
         }
@@ -232,7 +242,8 @@ export default function BoardFx() {
       const hr = (j.getUTCHours() % 12) + min / 60;
       world.style.setProperty("--ch", `${hr * 30}deg`);
       world.style.setProperty("--cm", `${min * 6}deg`);
-      if (!reduce) world.style.setProperty("--cs", `${Math.floor(sec) * 6}deg`);
+      // 秒針は小さな動きなので、動きを減らす設定でも動かす（本人 2026-10-09）
+      world.style.setProperty("--cs", `${Math.floor(sec) * 6}deg`);
     };
 
     /** 黒板の日付と見出しを、いまの世界時計に合わせる（インラインスクリプトと同じ。ページ内移動で戻ったときのため） */
@@ -283,7 +294,8 @@ export default function BoardFx() {
       return grain;
     };
     const grainPat = chalk.createPattern(makeGrain(7, 1), "repeat")!;
-    const doodleGrain = doodle.createPattern(makeGrain(13, 0.55), "repeat")!;
+    const doodleGrainImg = makeGrain(13, 0.55);
+    const doodleGrain = doodle.createPattern(doodleGrainImg, "repeat")!;
 
     // 黒板消しの面（縦長のフェルト。行ごとに抜け方が違う＝拭き跡の筋が残る）
     const SW = 26;
@@ -765,25 +777,26 @@ export default function BoardFx() {
       window.clearTimeout(saveTimer);
       saveTimer = window.setTimeout(flushDoodle, 400);
     };
-    const chalkLine = (x0: number, y0: number, x1: number, y1: number, color: string) => {
-      doodle.save();
-      doodle.strokeStyle = color;
-      doodle.lineCap = "round";
-      doodle.lineJoin = "round";
-      doodle.lineWidth = 3.6;
-      doodle.globalAlpha = 0.92;
-      doodle.shadowColor = "rgba(255,255,255,.3)";
-      doodle.shadowBlur = 1.5;
-      doodle.beginPath();
-      doodle.moveTo(x0, y0);
-      doodle.lineTo(x1, y1);
-      doodle.stroke();
-      doodle.restore();
-      doodle.save();
-      doodle.globalCompositeOperation = "destination-out";
-      doodle.fillStyle = doodleGrain;
-      doodle.fillRect(Math.min(x0, x1) - 3, Math.min(y0, y1) - 3, Math.abs(x1 - x0) + 6, Math.abs(y1 - y0) + 6);
-      doodle.restore();
+    /** チョークの線（g＝描く先。既定は落書きの canvas。見えない手は重ね用の層に描いてから確定する） */
+    const chalkLine = (x0: number, y0: number, x1: number, y1: number, color: string, g = doodle, grain: CanvasPattern = doodleGrain) => {
+      g.save();
+      g.strokeStyle = color;
+      g.lineCap = "round";
+      g.lineJoin = "round";
+      g.lineWidth = 3.6;
+      g.globalAlpha = 0.92;
+      g.shadowColor = "rgba(255,255,255,.3)";
+      g.shadowBlur = 1.5;
+      g.beginPath();
+      g.moveTo(x0, y0);
+      g.lineTo(x1, y1);
+      g.stroke();
+      g.restore();
+      g.save();
+      g.globalCompositeOperation = "destination-out";
+      g.fillStyle = grain;
+      g.fillRect(Math.min(x0, x1) - 3, Math.min(y0, y1) - 3, Math.abs(x1 - x0) + 6, Math.abs(y1 - y0) + 6);
+      g.restore();
     };
     const replayDoodle = () => {
       doodle.clearRect(0, 0, W, H);
@@ -807,7 +820,7 @@ export default function BoardFx() {
     /* ---------------- 粉 ---------------- */
     // 粒（P）：fall＝舞った粉（少し舞い上がってから重力で加速して落ち、左右にわずかに揺れる。小さな粒ほどゆっくり）。
     // 粉受けの上面（PC＝黒板の下の縁／スマホ＝画面の下に貼り付いた粉受け。位置は毎コマ測る）に当たると止まり、
-    // しばらく白く溜まってから薄れて消える／still＝動きを減らす設定の粉（動かずに、その場でふわっと現れて STILL_MS で消える）。
+    // しばらく白く溜まってから薄れて消える。
     // 雲（Cloud）：粉受けの粉やクリーナーの口から舞い上がる、ぼやけた白いかたまり。横へ広がりながら少し上がり、ふくらんで薄れて消える。
     // 窓の光の筋（消灯中は懐中電灯の円）の中では少し明るく見える
     type P = {
@@ -818,7 +831,6 @@ export default function BoardFx() {
       vy: number;
       a: number;
       r: number;
-      kind: "fall" | "still";
       born: number;
       /** 揺れの位相 */
       ph: number;
@@ -829,8 +841,10 @@ export default function BoardFx() {
       under: boolean;
       /** 落ちる速さの倍率（1＝ふつう。小さいほど空中にただよってから、ゆっくり落ちる） */
       fl: number;
+      /** 粒の色（"r,g,b"。なければ灰白） */
+      c?: string;
     };
-    type Cloud = { x: number; y: number; vx: number; vy: number; r0: number; r1: number; a: number; born: number; life: number; still: boolean };
+    type Cloud = { x: number; y: number; vx: number; vy: number; r0: number; r1: number; a: number; born: number; life: number };
     const DUST_MAX = 360; // 粒の数の上限（超えたら、溜まっている古い粒から入れ替える）
     const CLOUD_MAX = 72;
     const PILE_MS = 1700; // 粉受けに溜まっている長さ（粒ごとに 0.7〜1.3 倍）
@@ -933,20 +947,13 @@ export default function BoardFx() {
         const age = t - c.born;
         if (age >= c.life) continue;
         const u = age / c.life;
-        let r: number;
-        let a: number;
-        if (c.still) {
-          r = lerp(c.r0, c.r1, 0.6);
-          a = c.a * (age < 120 ? age / 120 : Math.max(0, 1 - (age - 120) / (c.life - 120)));
-        } else {
-          // 広がりながら勢いが落ちる。大きさは初めに急にふくらみ、だんだんゆっくり
-          c.x += c.vx * k;
-          c.y += c.vy * k;
-          c.vx *= Math.pow(0.962, k);
-          c.vy *= Math.pow(0.972, k);
-          r = lerp(c.r0, c.r1, 1 - Math.pow(1 - u, 2.6));
-          a = c.a * (u < 0.08 ? u / 0.08 : Math.pow(1 - (u - 0.08) / 0.92, 1.1));
-        }
+        // 広がりながら勢いが落ちる。大きさは初めに急にふくらみ、だんだんゆっくり
+        c.x += c.vx * k;
+        c.y += c.vy * k;
+        c.vx *= Math.pow(0.962, k);
+        c.vy *= Math.pow(0.972, k);
+        const r = lerp(c.r0, c.r1, 1 - Math.pow(1 - u, 2.6));
+        const a = c.a * (u < 0.08 ? u / 0.08 : Math.pow(1 - (u - 0.08) / 0.92, 1.1));
         clouds[m++] = c;
         // 横に少し長い（横へ広がる粉塵）
         const rx = r * 1.45;
@@ -967,11 +974,7 @@ export default function BoardFx() {
         let a = p.a;
         let w = p.r;
         let h = p.r;
-        if (p.kind === "still") {
-          const age = t - p.born;
-          if (age >= STILL_MS) continue;
-          a *= age < 80 ? age / 80 : Math.max(0, 1 - (age - 80) / (STILL_MS - 80));
-        } else if (p.landed) {
+        if (p.landed) {
           // 粉受けの上に溜まっている（粉受けが動けば一緒に動く）
           const age = t - p.landed;
           if (age >= p.stay + PILE_FADE) continue;
@@ -997,16 +1000,16 @@ export default function BoardFx() {
           if (p.y - p.r > H || p.x < -8 || p.x > W + 8) continue;
         }
         parts[n++] = p;
-        dust.fillStyle = `rgba(212,212,203,${a.toFixed(3)})`;
+        dust.fillStyle = `rgba(${p.c || "212,212,203"},${a.toFixed(3)})`;
         dust.fillRect(p.x - w / 2, p.y - h, w, h);
       }
       parts.length = n;
       raf = n || m ? requestAnimationFrame(loop) : 0;
     };
     /** 粉を1粒（vy＜0 で少し舞い上がってから落ちる。fl＝落ちる速さの倍率） */
-    const spawn = (x: number, y: number, vx: number, vy: number, a: number, r: number, fl = 1) => {
+    const spawn = (x: number, y: number, vx: number, vy: number, a: number, r: number, fl = 1, c?: string) => {
       if (parts.length >= DUST_MAX) {
-        const i = parts.findIndex((p) => p.landed > 0 || p.kind === "still");
+        const i = parts.findIndex((p) => p.landed > 0);
         if (i < 0) return;
         parts.splice(i, 1);
       }
@@ -1017,19 +1020,19 @@ export default function BoardFx() {
         vy,
         a,
         r,
-        kind: reduce ? "still" : "fall",
         born: performance.now(),
         ph: Math.random() * 6.283,
         landed: 0,
         stay: PILE_MS * (0.7 + Math.random() * 0.6),
         under: y >= floorNow(),
         fl,
+        c,
       });
     };
     /** 雲を1つ（vx・vy＝1コマあたりの初めの速さ。r0→r1 にふくらむ） */
     const cloudAt = (x: number, y: number, vx: number, vy: number, r0: number, r1: number, a: number, life: number) => {
       if (clouds.length >= CLOUD_MAX) clouds.shift();
-      clouds.push({ x, y, vx: reduce ? 0 : vx, vy: reduce ? 0 : vy, r0, r1, a, born: performance.now(), life: reduce ? Math.min(life, 760) : life, still: reduce });
+      clouds.push({ x, y, vx, vy, r0, r1, a, born: performance.now(), life });
     };
     // 雲の大きさは黒板の幅で少し変える（スマホでは小さめ）
     const cloudScale = () => Math.min(1, Math.max(0.8, W / 900));
@@ -1527,12 +1530,10 @@ export default function BoardFx() {
       trayDust = Math.max(0, trayDust * 0.86 - 0.02);
       drawTray(true);
       // 押した黒板消しが溝に少し沈む
-      if (!reduce) {
-        eraser.classList.remove("is-pafu");
-        void eraser.offsetWidth;
-        eraser.classList.add("is-pafu");
-        later(() => eraser.classList.remove("is-pafu"), 320);
-      }
+      eraser.classList.remove("is-pafu");
+      void eraser.offsetWidth;
+      eraser.classList.add("is-pafu");
+      later(() => eraser.classList.remove("is-pafu"), 320);
     };
     /** クリーナーを押した：黒板消しが口の上へ飛んでいき、自動で往復してきれいになり、粉受けに戻る（汚れていなければ短く2往復） */
     const toCleaner = async () => {
@@ -1542,55 +1543,42 @@ export default function BoardFx() {
       const dirty = before >= 0.05;
       try {
         const g = slotOf(cleaner.getBoundingClientRect());
-        if (reduce) {
-          // 動きを減らす設定：黒板消しは動かさず、汚れが段々落ちて色が変わるだけ（口の上に粉がふわっと出て消える）
-          cleaner.classList.add("is-scrubbing");
-          const steps = dirty ? 6 : 2;
-          for (let k = 1; k <= steps; k++) {
-            await wait(200);
-            if (disposed) return;
-            load = before * (1 - k / steps);
-            showLoad(true);
-            if (k % 2 === 1) slotPuff(g, g.mx + (k % 4 === 1 ? -1 : 1) * g.w * 0.25, k % 4 === 1 ? -1 : 1, before * (1 - (k - 1) / steps));
-          }
-        } else {
-          const r = measureRest(eraser);
-          eraser.classList.add("is-on-cleaner");
-          await moveEraser([r.x, r.y, 0, 1], [g.mx, g.ey - 14, 0, g.s], 340);
-          await moveEraser([g.mx, g.ey - 14, 0, g.s], [g.mx, g.ey, 0, g.s], 100);
-          if (disposed) return;
-          cleaner.classList.add("is-scrubbing");
-          const trips = dirty ? 6 : 2;
-          const dur = dirty ? 1400 : 520;
-          const amp = g.w * SCRUB_AMP;
-          let x = g.mx;
-          let acc = 0;
-          await new Promise<void>((done) => {
-            const t0 = performance.now();
-            const step = () => {
-              if (disposed) return done();
-              const t = Math.min(1, (performance.now() - t0) / dur);
-              const nx = g.mx + amp * Math.sin(t * trips * Math.PI * 2);
-              const dx = nx - x;
-              x = nx;
-              // 汚れは往復に合わせて少しずつ0へ
-              const now0 = load;
-              load = before * (1 - t);
-              showLoad();
-              acc += Math.abs(dx);
-              if (acc >= 24) {
-                acc -= 24;
-                slotPuff(g, x, Math.sign(dx) || 1, dirty ? now0 : 0);
-              }
-              setEraser(`translate(${x - r.x}px, ${g.ey + (Math.random() - 0.5) * 0.9 - r.y}px) rotate(${(Math.random() - 0.5) * 1.4}deg) scale(${g.s})`);
-              if (t < 1) requestAnimationFrame(step);
-              else done();
-            };
-            step();
-          });
-          cleaner.classList.remove("is-scrubbing");
-          await moveEraser([x, g.ey, 0, g.s], [x, g.ey - 10, 0, g.s], 90);
-        }
+        const r = measureRest(eraser);
+        eraser.classList.add("is-on-cleaner");
+        await moveEraser([r.x, r.y, 0, 1], [g.mx, g.ey - 14, 0, g.s], 340);
+        await moveEraser([g.mx, g.ey - 14, 0, g.s], [g.mx, g.ey, 0, g.s], 100);
+        if (disposed) return;
+        cleaner.classList.add("is-scrubbing");
+        const trips = dirty ? 6 : 2;
+        const dur = dirty ? 1400 : 520;
+        const amp = g.w * SCRUB_AMP;
+        let x = g.mx;
+        let acc = 0;
+        await new Promise<void>((done) => {
+          const t0 = performance.now();
+          const step = () => {
+            if (disposed) return done();
+            const t = Math.min(1, (performance.now() - t0) / dur);
+            const nx = g.mx + amp * Math.sin(t * trips * Math.PI * 2);
+            const dx = nx - x;
+            x = nx;
+            // 汚れは往復に合わせて少しずつ0へ
+            const now0 = load;
+            load = before * (1 - t);
+            showLoad();
+            acc += Math.abs(dx);
+            if (acc >= 24) {
+              acc -= 24;
+              slotPuff(g, x, Math.sign(dx) || 1, dirty ? now0 : 0);
+            }
+            setEraser(`translate(${x - r.x}px, ${g.ey + (Math.random() - 0.5) * 0.9 - r.y}px) rotate(${(Math.random() - 0.5) * 1.4}deg) scale(${g.s})`);
+            if (t < 1) requestAnimationFrame(step);
+            else done();
+          };
+          step();
+        });
+        cleaner.classList.remove("is-scrubbing");
+        await moveEraser([x, g.ey, 0, g.s], [x, g.ey - 10, 0, g.s], 90);
         load = 0;
         showLoad(true);
         saveLoad();
@@ -1608,7 +1596,7 @@ export default function BoardFx() {
     /** 書き終えたら true。途中で黒板に触れられたら false（その行は次の書き直しでやり直す） */
     const rewriteOne = (it: Item, token: number) =>
       new Promise<boolean>((done) => {
-        const dur = reduce ? 0 : 160 + it.text.length * 70;
+        const dur = 160 + it.text.length * 70;
         const t0 = performance.now();
         const step = () => {
           if (token !== rewriteToken || disposed) return done(false);
@@ -1630,7 +1618,7 @@ export default function BoardFx() {
         for (const it of queue) {
           if (token !== rewriteToken || disposed) return;
           if (await rewriteOne(it, token)) it.dirty = false;
-          await wait(reduce ? 0 : 120);
+          await wait(120);
         }
       }, IDLE_MS);
     };
@@ -1711,7 +1699,7 @@ export default function BoardFx() {
       busy = true;
       skipWrite = false;
       try {
-        if (!reduce && wipeFirst) {
+        if (wipeFirst) {
           for (const it of items.filter((i) => kinds.includes(i.kind))) await wipeItem(it);
           await wait(250);
         }
@@ -1725,18 +1713,11 @@ export default function BoardFx() {
         placeNowMark();
         headPending = false;
         const targets = items.filter((i) => kinds.includes(i.kind));
-        if (!reduce) {
-          targets.forEach(clearItem);
-          for (const it of targets) {
-            await writeItem(it, 300 + it.text.length * 90);
-            if (mode === "burn") drawText(ghost, it, 0.2);
-            if (!skipWrite) await wait(160);
-          }
-        } else {
-          for (const it of targets) {
-            drawText(chalk, it);
-            if (mode === "burn") drawText(ghost, it, 0.2);
-          }
+        targets.forEach(clearItem);
+        for (const it of targets) {
+          await writeItem(it, 300 + it.text.length * 90);
+          if (mode === "burn") drawText(ghost, it, 0.2);
+          if (!skipWrite) await wait(160);
         }
       } finally {
         busy = false;
@@ -1876,7 +1857,7 @@ export default function BoardFx() {
         for (const k of ["wide", "narrow"]) localStorage.removeItem(`gbf_${site.year}_doodle_v2:${k}`);
       } catch {}
       try {
-        const animate = !reduce && state.phase !== "after";
+        const animate = state.phase !== "after";
         if (animate) await wipeBoard();
         if (disposed) return;
         syncText();
@@ -2116,7 +2097,7 @@ export default function BoardFx() {
     // 消灯のとき、懐中電灯がひとりでに少し揺れて「触れる」ことを示す（説明文は置かない）。
     // 看板に手形があれば、いちばん近い手形を照らして止まる
     const wobble = () => {
-      if (reduce || lightMoved || state.dark < 0.5) return;
+      if (lightMoved || state.dark < 0.5) return;
       const b = board.getBoundingClientRect();
       const r = room.getBoundingClientRect();
       if (!b.width) return;
@@ -2146,7 +2127,7 @@ export default function BoardFx() {
       step();
     };
 
-    /* ---------------- 誰もいない教室：見えない手が落書きし、黒板消しがひとりでに消す ---------------- */
+    /* ---------------- 見えない手の落書き：どの時間帯でも、だれも触っていないと、チョークがひとりでに跳んで来て小さく書き、黒板消しがひとりでに消す ---------------- */
     let ghostToken = 0;
     let ghostBusy = false;
     type GhostMark = { x: number; y: number; w: number; h: number };
@@ -2165,6 +2146,9 @@ export default function BoardFx() {
       probe.height = Math.max(1, Math.round(H * k));
       const g = probe.getContext("2d", { willReadFrequently: true })!;
       g.clearRect(0, 0, probe.width, probe.height);
+      // 縮める写しは丁寧に（粗いままだと、スマホの小さな板書の細い線を拾い損ね、字の上に重ねて書いてしまう）
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = "high";
       g.drawImage(chalkC, 0, 0, probe.width, probe.height);
       g.drawImage(doodleC, 0, 0, probe.width, probe.height);
       const data = g.getImageData(0, 0, probe.width, probe.height).data;
@@ -2175,7 +2159,7 @@ export default function BoardFx() {
         for (let x = 3; x + cw < probe.width - 3; x += 2) {
           let ink = 0;
           for (let yy = y; yy < y + ch && ink < 3; yy++)
-            for (let xx = x; xx < x + cw; xx++) if (data[(yy * probe.width + xx) * 4 + 3] > 30) ink++;
+            for (let xx = x; xx < x + cw; xx++) if (data[(yy * probe.width + xx) * 4 + 3] > 24) ink++;
           if (ink < 3) cands.push({ x: (x + 1) / k, y: (y + 1) / k });
         }
       if (!cands.length) return null;
@@ -2190,39 +2174,132 @@ export default function BoardFx() {
       const ref = board.querySelector<HTMLElement>("[data-chalk]");
       return ref ? getComputedStyle(ref).fontFamily : "sans-serif";
     };
-    /** チョークを粉受けから書き始めの所まで運ぶ */
-    const carry = async (stick: HTMLElement | null, x: number, y: number, mine: () => boolean) => {
-      if (!stick) return;
-      const rest = measureRest(stick);
+    const frame = () => new Promise<number>((res) => requestAnimationFrame(res));
+    /** チョークの色 "#rrggbb" → 粉の色 "r,g,b"（読めなければ灰白） */
+    const rgbOf = (hex: string) => {
+      const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+      return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : undefined;
+    };
+    /** 書き終わり：チョークの色の粉が数粒、ぽんと弾ける */
+    const burst = (x: number, y: number, color: string) => {
+      const c = rgbOf(color);
+      for (let i = 0; i < 6; i++) {
+        const a = -Math.PI * (0.1 + Math.random() * 0.8);
+        const sp = 0.7 + Math.random() * 0.8;
+        spawn(x + Math.cos(a) * 5, y + Math.sin(a) * 5, Math.cos(a) * sp, Math.sin(a) * sp, 0.5 + Math.random() * 0.3, 1 + Math.random() * 1.1, 1, c);
+      }
+      kick();
+    };
+
+    /* 重ね用の層：見えない手の字や形は、まずこの層に出して動かし（ぽん・弾む）、出来上がったら落書きの canvas へ一度で写す（重ね塗りで濃くならない） */
+    type Layer = { cv: HTMLCanvasElement; g: CanvasRenderingContext2D; x: number; y: number; w: number; h: number };
+    let ghostLayer: HTMLCanvasElement | null = null;
+    /** 黒板の座標の範囲 x,y,w,h に、落書きの canvas と同じ解像度の層を作る（onBoard＝黒板に載せて見せる） */
+    const makeLayer = (x: number, y: number, w: number, h: number, onBoard: boolean): Layer => {
+      const px = Math.floor(x * dpr);
+      const py = Math.floor(y * dpr);
+      const cv = document.createElement("canvas");
+      cv.width = Math.max(1, Math.ceil((x + w) * dpr) - px);
+      cv.height = Math.max(1, Math.ceil((y + h) * dpr) - py);
+      const g = cv.getContext("2d")!;
+      g.setTransform(dpr, 0, 0, dpr, -px, -py);
+      const L = { cv, g, x: px / dpr, y: py / dpr, w: cv.width / dpr, h: cv.height / dpr };
+      if (onBoard) {
+        cv.className = "kb-cv kb-cv-pop";
+        cv.setAttribute("aria-hidden", "true");
+        Object.assign(cv.style, { left: `${L.x}px`, top: `${L.y}px`, width: `${L.w}px`, height: `${L.h}px`, zIndex: "5" });
+        if (ghostLayer) dropLayer(ghostLayer, false);
+        doodleC.after(cv);
+        ghostLayer = cv;
+      }
+      return L;
+    };
+    /** 層を外す（fade＝途中で止まったとき、すっと薄れて消える） */
+    const dropLayer = (cv: HTMLCanvasElement, fade: boolean) => {
+      if (ghostLayer === cv) ghostLayer = null;
+      if (!fade) return cv.remove();
+      cv.style.transition = "opacity .22s ease";
+      cv.style.opacity = "0";
+      window.setTimeout(() => cv.remove(), 260);
+    };
+    /** 層を落書きの canvas に写して確定し、層を外す */
+    const commitLayer = (L: Layer) => {
+      doodle.save();
+      doodle.globalAlpha = 1;
+      doodle.globalCompositeOperation = "source-over";
+      doodle.drawImage(L.cv, L.x, L.y, L.w, L.h);
+      doodle.restore();
+      dropLayer(L.cv, false);
+    };
+
+    /* チョークの動き（ポップに）：ぴょんと跳ぶ・書きながら揺れる・くるっと回って帰る */
+    type Pose = { x: number; y: number; a: number };
+    /** チョークを from から to へ、高さ lift の弧を描いて跳ばす（着いたら true） */
+    const hop = async (stick: HTMLElement, from: Pose, to: Pose, ms: number, lift: number, mine: () => boolean) => {
       const t0 = performance.now();
       while (mine()) {
-        const p = Math.min(1, (performance.now() - t0) / 700);
-        const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-        hold(stick, rest.x + (x - rest.x) * e, rest.y + (y - rest.y) * e, -35);
+        const p = Math.min(1, (performance.now() - t0) / ms);
+        const e = ease(p);
+        hold(stick, lerp(from.x, to.x, e), lerp(from.y, to.y, e) - Math.sin(Math.PI * p) * lift, lerp(from.a, to.a, e));
+        if (p >= 1) return true;
+        await frame();
+      }
+      return false;
+    };
+    /** 書いている間のチョーク：角度が軽く左右に振れ、少し弾む（t＝書き始めからの ms） */
+    const sway = (t: number) => ({ a: -35 + Math.sin(t * 0.015) * 9, dy: -Math.abs(Math.sin(t * 0.015)) * 1.8 });
+    /** 粉受けから書き始めの所へ、ぴょんと跳んで来る */
+    const hopIn = (stick: HTMLElement, x: number, y: number, mine: () => boolean) => {
+      const rest = measureRest(stick);
+      const lift = 36 + Math.min(70, Math.hypot(x - rest.x, y - rest.y) * 0.22);
+      return hop(stick, { x: rest.x, y: rest.y, a: 0 }, { x, y, a: -35 }, GHOST_HOP_MS, lift, mine);
+    };
+    /** 書き終わり：その場でくるっと一回転して、ぴょんと粉受けへ帰る */
+    const spinHome = async (stick: HTMLElement, x: number, y: number, mine: () => boolean) => {
+      const t0 = performance.now();
+      while (mine()) {
+        const p = Math.min(1, (performance.now() - t0) / GHOST_SPIN_MS);
+        hold(stick, x, y - Math.sin(Math.PI * p) * 14, -35 - 360 * ease(p));
         if (p >= 1) break;
-        await new Promise((r) => requestAnimationFrame(r));
+        await frame();
+      }
+      if (!mine()) return;
+      const rest = restOf.get(stick) || measureRest(stick);
+      const lift = 30 + Math.min(60, Math.hypot(x - rest.x, y - rest.y) * 0.18);
+      if (await hop(stick, { x, y, a: -35 }, { x: rest.x, y: rest.y, a: 0 }, GHOST_HOME_MS, lift, mine)) {
+        // 粉受けに着いた（いまの形は置いてある形と同じなので、そのまま手を離す）
+        stick.classList.remove("is-held");
+        stick.style.transform = "";
       }
     };
-    /** 誰もいない教室で、見えない手が黒板に小さく書く（本人の言葉4つと、∞・魔法陣。どれを書くかはその分の時刻で決まる） */
-    const ghostDraw = async (token: number) => {
+
+    /** 見えない手が黒板に小さく書く（本人の言葉4つと、∞・魔法陣。どれを書くかはその分の時刻で決まる。force＝検分用にどれを書くか決める） */
+    const ghostDraw = async (token: number, force?: number) => {
       const notes = site.ghostNotes;
       const total = notes.phrases.length + notes.marks.length;
       if (!total) return;
       const r = minuteRng(1);
-      const pick = Math.floor(r() * total);
+      const rolled = Math.floor(r() * total);
+      const pick = force !== undefined && force >= 0 && force < total ? Math.floor(force) : rolled;
       const sticks = [...board.querySelectorAll<HTMLElement>('[data-tool="chalk"]')];
-      const stick = sticks.length ? sticks[Math.floor(r() * sticks.length)] : null;
-      const color = stick?.dataset.color || "#f2f0e6";
+      const picked = sticks.length ? sticks[Math.floor(r() * sticks.length)] : null;
+      const color = picked?.dataset.color || "#f2f0e6";
+      const stick = picked;
       const mine = () => token === ghostToken && !disposed;
       try {
         if (pick < notes.phrases.length) {
-          // 本人の言葉を、小さく書く
+          // 本人の言葉を、小さく書く（1文字ずつ「ぽん」と出る）
           const text = notes.phrases[pick];
+          const chars = [...text];
           const size = Math.round(Math.min(19, Math.max(13, W * 0.019)));
           const font = `${size}px ${ghostFont()}`;
           doodle.save();
           doodle.font = font;
           const uw = Math.ceil(doodle.measureText(text).width) + 4;
+          // 1文字ずつの区切り（字の左の端からの位置。字は 2px 右から書く）
+          const edges = [0];
+          for (let i = 1; i < chars.length; i++) edges.push(doodle.measureText(chars.slice(0, i).join("")).width + 2);
+          edges.push(uw);
           doodle.restore();
           const uh = Math.ceil(size * 1.4);
           const rot = ((r() - 0.5) * 10 * Math.PI) / 180;
@@ -2234,7 +2311,7 @@ export default function BoardFx() {
           if (!spot) return;
           const cx = spot.x + 14 + w / 2;
           const cy = spot.y + 9 + h / 2;
-          // 字は一度だけ裏で書いておき、左から少しずつ写す（重ね塗りで濃くならないように）
+          // 字は一度だけ裏で書いておく（チョークの粒もここで付ける）
           const off = document.createElement("canvas");
           off.width = Math.ceil(uw * dpr);
           off.height = Math.ceil(uh * dpr);
@@ -2251,61 +2328,139 @@ export default function BoardFx() {
           o.fillText(text, 2.7, uh / 2 + 0.5);
           o.globalAlpha = 1;
           o.globalCompositeOperation = "destination-out";
-          o.fillStyle = o.createPattern(makeGrain(13, 0.55), "repeat")!;
+          o.fillStyle = o.createPattern(doodleGrainImg, "repeat")!;
           o.fillRect(0, 0, uw, uh);
           const at = (fx: number) => ({ x: cx + (-uw / 2 + uw * fx) * Math.cos(rot), y: cy + (-uw / 2 + uw * fx) * Math.sin(rot) });
+          const tipY = size * 0.2;
           const s0 = at(0);
-          await carry(stick, s0.x, s0.y, mine);
-          const dur = 300 + text.length * 120;
+          if (stick && !(await hopIn(stick, s0.x, s0.y + tipY, mine))) return;
+          // 字の a〜b（左の端からの位置）を、その真ん中を中心に k 倍・濃さ alpha で層に写す
+          const L = makeLayer(cx - w / 2 - size * 0.6 - 6, cy - h / 2 - size * 0.6 - 6, w + size * 1.2 + 12, h + size * 1.2 + 12, true);
+          const slice = (a: number, b: number, k: number, alpha: number) => {
+            const sa = Math.round(a * dpr);
+            const sb = Math.round(b * dpr);
+            if (sb <= sa || alpha <= 0) return;
+            const mid = (a + b) / 2;
+            const g = L.g;
+            g.save();
+            g.translate(cx, cy);
+            g.rotate(rot);
+            g.translate(-uw / 2 + mid, 0);
+            g.scale(k, k);
+            g.globalAlpha = Math.min(1, alpha);
+            g.drawImage(off, sa, 0, sb - sa, off.height, sa / dpr - mid, -uh / 2, (sb - sa) / dpr, off.height / dpr);
+            g.restore();
+          };
+          // チョークは一定の速さで左から右へ進み、字はチョークがその字の真ん中を過ぎたときに出る
+          const n = chars.length;
+          const dur = 300 + n * 120;
+          const anim = GHOST_POP_MS;
+          const starts = chars.map((_, i) => ((edges[i] + edges[i + 1]) / 2 / uw) * dur);
           const t0 = performance.now();
-          let done = 0;
-          while (mine()) {
-            const p = Math.min(1, (performance.now() - t0) / dur);
-            if (p > done) {
-              const a = done * uw;
-              const b = p * uw;
-              doodle.save();
-              doodle.translate(cx, cy);
-              doodle.rotate(rot);
-              doodle.drawImage(off, a * dpr, 0, Math.max(1, (b - a) * dpr), off.height, -uw / 2 + a, -uh / 2, Math.max(1 / dpr, b - a), uh);
-              doodle.restore();
-              done = p;
-              const tip = at(p);
-              if (stick) hold(stick, tip.x, tip.y + size * 0.2, -35);
-              if (Math.random() < 0.08) emit(tip.x, tip.y + size * 0.3, 4, 1);
+          for (;;) {
+            if (!mine()) return;
+            const t = performance.now() - t0;
+            L.g.clearRect(L.x, L.y, L.w, L.h);
+            // 落ち着いた字は左から続けて一度に写す（字の境目に筋を出さない）
+            let settled = 0;
+            while (settled < n && t >= starts[settled] + anim) settled++;
+            if (settled) slice(0, edges[settled], 1, 1);
+            for (let i = settled; i < n && t >= starts[i]; i++) {
+              const u = (t - starts[i]) / anim;
+              slice(edges[i], edges[i + 1], 1 + GHOST_POP * (1 - u) * (1 - u), u * 4);
             }
-            if (p >= 1) break;
-            await new Promise((res) => requestAnimationFrame(res));
+            if (stick) {
+              const tip = at(Math.min(1, t / dur));
+              const s = sway(t);
+              hold(stick, tip.x, tip.y + tipY + s.dy, s.a);
+              if (t < dur && Math.random() < 0.06) emit(tip.x, tip.y + size * 0.3, 4, 1);
+            }
+            if (settled >= n) break;
+            await frame();
           }
-          if (mine()) ghostMarks.push({ x: spot.x + 6, y: spot.y + 4, w: w + 16, h: h + 10 });
+          commitLayer(L);
+          ghostMarks.push({ x: spot.x + 6, y: spot.y + 4, w: w + 16, h: h + 10 });
+          const end = at(1);
+          burst(end.x, end.y + tipY, color);
+          if (stick) {
+            const s = sway(performance.now() - t0);
+            await spinHome(stick, end.x, end.y + tipY + s.dy, mine);
+          }
           return;
         }
-        // ∞・魔法陣を、線で描く
+        // ∞・魔法陣を、線でさっと描く（描き終わりに形全体が一度だけ小さく弾む）
         const def = notes.marks[pick - notes.phrases.length];
         const w = Math.min(W - 24, 56 + r() * 30);
         const h = w / (def.aspect || 1);
         const found = freeSpot(w + 20, h + 20, r());
         if (!found) return;
         const spot = { x: found.x + 10, y: found.y + 10 };
-        await carry(stick, spot.x + def.strokes[0][0] * w, spot.y + def.strokes[0][1] * h, mine);
-        for (const st of def.strokes) {
-          for (let i = 2; i < st.length; i += 2) {
-            if (!mine()) return;
-            const x0 = spot.x + st[i - 2] * w;
-            const y0 = spot.y + st[i - 1] * h;
-            const x1 = spot.x + st[i] * w;
-            const y1 = spot.y + st[i + 1] * h;
-            chalkLine(x0, y0, x1, y1, color);
-            if (stick) hold(stick, x1, y1, -35);
-            if (Math.random() < 0.1) emit(x1, y1, 4, 1);
-            await wait(14 + Math.hypot(x1 - x0, y1 - y0) * 5);
+        const strokes = def.strokes.filter((st) => st.length >= 4).map((st) => st.map((v, i) => (i % 2 ? spot.y + v * h : spot.x + v * w)));
+        if (!strokes.length) return;
+        const pad = 8;
+        if (stick && !(await hopIn(stick, strokes[0][0], strokes[0][1], mine))) return;
+        const L = makeLayer(spot.x - pad, spot.y - pad, w + pad * 2, h + pad * 2, true);
+        const grain = L.g.createPattern(doodleGrainImg, "repeat")!;
+        let total = 0;
+        for (const st of strokes) for (let i = 2; i < st.length; i += 2) total += Math.hypot(st[i] - st[i - 2], st[i + 1] - st[i - 1]);
+        const speed = Math.max(GHOST_LINE_SPEED, total / GHOST_LINE_MAX_MS);
+        const t0 = performance.now();
+        let lx = strokes[0][0];
+        let ly = strokes[0][1];
+        for (let si = 0; si < strokes.length; si++) {
+          const st = strokes[si];
+          // 次の線の書き始めへは、チョークが小さくぴょんと移る
+          if (si > 0 && stick) {
+            const s = sway(performance.now() - t0);
+            if (!(await hop(stick, { x: lx, y: ly + s.dy, a: s.a }, { x: st[0], y: st[1], a: -35 }, 120, 10, mine))) return;
           }
-          await wait(160);
+          lx = st[0];
+          ly = st[1];
+          // 一定の速さで線をたどる（描くのは点と点の間をまるごと。途中で切らない）
+          const ts = performance.now();
+          let i = 2;
+          let len = 0;
+          while (i < st.length) {
+            if (!mine()) return;
+            const reach = (performance.now() - ts) * speed;
+            while (i < st.length) {
+              const d = Math.hypot(st[i] - lx, st[i + 1] - ly);
+              if (len + d > reach) break;
+              chalkLine(lx, ly, st[i], st[i + 1], color, L.g, grain);
+              len += d;
+              lx = st[i];
+              ly = st[i + 1];
+              i += 2;
+            }
+            if (stick) {
+              const s = sway(performance.now() - t0);
+              hold(stick, lx, ly + s.dy, s.a);
+              if (Math.random() < 0.06) emit(lx, ly, 4, 1);
+            }
+            if (i < st.length) await frame();
+          }
         }
+        // 形全体が一度だけ小さく「ぽん」と弾み、チョークは一回転して帰る
+        burst(lx, ly, color);
+        const home = stick ? spinHome(stick, lx, ly, mine) : Promise.resolve();
+        L.cv.style.transformOrigin = `${spot.x + w / 2 - L.x}px ${spot.y + h / 2 - L.y}px`;
+        const tb = performance.now();
+        for (;;) {
+          if (!mine()) return;
+          const p = Math.min(1, (performance.now() - tb) / GHOST_BOUNCE_MS);
+          L.cv.style.transform = `scale(${(1 + GHOST_BOUNCE * Math.sin(Math.PI * p)).toFixed(4)})`;
+          if (p >= 1) break;
+          await frame();
+        }
+        L.cv.style.transform = "";
+        commitLayer(L);
         ghostMarks.push({ x: spot.x, y: spot.y, w, h });
+        await home;
       } finally {
-        // 人が同じチョークで書いている最中なら手を離さない
-        if (stick && !(active === "draw" && tool.el === stick)) putBack(stick);
+        // 途中で止まった（人が触った）：出しかけの字や形は、すっと薄れて消える
+        if (ghostLayer) dropLayer(ghostLayer, true);
+        // 人が同じチョークで書いている最中なら手を離さない（帰り着いたチョークはそのまま）
+        if (stick && stick.classList.contains("is-held") && !(active === "draw" && tool.el === stick)) putBack(stick);
       }
     };
     const ghostErase = async (token: number) => {
@@ -2357,20 +2512,34 @@ export default function BoardFx() {
       }
       if (active !== "rub") putBack(eraser);
     };
-    const ghostTick = async () => {
-      if (ghostBusy || busy || active || cleaning || reduce || document.hidden) return;
-      if (state.phase === "after" || !QUIET_SCENES.has(state.scene) || world.dataset.gate !== "open") return;
-      if (performance.now() - lastUser < GHOST_IDLE_MS || !boardInView()) return;
+    /** 見えない手がいま動けない理由（動けるなら null）。force＝検分用（触っていない時間と、黒板が見えているかは問わない） */
+    const ghostBlocked = (force = false): string | null => {
+      if (ghostBusy) return "ghost-busy";
+      if (busy || active || cleaning) return "board-in-use";
+      if (document.hidden) return "hidden";
+      if (state.phase === "after") return "after";
+      if (world.dataset.gate !== "open") return "gate-closed";
+      if (force) return null;
+      if (performance.now() - lastUser < GHOST_IDLE_MS) return "waiting";
+      if (!boardInView()) return "board-out-of-view";
+      return null;
+    };
+    /** 見えない手を1回動かす（kind＝書く／消すを決める。なければ、落書きが2つ以上あるか時刻の気まぐれで消す） */
+    const ghostRun = async (kind?: "draw" | "erase", pick?: number) => {
       ghostBusy = true;
       const token = ++ghostToken;
       try {
-        if (ghostMarks.length >= 2 || (ghostMarks.length && minuteRng(2)() < 0.45)) await ghostErase(token);
-        else await ghostDraw(token);
+        const erase = kind ? kind === "erase" : ghostMarks.length >= 2 || (ghostMarks.length > 0 && minuteRng(2)() < 0.45);
+        if (erase) await ghostErase(token);
+        else await ghostDraw(token, pick);
       } finally {
         ghostBusy = false;
-        // 次の気配まで、8〜22秒あける（描いた落書きはしばらく残る）
-        lastUser = performance.now() - GHOST_IDLE_MS + 8000 + minuteRng(3)() * 14000;
+        // 次の気配まで、8〜22秒あける（描いた落書きはしばらく残る）。人が触って止めたときは、触った時刻から数え直す
+        if (token === ghostToken) lastUser = performance.now() - GHOST_IDLE_MS + 8000 + minuteRng(3)() * 14000;
       }
+    };
+    const ghostTick = () => {
+      if (!ghostBlocked()) void ghostRun();
     };
     intervals.push(window.setInterval(ghostTick, 3000));
 
@@ -2382,7 +2551,7 @@ export default function BoardFx() {
     let moteRaf = 0;
     let moteLast = 0;
     const motesOn = () =>
-      !reduce && !document.hidden && ["akegata", "asa", "hiru", "yugata", "choshinsei"].includes(state.scene) && state.sun > 0.2 && boardInView();
+      !document.hidden && ["akegata", "asa", "hiru", "yugata", "choshinsei"].includes(state.scene) && state.sun > 0.2 && boardInView();
     const moteLoop = (t: number) => {
       moteRaf = 0;
       if (!motesOn()) {
@@ -2471,16 +2640,15 @@ export default function BoardFx() {
           return parts.length;
         },
         /**
-         * 粉の様子：n＝粒の数／falling＝落ちている途中の粒／landed＝粉受けに乗った粒／still＝動きを減らす設定の粒／
+         * 粉の様子：n＝粒の数／falling＝落ちている途中の粒／landed＝粉受けに乗った粒／
          * clouds＝舞っている雲の数／trayDust＝溝の粉／maxY＝落ちている途中の粒（粉受けより上で生まれたもの）の下の端の最大／floor＝粉受けの上面
          */
         dustInfo: () => {
-          const fall = parts.filter((p) => p.kind === "fall" && !p.under);
+          const fall = parts.filter((p) => !p.under);
           return {
             n: parts.length,
-            falling: parts.filter((p) => p.kind === "fall" && !p.landed).length,
+            falling: parts.filter((p) => !p.landed).length,
             landed: parts.filter((p) => p.landed > 0).length,
-            still: parts.filter((p) => p.kind === "still").length,
             clouds: clouds.length,
             trayDust: Math.round(trayDust * 1000) / 1000,
             maxY: fall.some((p) => !p.landed) ? Math.round(Math.max(...fall.filter((p) => !p.landed).map((p) => p.y)) * 10) / 10 : null,
@@ -2526,6 +2694,29 @@ export default function BoardFx() {
         marks: () => marks.map((m) => ({ owner: m.owner, x: m.x, y: m.y, w: m.w, h: m.h, on: m.on })),
         reset: () => resetBoard(),
         clean: () => toCleaner(),
+        /**
+         * 見えない手を今すぐ動かす（触っていない時間・黒板が見えているかは問わない）。kind＝"draw"（書く）／"erase"（消す）／なし（いつもどおり選ぶ）。
+         * pick＝書くものの番号（0〜3＝本人の言葉、4＝∞、5＝魔法陣。なし＝その分の時刻で決まる）。動けないときは理由を返す。終わると "done"
+         */
+        ghost: async (kind?: "draw" | "erase", pick?: number) => {
+          const why = ghostBlocked(true);
+          if (why) return why;
+          await ghostRun(kind, pick);
+          return "done";
+        },
+        /** 見えない手のようす（blocked＝いつもの見回りで動けない理由。null なら次の見回り（3秒ごと）で動く） */
+        get ghostState() {
+          return {
+            busy: ghostBusy,
+            blocked: ghostBlocked(),
+            marks: ghostMarks.map((m) => ({ x: Math.round(m.x), y: Math.round(m.y), w: Math.round(m.w), h: Math.round(m.h) })),
+            layer: !!board.querySelector(".kb-cv-pop"),
+            idleMs: Math.round(performance.now() - lastUser),
+            scene: state.scene,
+            phase: state.phase,
+            reduceBig,
+          };
+        },
       };
     }
 
@@ -2540,7 +2731,10 @@ export default function BoardFx() {
       collect();
       drawAll();
       replayDoodle();
+      // 見えない手の落書きは測り直しで消える（書きかけも止める）
+      ghostToken++;
       ghostMarks = [];
+      if (ghostLayer) dropLayer(ghostLayer, false);
       restOf.clear();
       placeNowMark();
     };
@@ -2595,8 +2789,8 @@ export default function BoardFx() {
       // 消灯中なら、懐中電灯がひとりでに揺れて手形を照らす
       if (Math.abs(board.clientWidth - W) + Math.abs(board.clientHeight - H) > 2) layout();
       lightMoved = false;
-      later(wobble, reduce ? 0 : 200);
-      later(() => handWrite(["date", "count"], false), reduce ? 0 : 150);
+      later(wobble, 200);
+      later(() => handWrite(["date", "count"], false), 150);
     };
     const onDepart = () => {
       // タイムスリップの真っ白の瞬間：門が開いた直後なので測り直し、見出し（日付・残り日数）だけ空にしておく
@@ -2662,7 +2856,7 @@ export default function BoardFx() {
     syncWithServer();
 
     // 動きを止めた人には秒針を見せず、針の更新も間引く
-    intervals.push(window.setInterval(tickHands, reduce ? 15000 : 1000));
+    intervals.push(window.setInterval(tickHands, 1000));
     intervals.push(window.setInterval(recompute, 15000));
 
     let rto = 0;
@@ -2705,6 +2899,7 @@ export default function BoardFx() {
       trayC.remove();
       delete kbWin.__kbBoard;
       [dustC, doodleC, chalkC, smearC, ghostC, motesC, nowMark].forEach((el) => el.remove());
+      board.querySelectorAll(".kb-cv-pop").forEach((el) => el.remove());
       board.classList.remove("is-canvas", "is-drawing");
     };
   }, []);

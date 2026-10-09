@@ -95,6 +95,43 @@ export const site = {
     stripsTray: "/kokuban/strips-tray.webp",
     /** 教室の後ろのブラウン管（テレビ台の天板込み・1200×857）。空なら CSS の仮の箱 */
     tv: "/kokuban/tv.webp",
+    /**
+     * 壁の時計が割れたときの部品（透過・正面・1枚に1つ）。空なら canvas で描いた仮の形。
+     * gear＝大きい歯車／gearSmall＝小さい歯車／spring＝ゼンマイ／glass＝ガラスの破片（破片ごとに順に割り当てる）／
+     * rim＝枠の折れた弧（rimArc＝弧の中心 x・y と外周・内周の半径〔絵の幅・高さ・幅に対する %〕、弧のある向きの始め・終わり〔度。右が 0・時計回り〕）／
+     * hour・minute・second＝針（縦向き・先が上。handPivot＝軸の丸の中心〔絵の幅・高さに対する %〕）
+     */
+    clockParts: {
+      gear: "/clockfall/gear-large.webp",
+      gearSmall: "/clockfall/gear-small.webp",
+      spring: "/clockfall/spring.webp",
+      glass: ["/clockfall/glass-1.webp", "/clockfall/glass-2.webp", "/clockfall/glass-3.webp", "/clockfall/glass-4.webp"],
+      rim: "/clockfall/rim.webp",
+      rimArc: { cx: 61.48, cy: 48.29, r: 60.08, ri: 47.29, from: 54, to: 264 },
+      hour: "/clockfall/hand-hour.webp",
+      minute: "/clockfall/hand-minute.webp",
+      second: "/clockfall/hand-second.webp",
+      handPivot: [
+        [48.69, 85.57],
+        [47.79, 88.41],
+        [49.12, 77.74],
+      ],
+    } as {
+      gear: string;
+      gearSmall: string;
+      spring: string;
+      glass: string[];
+      rim: string;
+      rimArc: { cx: number; cy: number; r: number; ri: number; from: number; to: number };
+      hour: string;
+      minute: string;
+      second: string;
+      handPivot: [number, number][];
+    },
+    /** フッターの下の引き出しの前板（横長・正面・1400×270。中央上に名札入れ、その下に取っ手）。空なら CSS の木の板 */
+    drawer: "/clockfall/drawer.webp" as string,
+    /** フッターの縁のひび（透過・上の辺がフッターの縁に重なる）。空なら canvas で描いた線 */
+    crack: "" as string,
   },
 
   /* ---------- 開催（DAY / VENUE） ---------- */

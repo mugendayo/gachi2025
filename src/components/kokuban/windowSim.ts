@@ -97,6 +97,7 @@ export function breathEdge(th: number, ph: [number, number, number]) {
   return 1 + 0.12 * Math.sin(3 * th + ph[0]) + 0.07 * Math.sin(5 * th + ph[1]) + 0.09 * Math.sin(2 * th + ph[2]);
 }
 
+/** opt.reduce＝端末の「動きを減らす」設定。窓の動き（曇り直し・息・水滴・長押しで寄せる）は小さいので、その設定でも止めない（今は使わない） */
 export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () => void }): () => void {
   const glass = sec.querySelector<HTMLElement>(".kb-glass");
   const mirror = sec.querySelector<HTMLElement>(".kb-wmirror");
@@ -104,7 +105,6 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
   if (!glass || !mirror || !moonCv) return () => {};
   const handsBox = sec.querySelector<HTMLElement>(".kb-whands");
   const handEls = handsBox ? [...handsBox.querySelectorAll<SVGElement>(".kb-whp")] : [];
-  const reduce = opt.reduce;
 
   /* ---------------- 曇りの格子 ---------------- */
   const fog = new Float32Array(N); // 曇り 0〜1
@@ -442,7 +442,6 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
   /* ---------------- 見回り ---------------- */
   let inView = true;
   let lastPatrol = 0;
-  let lastWipe = -Infinity;
   /** いまの時刻で空・鏡・月・曇りの目標・曇りの色・手形を計算し直す。snap＝曇りを即座に合わせる */
   const patrol = (snap: boolean) => {
     const t = now();
@@ -469,10 +468,7 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
     sec.style.setProperty("--wfog", target.toFixed(2));
     drawMoon(t, sky);
     if (snap || stale) snapFog();
-    else if (reduce) {
-      // 動きを減らす設定：曇り直しは見せず、見回りで状態だけを反映（拭いた直後の見回りでは戻さない）
-      if (performance.now() - lastWipe >= PATROL_MS) snapFog();
-    } else for (let i = 0; i < N; i++) if (settled[i]) fog[i] = tEff(i);
+    else for (let i = 0; i < N; i++) if (settled[i]) fog[i] = tEff(i);
     draw();
     wake();
   };
@@ -609,12 +605,8 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
     if (pid !== -1 || breathPhase !== null || moving) raf = requestAnimationFrame(loop);
     else rafActive = false;
   };
-  /** 動きがあれば rAF を回し始める（動きを減らす設定では回さず、その場で描く） */
+  /** 動きがあれば rAF を回し始める */
   const kick = () => {
-    if (reduce) {
-      draw();
-      return;
-    }
     if (raf || !inView || document.hidden) return;
     rafActive = true;
     lastFrame = performance.now() - 34;
@@ -693,7 +685,6 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
       (stroke.f as number[]).push(q1(f));
       present();
     }
-    lastWipe = performance.now();
     kick();
     return true;
   };
@@ -715,15 +706,6 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
     const m = mouthOf(lastP);
     mouth = m;
     breathC = { x: m.x, y: m.y, w: lastP.w, h: lastP.h };
-    if (reduce) {
-      // 動きを減らす設定：寄せず、息の曇りを一段で出す（前の跡が静止で見える）
-      breathPh = [0.7, 2.1, 4.0];
-      breathR = breathMax() * 0.85;
-      breath.fill(0);
-      stepBreath(1, "out");
-      draw();
-      return;
-    }
     // ガラスを指の所へ向かって寄せ、まわりを少し暗くする。
     // 前の寄せが戻りきる前（0.5秒）に寄せ直すときは、中心を動かさない（拡大中に中心を変えるとガラスが跳ぶ）
     if (performance.now() - leanOffAt > 550) {
@@ -745,12 +727,6 @@ export function start(sec: HTMLElement, opt: { reduce: boolean; onRefuse?: () =>
     delete sec.dataset.peek;
     if (sec.dataset.lean !== undefined) leanOffAt = performance.now();
     delete sec.dataset.lean;
-    if (reduce) {
-      breathR = 0;
-      breath.fill(0);
-      draw();
-      return;
-    }
     // 離したら、息は縁から引く（曇りやすい夜ほどゆっくり）
     breathPhase = "off";
     breathFrom = breathR;

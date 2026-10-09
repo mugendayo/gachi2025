@@ -11,14 +11,20 @@ export default function Inventory() {
   const [glow, setGlow] = useState<string | null>(null);
 
   useEffect(() => {
+    // 続けて拾ったとき、前の1つの消える合図で次の光が早く消えないよう、合図は1つだけ持つ
+    let timer = 0;
     const onItem = (e: Event) => {
       const id = (e as CustomEvent).detail?.id as string | undefined;
       if (!id) return;
       setGlow(id);
-      window.setTimeout(() => setGlow(null), 1000);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setGlow(null), 1000);
     };
     window.addEventListener(ITEM_EVENT, onItem);
-    return () => window.removeEventListener(ITEM_EVENT, onItem);
+    return () => {
+      window.removeEventListener(ITEM_EVENT, onItem);
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const have = site.items.filter((it) => owned.includes(it.id));
@@ -95,16 +101,56 @@ export default function Inventory() {
             transform: scale(1);
           }
         }
-        @media (prefers-reduced-motion: reduce) {
+        /* スマホ：欄の高さを PC の約 7 割に詰める（56px → 38px）。
+           縦書きの「もちもの」は欄の高さを決めてしまうので横書きにして左に置く。
+           枠は小さくなる分、細い縁を足して形が見えるようにする */
+        @media (max-width: 699px) {
+          .gb-inv {
+            left: calc(8px + env(safe-area-inset-left));
+            bottom: calc(8px + env(safe-area-inset-bottom));
+            gap: 6px;
+            padding: 4px 4px 4px 8px;
+            border-radius: 9px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+          }
+          .gb-inv-label {
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            writing-mode: horizontal-tb;
+            line-height: 1;
+            white-space: nowrap; /* 日本語は1字ずつ折り返せるので、欄が縮んでも1行のまま */
+          }
+          ul {
+            gap: 4px;
+          }
+          li {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+          }
+          /* 細い縁（inset）を先頭に残したまま光を足す：並びがそろうので光が消えるときもなめらかに変わる */
           li.is-glow {
-            animation: none;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 0 2px #ffd54a,
+              0 0 16px rgba(255, 213, 74, 0.9);
+          }
+          img {
+            width: 88%;
+            height: 88%;
           }
         }
+        /* 動きを減らす設定でも、拾った1つが小さく弾んで光る動きは止めない（欄の中の1枠だけの手応え） */
       `}</style>
       <style jsx global>{`
         body.has-inv {
           padding-bottom: calc(84px + env(safe-area-inset-bottom));
           background: #111; /* フッターと同じ色で余白をつなぐ */
+        }
+        /* スマホは欄が低い（下から 8px＋高さ 38px）ので、余白もそのぶん詰める */
+        @media (max-width: 699px) {
+          body.has-inv {
+            padding-bottom: calc(62px + env(safe-area-inset-bottom));
+          }
         }
       `}</style>
     </aside>,

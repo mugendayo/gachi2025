@@ -1,0 +1,264 @@
+/* ========================= 窓の下に立てかけたスマホ（押すと縦の動画が流れる） =========================
+   窓（ガラス）の下の壁ぎわ、タブレットと反対の左寄りに、少し傾けて立てかけてある古い端末。拭く範囲（ガラス）とは重ならない。
+   ケースとふちは部屋の明るさ（--amb）で暗くなるが、画面は暗くしない。
+   YouTube の埋め込み（.kb-phone-yt の中）の上には何も重ねない：照りはふちだけ、画面の指紋は埋め込みを見せる前（off）だけ。
+   ケース・ふちに filter を掛けない（祖先の filter は埋め込みの見え方まで変えるため。暗さは color-mix で付ける）。
+   門の内なので橙と明朝は使わない。文字は置かない。 */
+
+/* 窓は上、スマホは区画の下（床ぎわ）へ。背の高い画面で余った高さは窓とスマホの間に入る（スマホが壁の途中に浮かない） */
+.kb-place.kb-window:has(> .kb-wbox + .kb-pmv) {
+  grid-template-rows: auto 1fr;
+}
+.kb-wbox + .kb-pmv {
+  align-self: end;
+}
+/* 絵が無いとき（CSS の窓台）は、窓・窓台・スマホを上下にくっつけて区画の中ほどに置く */
+.kb-place.kb-window:has(> .kb-wpad + .kb-pmv) {
+  align-content: center;
+}
+
+/* 置き場：窓の絵と同じ幅の帯。スマホはその左寄り。窓の暗がり（.kb-window::after・z-index 3）より手前 */
+.kb-pmv {
+  /* 端末の幅（390px で 79px・PC で 124px） */
+  --pw: clamp(78px, 6vw + 56px, 124px);
+  position: relative;
+  z-index: 4;
+  box-sizing: border-box;
+  width: min(92vw + 20px, 100%, 660px);
+  display: flex;
+  /* 下は床に垂れた充電の線の分 */
+  padding: 0 0 calc(var(--pw) * 0.22) 13%;
+  /* 窓を寄せる（長押しでガラスと枠の絵が 1.08 倍になる）ときも、窓台がスマホにかからない間 */
+  margin-top: clamp(16px, 3vh + 12px, 42px);
+  pointer-events: none;
+}
+
+/* 端末：くすんだ藤色のシリコンケース（角は手垢で少し黒ずみ、縁は擦れて白っぽい）。壁にもたれて左へ傾いている */
+.kb-phone {
+  --case: color-mix(in oklab, #17161b, #9e99ad calc(var(--amb, 1) * 100%));
+  --bez: color-mix(in oklab, #0c0d0f, #16171a calc(var(--amb, 1) * 100%));
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--pw);
+  /* 上のふち（受話口）・下のふち（ホームボタン）が太い古い形 */
+  padding: calc(var(--pw) * 0.2) calc(var(--pw) * 0.075) calc(var(--pw) * 0.25);
+  border-radius: calc(var(--pw) * 0.17);
+  background:
+    radial-gradient(55% 22% at 12% 94%, rgba(38, 34, 34, 0.32), transparent 72%),
+    radial-gradient(40% 16% at 92% 6%, rgba(38, 34, 34, 0.2), transparent 72%),
+    radial-gradient(70% 30% at 85% 92%, rgba(255, 255, 255, 0.1), transparent 70%),
+    var(--case);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.22),
+    inset 0 calc(var(--pw) * -0.03) calc(var(--pw) * 0.05) rgba(0, 0, 0, 0.16),
+    /* 壁に落ちる影と、床との接地 */
+    calc(var(--pw) * 0.07) calc(var(--pw) * 0.02) calc(var(--pw) * 0.12) rgba(0, 0, 0, 0.3),
+    0 calc(var(--pw) * 0.06) calc(var(--pw) * 0.07) calc(var(--pw) * -0.02) rgba(0, 0, 0, 0.45);
+  transform: rotate(-7deg);
+  transform-origin: 50% 100%;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: box-shadow 0.4s ease;
+}
+.kb-phone:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 4px;
+}
+/* 表の黒いふち（ガラス）。斜めの照りはふちにだけ見える（画面がその上に乗る） */
+.kb-phone::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--pw) * 0.045);
+  border-radius: calc(var(--pw) * 0.13);
+  background:
+    linear-gradient(
+      128deg,
+      transparent 0 26%,
+      rgba(255, 255, 255, calc(0.03 + 0.06 * var(--amb, 1))) 26% 31%,
+      transparent 31% 100%
+    ),
+    var(--bez);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+/* 流れている間、暗い部屋では画面の光がまわりににじむ（ケースの外側の影。画面には重ならない） */
+.kb-phone[data-pmv="play"] {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.22),
+    inset 0 calc(var(--pw) * -0.03) calc(var(--pw) * 0.05) rgba(0, 0, 0, 0.16),
+    calc(var(--pw) * 0.07) calc(var(--pw) * 0.02) calc(var(--pw) * 0.12) rgba(0, 0, 0, 0.3),
+    0 calc(var(--pw) * 0.06) calc(var(--pw) * 0.07) calc(var(--pw) * -0.02) rgba(0, 0, 0, 0.45),
+    0 0 calc(var(--pw) * 0.7) rgba(150, 185, 240, calc(0.5 * (1 - var(--amb, 1))));
+}
+
+/* 受話口とカメラ */
+.kb-phone-ear {
+  position: absolute;
+  top: calc(var(--pw) * 0.09);
+  left: 50%;
+  width: calc(var(--pw) * 0.22);
+  height: calc(var(--pw) * 0.026);
+  margin-left: calc(var(--pw) * -0.11);
+  border-radius: 9px;
+  background: #26272b;
+  box-shadow: calc(var(--pw) * -0.13) 0 0 calc(var(--pw) * -0.002) #1d1e22;
+}
+/* ホームボタン（擦れて縁だけ光る） */
+.kb-phone-home {
+  position: absolute;
+  bottom: calc(var(--pw) * 0.055);
+  left: 50%;
+  width: calc(var(--pw) * 0.14);
+  aspect-ratio: 1;
+  margin-left: calc(var(--pw) * -0.07);
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #1f2024, #121316);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, calc(0.06 + 0.1 * var(--amb, 1)));
+}
+
+/* 画面（縦 9:16）。部屋の明るさには左右されない */
+.kb-phone-screen {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #050607;
+  transition: background-color 0.3s ease;
+}
+/* 消えた画面：動画の静止画が、明るさを落とした待ち受けのようにうっすら見える */
+.kb-phone-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.38) saturate(0.7);
+  pointer-events: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+/* 押したら静止画は消し、流れ始めるまでは点いただけの暗い画面 */
+.kb-phone:not([data-pmv="off"]) .kb-phone-thumb {
+  opacity: 0;
+}
+.kb-phone[data-pmv="wake"] .kb-phone-screen {
+  background: #101215;
+}
+
+/* 埋め込み・自前の動画の入れ物。流れ始めるまでは見せない（止まった画面は見せたまま） */
+.kb-phone-yt {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.kb-phone:is([data-pmv="play"], [data-pmv="pause"]) .kb-phone-yt {
+  opacity: 1;
+}
+.kb-phone-yt :is(iframe, video) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+.kb-phone-yt video {
+  object-fit: cover;
+  background: #000;
+}
+
+/* 画面の指紋と、親指でこすった跡（埋め込みを見せる前だけ。見せている間は外す） */
+.kb-phone-smudge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(14% 9% at 64% 70%, rgba(255, 255, 255, 0.09), transparent 75%),
+    radial-gradient(11% 7% at 30% 38%, rgba(255, 255, 255, 0.07), transparent 75%),
+    radial-gradient(40% 12% at 55% 86%, rgba(255, 255, 255, 0.05), transparent 70%),
+    linear-gradient(150deg, transparent 0 52%, rgba(255, 255, 255, 0.04) 52% 60%, transparent 60%);
+}
+.kb-phone:not([data-pmv="off"]) .kb-phone-smudge {
+  display: none;
+}
+
+/* 下の差し込み口から床へ垂れた充電の線（傾きを戻して、床に沿わせる） */
+.kb-phone-cable {
+  position: absolute;
+  top: calc(100% - var(--pw) * 0.02);
+  left: calc(50% - var(--pw) * 0.073);
+  width: calc(var(--pw) * 1.1);
+  height: auto;
+  overflow: visible;
+  transform: rotate(7deg);
+  transform-origin: 6.7% 0;
+  pointer-events: none;
+}
+.kb-phone-cable {
+  --cord: color-mix(in oklab, #2b2b2d, #dedcd5 calc(var(--amb, 1) * 100%));
+}
+.kb-phone-cable path {
+  fill: none;
+  stroke: var(--cord);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+/* 抜けたままの差し込み（白い根元と、くすんだ金属の先） */
+.kb-phone-plug {
+  fill: var(--cord);
+}
+.kb-phone-plugtip {
+  fill: color-mix(in oklab, #1d1e20, #9a9b9d calc(var(--amb, 1) * 100%));
+}
+
+/* ========== スマホの絵（playground.phoneArt）があるとき ==========
+   CSS のケース・ふち・受話口・ホームボタンの代わりに絵を使い、画面は絵の画面の位置に合わせる。
+   絵 phone.webp（261×500）を採寸：画面（真っ黒の所）＝ x 25〜236・y 61〜433（212×373）。外形の角の丸みは約 40px */
+.kb-phone.has-art {
+  padding: calc(var(--pw) * 61 / 261) calc(var(--pw) * 24 / 261) calc(var(--pw) * 66 / 261) calc(var(--pw) * 25 / 261);
+  border-radius: calc(var(--pw) * 0.15);
+  background: var(--art) 0 0 / 100% 100% no-repeat;
+  /* 壁に落ちる影と、床との接地（絵の外形に合わせた丸み） */
+  box-shadow:
+    calc(var(--pw) * 0.07) calc(var(--pw) * 0.02) calc(var(--pw) * 0.12) rgba(0, 0, 0, 0.3),
+    0 calc(var(--pw) * 0.06) calc(var(--pw) * 0.07) calc(var(--pw) * -0.02) rgba(0, 0, 0, 0.45);
+}
+.kb-phone.has-art[data-pmv="play"] {
+  box-shadow:
+    calc(var(--pw) * 0.07) calc(var(--pw) * 0.02) calc(var(--pw) * 0.12) rgba(0, 0, 0, 0.3),
+    0 calc(var(--pw) * 0.06) calc(var(--pw) * 0.07) calc(var(--pw) * -0.02) rgba(0, 0, 0, 0.45),
+    0 0 calc(var(--pw) * 0.7) rgba(150, 185, 240, calc(0.5 * (1 - var(--amb, 1))));
+}
+/* 絵のケースとふちを部屋の明るさで暗くし、斜めの照りを重ねる（絵の形で切り抜く。画面はこの上に乗るので照りも暗さも画面には掛からない） */
+.kb-phone.has-art::before {
+  inset: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(
+      128deg,
+      transparent 0 26%,
+      rgba(255, 255, 255, calc(0.02 + 0.05 * var(--amb, 1))) 26% 31%,
+      transparent 31% 100%
+    ),
+    rgba(10, 10, 14, calc((1 - var(--amb, 1)) * 0.72));
+  box-shadow: none;
+  -webkit-mask: var(--art) 0 0 / 100% 100% no-repeat;
+  mask: var(--art) 0 0 / 100% 100% no-repeat;
+}
+.kb-phone.has-art .kb-phone-screen {
+  aspect-ratio: 212 / 373;
+  border-radius: 1px;
+}
+.kb-phone.has-art .kb-phone-ear,
+.kb-phone.has-art .kb-phone-home {
+  display: none;
+}
+
+/* 動きを減らす設定でも、流れ始めたときの光のにじみと画面の明るさの移り変わりは止めない（スマホの中だけの小さな手応え） */
