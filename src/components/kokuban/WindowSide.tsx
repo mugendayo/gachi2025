@@ -6,12 +6,14 @@
 // 枠の絵とタブレットはガラスの子として上に重ねる（寄せる＝ガラスの拡大に、枠と窓台のタブレットも一緒についてくる）。
 // 絵が無いときは、今までどおり CSS の枠と窓台。
 // 窓の下（ガラスの外・タブレットと反対の左寄り）には、押すと縦の動画が流れるスマホを立てかける（PhoneMv）。
+// スマホの右には「ガチ文のきほん」の冊子（Booklet。押すと /guide）。
 // その下は窓際の机（Playground）：ガチャガチャ・生徒指導ポイントカード・銀のアタッシュケース。
 import type { CSSProperties } from "react";
 import { site } from "@/data/site";
 import WindowFx from "./WindowFx";
 import WeatherPad from "./WeatherPad";
 import PhoneMv from "./PhoneMv";
+import Booklet from "./Booklet";
 import Playground from "@/components/playground/Playground";
 import "./window.css";
 
@@ -52,7 +54,9 @@ export default function WindowSide() {
             <WeatherPad />
           </div>
         </div>
-        <PhoneMv />
+        <PhoneMv>
+          <Booklet />
+        </PhoneMv>
         <Playground />
         <WindowFx />
       </section>
@@ -65,7 +69,9 @@ export default function WindowSide() {
         <i className="kb-wframe" aria-hidden />
       </div>
       <WeatherPad />
-      <PhoneMv />
+      <PhoneMv>
+        <Booklet />
+      </PhoneMv>
       <Playground />
       <WindowFx />
     </section>

@@ -1,0 +1,422 @@
+/* ========================= 職員室：壁の掲示と、座席表の頭（校長・教頭） =========================
+   掲示（アドミッション・ポリシー）は座席表の隣の壁に画鋲で留めた A3 の紙（活字ゴシック＝現実の事務文書の顔）。押すと /admission へ。
+   座席表のいちばん上の段に、校長室（点線の枠）と教頭席。写真はあとからセロテープで貼ったもの。押すと写真2枚のカード（<dialog>）。
+   座席表と同じく時間帯では暗くしない（超新星祭の帯だけ .74。消灯の帯は職員室ごと明るいまま）。
+   門の内なので橙は使わない。明朝は札「校長室」だけ（物に書かれた字）。
+   動きはどれも小さい（140ms 以内・カードは 160ms）ので、動きを減らす設定でも止めない。 */
+
+/* 壁：スマホは掲示が座席表の上（左寄せ）、幅 1024px 以上は横並び（掲示が左の列） */
+.kb-staff-wall {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+/* 座席表は今までどおり最大 880px で真ん中（左右の auto の余白で縮まないよう幅を決めておく） */
+.kb-staff-wall > .kb-staff-board {
+  width: 100%;
+}
+@media (min-width: 1024px) {
+  .kb-staff-wall {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 880px);
+    justify-content: center;
+    align-items: start;
+    gap: 40px;
+  }
+}
+
+/* ---------- 掲示：A3 縦の紙。画鋲は3つ（右下だけ無い）、右下の角がめくれ、うっすら日焼け、少し傾いている ---------- */
+.kb-policy {
+  /* めくれた角の大きさ */
+  --c: 14px;
+  --kb-policy-shadow: drop-shadow(0 5px 7px rgba(0, 0, 0, 0.2)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.16));
+  position: relative;
+  display: block;
+  align-self: flex-start;
+  margin-left: 4%;
+  width: clamp(136px, 36vw, 200px);
+  aspect-ratio: 1 / 1.414;
+  color: #1d1f22;
+  text-decoration: none;
+  font-family: var(--font-print);
+  /* 影は紙の形（めくれた角を切り抜いた後）に沿わせる */
+  filter: var(--kb-policy-shadow);
+  transform: rotate(-1.5deg);
+  transition: transform 0.12s ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 1024px) {
+  .kb-policy {
+    --c: 18px;
+    width: 200px;
+    margin: 28px 0 0;
+  }
+}
+/* 紙：右下の角を切り抜いて（めくれて壁が見える）、日焼けは上と左右の縁が黄ばむ */
+.kb-policy-paper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14% 8% 0;
+  background:
+    linear-gradient(to bottom, rgba(206, 180, 118, 0.22), transparent 24%),
+    linear-gradient(to right, rgba(206, 180, 118, 0.14), transparent 16% 84%, rgba(206, 180, 118, 0.14)),
+    #f5f1e4;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%);
+  transition: clip-path 0.12s ease-out;
+}
+/* めくれた角（紙の裏側が手前に折れている） */
+.kb-policy-paper::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--c);
+  height: var(--c);
+  background: linear-gradient(135deg, #d9d1bb 0%, #eee8d8 44%, #cbc2a8 50%, transparent 50%);
+  filter: drop-shadow(-1px -1px 1.5px rgba(0, 0, 0, 0.16));
+  transition:
+    width 0.12s ease-out,
+    height 0.12s ease-out;
+}
+/* 画鋲3つ（左上・右上・左下） */
+.kb-policy::after {
+  --pin: radial-gradient(circle at 40% 38%, #f3a196 0 1px, #d4473a 1.6px 3.3px, #9b2a21 3.8px, transparent 4.4px);
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    var(--pin) 5px 5px / 10px 10px no-repeat,
+    var(--pin) calc(100% - 5px) 5px / 10px 10px no-repeat,
+    var(--pin) 5px calc(100% - 5px) / 10px 10px no-repeat;
+}
+.kb-policy-h {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.kb-policy-h > span {
+  display: block;
+  white-space: nowrap;
+}
+.kb-policy-motto {
+  display: block;
+  margin-top: 10%;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+/* 本文の行（灰色の線4本。最後の行は短い） */
+.kb-policy-lines {
+  display: block;
+  width: 100%;
+  margin-top: 12%;
+}
+.kb-policy-lines i {
+  display: block;
+  height: 2px;
+  margin-top: 9px;
+  border-radius: 1px;
+  background: #c9c4b6;
+}
+.kb-policy-lines i:last-child {
+  width: 62%;
+}
+@media (min-width: 1024px) {
+  .kb-policy-h {
+    font-size: 15px;
+  }
+  .kb-policy-motto {
+    font-size: 34px;
+  }
+  .kb-policy-lines i {
+    margin-top: 12px;
+  }
+}
+/* PC で指を乗せる・キーで注目したとき：めくれた角が少し大きく浮く。押した瞬間は 1px 沈む */
+@media (hover: hover) {
+  .kb-policy:hover {
+    --c: 20px;
+  }
+}
+.kb-policy:focus-visible {
+  --c: 20px;
+  outline: 2px solid color-mix(in oklab, #f4f2ea, #1d1f22 calc(var(--amb, 1) * 100%));
+  outline-offset: 4px;
+}
+@media (min-width: 1024px) and (hover: hover) {
+  .kb-policy:hover {
+    --c: 26px;
+  }
+}
+@media (min-width: 1024px) {
+  .kb-policy:focus-visible {
+    --c: 26px;
+  }
+}
+.kb-policy:active {
+  transform: translateY(1px) rotate(-1.5deg);
+}
+/* 消灯の帯は職員室だけ明るい壁のまま（注目の枠は濃い色に） */
+.kb-world[data-scene="shoto"] .kb-policy:focus-visible {
+  outline-color: #1d1f22;
+}
+/* 超新星祭の帯は座席表と同じく灯りが落ちる */
+.kb-world[data-scene="choshinsei"] .kb-policy {
+  filter: var(--kb-policy-shadow) brightness(0.74);
+}
+
+/* ---------- 座席表の頭：校長室｜教頭（先生の段との間に二重線） ---------- */
+.kb-heads {
+  display: grid;
+  /* 既存の机と同じ2列 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 3px double #6b6455;
+}
+@media (min-width: 640px) {
+  /* 校長室は左端、教頭は島の頭（中央） */
+  .kb-heads {
+    grid-template-columns: 1fr auto 1fr;
+  }
+  .kb-heads > li {
+    width: 148px;
+  }
+  .kb-heads > [data-id="principal"] {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .kb-heads > [data-id="vice"] {
+    grid-column: 2;
+  }
+}
+
+/* 席（ボタンの見た目を消して、机に見せる。.kb-desk の地は中の .kb-head-desk に移す） */
+.kb-desk.kb-headseat {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease-out;
+}
+.kb-headseat span {
+  display: block;
+}
+.kb-head-desk {
+  padding: 8px 8px 10px;
+  border-radius: 3px;
+  background: linear-gradient(#e6dfcf, #d6cdb8);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.08);
+}
+/* 教頭席：机の色を一段濃く */
+.kb-headseat[data-id="vice"] .kb-head-desk {
+  background: linear-gradient(#d9cfb9, #c5b99e);
+}
+/* 校長室：座席表に点線で囲った部屋。札が付いている */
+.kb-desk.kb-headseat[data-id="principal"] {
+  padding: 6px;
+  border: 2px dotted #7d7565;
+  border-radius: 2px;
+}
+.kb-headseat .kb-head-room {
+  width: max-content;
+  margin: 0 auto 6px;
+  padding: 1px 8px;
+  border: 1.5px solid #1d1f22;
+  background: #f4f2ea;
+  font: 800 12px/1.4 var(--font-mincho);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+}
+/* あとからセロテープで貼った写真（校長は左へ、教頭は右へ少し傾く） */
+.kb-head-photo {
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transform: rotate(-2deg);
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out;
+}
+.kb-headseat[data-id="vice"] .kb-head-photo {
+  transform: rotate(1.5deg);
+}
+/* 肩書きの無い席（校長室）は、名前を写真から肩書きの行と同じだけ離す */
+.kb-head-photo + .kb-desk-name {
+  margin-top: 6px;
+}
+.kb-head-photo::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -6px;
+  left: 28%;
+  width: 44%;
+  height: 14px;
+  background: rgba(246, 240, 214, 0.62);
+  box-shadow: 0 0 0 0.5px rgba(120, 110, 80, 0.2);
+  transform: rotate(-4deg);
+}
+/* 指を乗せる・注目したとき：写真の傾きが戻り、2px 浮いて影が付く。押すと少し縮む */
+@media (hover: hover) {
+  .kb-headseat:hover .kb-head-photo {
+    transform: translateY(-2px) rotate(0deg);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25);
+  }
+}
+.kb-headseat:focus-visible .kb-head-photo {
+  transform: translateY(-2px) rotate(0deg);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25);
+}
+.kb-headseat:focus-visible {
+  outline: 2px solid #1d1f22;
+  outline-offset: 3px;
+}
+.kb-desk.kb-headseat:active {
+  transform: scale(0.98);
+}
+
+/* ---------- カード（写真2枚）：ブラウザ標準の <dialog> の見た目を消して、画面いっぱいの透明な地にする ---------- */
+.kb-head-dlg {
+  /* 写真1枚の幅：スマホは画面の8割（背の低い画面では高さに合わせる） */
+  --w: min(80vw, calc((100svh - 120px) * 9 / 16));
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f4f2ea;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+/* 開いているときだけ並べる（閉じているときは標準の display: none のまま） */
+.kb-head-dlg[open] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+}
+.kb-head-dlg::backdrop {
+  background: rgba(10, 12, 14, 0.72);
+}
+.kb-head-dlg[open]::backdrop {
+  animation: kb-head-fade 160ms ease-out;
+}
+.kb-head-dlg[open] .kb-head-body {
+  animation: kb-head-in 160ms ease-out;
+}
+@keyframes kb-head-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+@keyframes kb-head-fade {
+  from {
+    opacity: 0;
+  }
+}
+.kb-head-body {
+  width: 100%;
+}
+/* 写真の帯：スマホは1枚を真ん中に置き、2枚目の端を覗かせて横にめくる（scroll-snap だけ・JS なし） */
+.kb-head-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-inline: calc((100% - var(--w)) / 2);
+  /* 上下は写真の影が切れない分 */
+  padding-block: 32px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.kb-head-track::-webkit-scrollbar {
+  display: none;
+}
+.kb-head-shot {
+  flex: none;
+  display: block;
+  width: var(--w);
+  max-width: none;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  border-radius: 10px;
+  background: #15171a;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  scroll-snap-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+/* PC：2枚を横に並べる（めくらない） */
+@media (min-width: 820px) {
+  .kb-head-dlg {
+    --w: min(360px, calc((100svh - 140px) * 9 / 16));
+  }
+  .kb-head-track {
+    justify-content: center;
+    gap: 20px;
+    overflow: visible;
+    padding-inline: 0;
+    scroll-snap-type: none;
+  }
+}
+/* ×（右上・44px） */
+.kb-head-x {
+  position: absolute;
+  z-index: 1;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f4f2ea;
+  color: #1d1f22;
+  font: 700 24px/1 var(--font-print);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.kb-head-x:focus-visible {
+  outline: 2px solid #f4f2ea;
+  outline-offset: 3px;
+}
+/* 開いている間は後ろをスクロールさせない（スクロールバーの幅は残して、画面が横にずれないように） */
+html:has(.kb-head-dlg[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}

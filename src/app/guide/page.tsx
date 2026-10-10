@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { SimpleSlider, type Slide } from "./ClientParts";
 import TeachersSection from "./TeachersSection";
+import BackButton from "@/components/BackButton";
 import { site } from "@/data/site";
 import type { CSSProperties } from "react";
 
@@ -285,6 +286,10 @@ export default function GuidePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-white/0" />
         </div>
         <Container>
+          {/* もどる（門の内＝窓の下の冊子から来たら、門が開いたまま元の位置へ。/notice と同じ） */}
+          <div className="pt-4">
+            <BackButton />
+          </div>
           <div className="flex min-h-[62svh] items-center py-14 md:py-24 text-white">
             <div className="max-w-2xl">
               <span className="inline-block rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] tracking-widest uppercase">
@@ -527,6 +532,12 @@ export default function GuidePage() {
           <div className="pt-2">寝室は施錠していますが、気になる場合は持ち歩くか職員室に預けてください（常駐の先生がいます）。</div>
         </details>
       </Panel>
+
+      <Container>
+        <div className="py-8">
+          <BackButton />
+        </div>
+      </Container>
     </main>
   );
 }

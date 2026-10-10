@@ -7,7 +7,7 @@
 //   流れ始めるまで埋め込みは見せない（暗い画面のまま）／音ありが端末に止められたら消音で流し、次に押したとき音を戻す。
 // 画面から外れたら一時停止（戻っても勝手に流さない）。テレビとは同時に鳴らさない（あとから押した方が流れ、もう片方は止まる）。
 // src（自前の縦動画）があれば YouTube を使わず <video> で流す。静止画は近づいてから読む（最初の画面では読まない）。
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { playground, type PhoneMv as PhoneSource } from "@/data/playground";
 import { ARRIVE_EVENT } from "@/lib/now";
 import { debugAllowed } from "@/lib/worldClock";
@@ -462,7 +462,8 @@ function createEngine(host: HTMLElement, getSource: () => PhoneSource, setPhase:
   };
 }
 
-export default function PhoneMv() {
+/** children＝スマホの右に一緒に立てかける物（窓の下の帯の最後の子。いまは「ガチ文のきほん」の冊子） */
+export default function PhoneMv({ children }: { children?: ReactNode }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<Engine | null>(null);
@@ -642,6 +643,7 @@ export default function PhoneMv() {
           <rect className="kb-phone-plugtip" x="105.6" y="26.3" width="5.4" height="3.4" rx="0.4" />
         </svg>
       </div>
+      {children}
     </div>
   );
 }

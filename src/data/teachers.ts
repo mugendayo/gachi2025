@@ -37,6 +37,55 @@ export const teachers: Teacher[] = [
   { id: "monchin", name: "問珍仏破", reading: "といれあぶっぱ", title: "英語科", image: "/images/teachers/5.webp", hobby: "シュークリームぶっぱバトル＆腕相撲", motto: "三度の飯よりぶっぱ", subjects: "英語科 コミュニケーション担当" },
 ];
 
+/* ---------- 校長と教頭（職員室の座席表の頭だけが読む） ----------
+   teachers には入れない（guide の先生一覧は7名のまま）。
+   値は2025年版（SchoolIntro の PRINCIPAL / VICE）の写し。name / reading は本人の字「炎山　塚根」と写真の表記に合わせた仮置き */
+export type HeadShot = { src: string; alt: string };
+
+export type Head = {
+  id: "principal" | "vice";
+  room?: string; // 座席表の枠に付いた札（校長室）
+  role?: string; // 机に出す肩書き（教頭）
+  name: string;
+  reading: string;
+  title: string; // 肩書き（フル）。カードの読み上げ用
+  fullName: string; // 2025年版の名前。カードの読み上げ用
+  bio: string; // カードの読み上げ用の説明
+  thumb: string; // 座席の写真
+  story: [HeadShot, HeadShot]; // カードの写真2枚（540×960）
+};
+
+export const heads: Head[] = [
+  {
+    id: "principal",
+    room: "校長室",
+    name: "塚根",
+    reading: "つかね",
+    title: "ガチ文高等学校 校長",
+    fullName: "つかね ひろき",
+    bio: "“いつでも高校生に戻れる社会をつくる” を合言葉に、生徒一人ひとりに青い春と希望を与える。前職はマザーテレサ。趣味は世界平和。",
+    thumb: "/principal/thumb.webp",
+    story: [
+      { src: "/principal/1.webp", alt: "校長 1/2" },
+      { src: "/principal/2.webp", alt: "校長 2/2" },
+    ],
+  },
+  {
+    id: "vice",
+    role: "教頭",
+    name: "炎山",
+    reading: "えんざん",
+    title: "ガチ文高等学校 教頭",
+    fullName: "炎山（えんざん）",
+    bio: "現実主義で“仕組みで青春”を推進。高校時代の文化祭そして使われなくなった廃校に命を芽吹くことに命を賭ける。前職は宮代健太。趣味は多拠点生活。",
+    thumb: "/vice/thumb.webp",
+    story: [
+      { src: "/vice/1.webp", alt: "教頭 1/2" },
+      { src: "/vice/2.webp", alt: "教頭 2/2" },
+    ],
+  },
+];
+
 /* ---------- 以下は表示側の補助（書き換え不要） ---------- */
 const PALETTE: TeacherTheme[] = [
   { from: "#ff7a18", to: "#ff3d77", accent: "#fff", ring: "#ffb199" },

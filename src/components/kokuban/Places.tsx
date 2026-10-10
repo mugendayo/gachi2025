@@ -1,11 +1,14 @@
 // 黒板の下に続く校舎（スクロール＝空間）。1画面に1か所。
 // 教室の後ろ → 職員室 → 体育館の舞台 → 学校の外（ゲームの箱の裏）。
+import Link from "next/link";
 import { site } from "@/data/site";
-import { teachers, thumbOf } from "@/data/teachers";
+import { heads, teachers, thumbOf } from "@/data/teachers";
 import FloorItem from "@/components/FloorItem";
 import { JoinButton } from "@/components/JoinGate";
 import BackTv from "./BackTv";
 import Garland from "./Garland";
+import HeadSeat from "./HeadSeat";
+import "./staff.css";
 
 /* ---------- 教室の後ろ：チャンネルを変えられるテレビと輪飾り ---------- */
 export function BackOfRoom() {
@@ -20,23 +23,50 @@ export function BackOfRoom() {
   );
 }
 
-/* ---------- 職員室：座席表（teachers.ts の1行＝1席。画像の無い先生はまだ座らない） ---------- */
+/* ---------- 職員室：壁の掲示と座席表 ----------
+   掲示＝アドミッション・ポリシー（A3 の紙。普通のリンクで /admission へ＝ゲームを通らずに読める。もどるで門が開いたまま元の位置に帰る）。
+   座席表のいちばん上の段＝校長室と教頭席（heads。押すと写真のカード）。その下＝teachers.ts の1行＝1席（画像の無い先生はまだ座らない） */
 export function Staffroom() {
   const seated = teachers.filter((t) => t.image);
   return (
     <section className="kb-place kb-staff" aria-label="職員室">
-      <div className="kb-staff-board">
-        <p className="kb-staff-sign">職員室</p>
-        <ul className="kb-desks">
-          {seated.map((t) => (
-            <li key={t.id} className="kb-desk">
-              <img src={thumbOf(t)} alt="" loading="lazy" decoding="async" />
-              <p className="kb-desk-title">{t.title}</p>
-              <p className="kb-desk-name">{t.name}</p>
-              {t.reading && <p className="kb-desk-reading">{t.reading}</p>}
-            </li>
-          ))}
-        </ul>
+      <div className="kb-staff-wall">
+        <Link href="/admission" className="kb-policy">
+          <span className="kb-policy-paper">
+            <span className="kb-policy-h">
+              <span>アドミッション・</span>
+              <span>ポリシー</span>
+            </span>
+            <span className="kb-policy-motto">{site.motto}</span>
+            {/* 本文がある感じだけ（字は書かない） */}
+            <span className="kb-policy-lines" aria-hidden>
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+          </span>
+        </Link>
+        <div className="kb-staff-board">
+          <p className="kb-staff-sign">職員室</p>
+          <ul className="kb-heads">
+            {heads.map((h) => (
+              <li key={h.id} data-id={h.id}>
+                <HeadSeat head={h} />
+              </li>
+            ))}
+          </ul>
+          <ul className="kb-desks">
+            {seated.map((t) => (
+              <li key={t.id} className="kb-desk">
+                <img src={thumbOf(t)} alt="" loading="lazy" decoding="async" />
+                <p className="kb-desk-title">{t.title}</p>
+                <p className="kb-desk-name">{t.name}</p>
+                {t.reading && <p className="kb-desk-reading">{t.reading}</p>}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );

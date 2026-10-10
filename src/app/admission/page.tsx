@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { site } from "@/data/site";
+import BackButton from "@/components/BackButton";
 
 /* =========================================================
    スワイプ判定（左右40px以上・縦移動は無視）
@@ -228,8 +229,13 @@ function PhilosophySlides() {
 export default function AdmissionPage() {
   return (
     <main className="bg-white text-slate-800">
-      {/* Hero */}
-      <section className="relative overflow-hidden">
+      {/* もどる（門の内＝職員室の掲示から来たら、門が開いたまま元の位置へ。/notice と同じ） */}
+      <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
+        <BackButton />
+      </div>
+
+      {/* Hero（見出しの帯。ヘッダー画像を外した後も2025年版と同じ高さを保つ） */}
+      <section className="relative overflow-hidden h-[28svh] md:h-[36vh]">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.85)_0%,rgba(233,241,251,.85)_35%,rgba(233,241,251,.6)_100%)]" />
         <div className="absolute inset-0 flex items-center justify-center px-4">
           <h1 className="text-center font-extrabold tracking-wide text-[clamp(20px,4.8vw,40px)] text-[#103B73]">
@@ -306,6 +312,10 @@ export default function AdmissionPage() {
         <PhilosophySlides />
 
         <div className="h-16" />
+      </div>
+
+      <div className="mx-auto max-w-5xl px-4 pb-10 sm:px-6">
+        <BackButton />
       </div>
     </main>
   );
