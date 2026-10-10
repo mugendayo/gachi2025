@@ -7,6 +7,10 @@ import { site } from "@/data/site";
 import { now } from "@/lib/now";
 
 const UNLOCK_TS = Date.parse(site.unlockAt);
+/** 解禁の表記を「10月12日（月・祝）」と「23:00」に分ける（括弧が無ければ全部を時刻の側に） */
+const LABEL_CUT = site.unlockLabel.indexOf("）") + 1;
+const LABEL_DAY = site.unlockLabel.slice(0, LABEL_CUT);
+const LABEL_TIME = site.unlockLabel.slice(LABEL_CUT);
 /** 黒板の世界時計と同じ「いま」（?t= と配信元の時刻の補正を共有する＝lib/now） */
 export const isLockedNow = () => now() < UNLOCK_TS;
 export const msUntilUnlock = () => UNLOCK_TS - now();
@@ -85,7 +89,9 @@ export default function UnlockTeaser({ onClose }: { onClose: () => void }) {
         <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
         <p className="text-xs tracking-[.35em] text-white/60">{site.title}</p>
         <h2 id="gb-unlock-title" className="mt-4 text-[clamp(20px,5vw,26px)] font-black leading-snug">
-          {site.unlockLabel}より、
+          {/* 日付と「時刻より、」の間でだけ折り返す（狭い画面で「…23:00よ／り、」と割れないように） */}
+          <span className="inline-block">{LABEL_DAY}</span>
+          <span className="inline-block">{LABEL_TIME}より、</span>
           <br />
           この先が見れます！
         </h2>
